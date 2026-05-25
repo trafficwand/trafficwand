@@ -462,11 +462,30 @@ The app is "done" (Task 17) when all of these hold:
 - Modify: `App/Resources/Info.plist` (finalize `CFBundleURLTypes`, `LSHandlerRank`)
 - Create: `App/Tests/AppTests/RoutingServiceTests.swift`
 
-- [ ] write failing tests: `.open` decision → launcher called with target + last-used recorded;
+- [x] write failing tests: `.open` decision → launcher called with target + last-used recorded;
       `.prompt` decision → `PickerPresenting` invoked (mocks for Router/launcher/presenter)
-- [ ] implement `RoutingService.route(url:)` composing Router + provider + launcher + lastUsed
-- [ ] wire real `application(_:open urls:)` to `RoutingService`; finalize URL-type registration
-- [ ] run `xcodebuild test` — must pass before Task 14
+      (`RoutingServiceTests` exercises the **real** Core `Router` via chosen config rules/fallback:
+      `.open` → mock `BrowserLaunching` called with the resolved `Browser` for the target's bundle ID
+      AND mock `LastUsedRecording.set` recorded, picker NOT shown; `.prompt` → mock `PickerPresenting`
+      invoked with the available browsers, launcher NOT called, nothing recorded; plus an edge test for
+      an `.open` target with no matching installed browser — launch skipped, last-used still recorded)
+- [x] implement `RoutingService.route(url:)` composing Router + provider + launcher + lastUsed
+      (`App/Sources/RoutingService.swift` composes `ConfigStore.load` → provider.installedBrowsers →
+      `LastUsedRecording.get` → `Router.decide` → act: `.open` resolves the `Browser` and calls
+      `BrowserLaunching.launch` + records last-used; `.prompt` calls `PickerPresenting.presentPicker`.
+      All five collaborators injected via init; no NSWorkspace/Process inside. Added `PickerPresenting`
+      seam in `App/Sources/PickerPresenting.swift`, plus App-side `InstalledBrowsersProviding` and
+      `LastUsedRecording` seams with the concrete `WorkspaceBrowserProvider`/`LastUsedStore` conforming)
+- [x] wire real `application(_:open urls:)` to `RoutingService`; finalize URL-type registration
+      (`AppMain` builds the real `RoutingService` from `FileConfigStore` (Application Support/TrafficWand),
+      `WorkspaceBrowserProvider`, `BrowserLauncher`, `LastUsedStore`, and a logging Task-16 placeholder
+      `PickerPresenting`; `application(_:open:)` now routes each URL via `RoutingService.route(url:)`,
+      keeping `.accessory`/`LSUIElement`. `Info.plist` `CFBundleURLTypes` already declares http+https with
+      `LSHandlerRank = Default` per the plan — verified, no change needed. The live OS
+      `application(_:open:)` callback is Post-Completion manual verification.)
+- [x] run `xcodebuild test` — must pass before Task 14
+      (`task test`: 35 App tests pass incl. 3 new `RoutingServiceTests`; `task test-core`: 81 Core tests
+      pass + AppKit-import guard clean; `swift test` green)
 
 ### Task 14: Status bar menu
 
