@@ -305,12 +305,12 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `TrafficWandCore/Sources/TrafficWandCore/Matching/GlobPattern.swift`
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/GlobPatternTests.swift`
 
-- [ ] write failing tests: literal match, `*` (zero-or-more, incl. dots), `?` (single char),
+- [x] write failing tests: literal match, `*` (zero-or-more, incl. dots), `?` (single char),
       case-insensitivity, full-string anchoring, dot is literal, regex metachars escaped
-- [ ] write failing edge tests: `*.github.com` vs `github.com`, `*github.com` matches apex+subs,
+- [x] write failing edge tests: `*.github.com` vs `github.com`, `*github.com` matches apex+subs,
       empty pattern, pattern of only `*`
-- [ ] implement `GlobPattern` (compile glob → `NSRegularExpression`, cache compiled form)
-- [ ] run `swift test` — must pass before Task 5
+- [x] implement `GlobPattern` (compile glob → `NSRegularExpression`, cache compiled form)
+- [x] run `swift test` — must pass before Task 5
 
 ### Task 5: Rule matching against URLs
 
