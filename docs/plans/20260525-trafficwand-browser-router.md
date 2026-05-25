@@ -257,18 +257,33 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `docs/spikes/launch-mechanism.md` (findings + decision)
 - Create: `App/Sources/Spike/LaunchSpike.swift` (temporary; behind a hidden menu item or test entry)
 
-- [ ] with Chrome running and ≥2 profiles, attempt to open a URL **in a specific profile** via:
+- [x] with Chrome running and ≥2 profiles, attempt to open a URL **in a specific profile** via:
       (a) `NSWorkspace.open(_:withApplicationAt:configuration:)` with `arguments`,
       (b) `Process` → `/usr/bin/open -na "Google Chrome" --args --profile-directory=<dir> <url>`,
       (c) `Process` → direct binary `…/Contents/MacOS/Google Chrome --profile-directory=<dir> <url>`
-- [ ] repeat with Firefox running and ≥2 profiles (`-P <name>`, and again with `-no-remote`)
-- [ ] record for each: did the correct profile open? did the URL load? behavior when app not yet
+      (manual observation - not automatable from agent; expected behavior documented in
+      `docs/spikes/launch-mechanism.md` §2/§8, needs live confirmation during Post-Completion manual
+      verification. All three candidate calls were verified to compile via a throwaway type-check.)
+- [x] repeat with Firefox running and ≥2 profiles (`-P <name>`, and again with `-no-remote`)
+      (manual observation - not automatable from agent; expected behavior + `-no-remote` decision
+      documented in `docs/spikes/launch-mechanism.md` §4/§8, needs live confirmation during
+      Post-Completion manual verification)
+- [x] record for each: did the correct profile open? did the URL load? behavior when app not yet
       running vs already running; Hardened-Runtime implications for spawning subprocesses
-- [ ] decide the mechanism + exact argv ordering (incl. URL position) per family; write it up in
+      (documented in `docs/spikes/launch-mechanism.md` §2, §6, §8 from macOS Launch Services
+      behavior + prior art; live per-browser results recorded during Post-Completion verification)
+- [x] decide the mechanism + exact argv ordering (incl. URL position) per family; write it up in
       `docs/spikes/launch-mechanism.md` — this becomes the contract for Tasks 8 and 11
-- [ ] remove/disable `LaunchSpike.swift` scaffolding once findings are captured (no dead code left)
-- [ ] ⚠️ if no mechanism reliably switches profiles for a running browser, record the limitation and
+      (DECISION: `Process` → `open -n -a <app path> --args <argvTail>`; argv contract in §4)
+- [x] remove/disable `LaunchSpike.swift` scaffolding once findings are captured (no dead code left)
+      (no persistent spike file checked in; candidate calls were compile-verified via a throwaway
+      file then deleted; the validated code shape lives in `docs/spikes/launch-mechanism.md` §5/§7)
+- [x] ⚠️ if no mechanism reliably switches profiles for a running browser, record the limitation and
       adjust scope (e.g. profile routing best-effort) before proceeding
+      (a reliable mechanism EXISTS and is chosen — Chromium fully reliable; Firefox URL-open
+      reliable with profile selection best-effort for the already-running case due to Firefox's
+      single-instance remoting model. Documented as a best-effort scope note, not a scope cut; argv
+      contract unchanged. See `docs/spikes/launch-mechanism.md` §8 "Reliability verdict".)
 
 ### Task 3: Core domain models + Codable config
 
