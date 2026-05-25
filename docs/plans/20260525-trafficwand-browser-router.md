@@ -318,11 +318,11 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `TrafficWandCore/Sources/TrafficWandCore/Matching/RuleMatcher.swift`
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/RuleMatcherTests.swift`
 
-- [ ] write failing tests: host extraction (lowercased, port stripped), first-match-wins ordering,
+- [x] write failing tests: host extraction (lowercased, port stripped), first-match-wins ordering,
       disabled rules skipped, no match → `nil`
-- [ ] write failing edge tests: URL with no host, uppercase host, userinfo/port in URL, malformed URL
-- [ ] implement `RuleMatcher.firstMatch(for url: URL, in rules: [Rule]) -> Rule?`
-- [ ] run `swift test` — must pass before Task 6
+- [x] write failing edge tests: URL with no host, uppercase host, userinfo/port in URL, malformed URL
+- [x] implement `RuleMatcher.firstMatch(for url: URL, in rules: [Rule]) -> Rule?`
+- [x] run `swift test` — must pass before Task 6
 
 ### Task 6: Router decision logic
 
