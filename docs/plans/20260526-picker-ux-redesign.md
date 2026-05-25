@@ -180,8 +180,8 @@ Reused, do not reinvent:
 - [x] `task build` succeeds — BUILD SUCCEEDED
 
 ### Task 9: [Final] Docs + plan housekeeping
-- [ ] note the new seams (`RulePersisting`, `BrowserIconProviding`) in `CLAUDE.md` "Protocol seams" if warranted
-- [ ] move this plan to `docs/plans/completed/`
+- [x] note the new seams (`RulePersisting`, `BrowserIconProviding`) in `CLAUDE.md` "Protocol seams" if warranted
+- [x] move this plan to docs/plans/completed/ (deferred — kept in place for review/finalize phases; move after exec completes)
 
 ## Post-Completion
 *Manual verification — the live `NSPanel` rendering + keyboard handling are untested by design.*

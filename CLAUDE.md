@@ -45,10 +45,13 @@ These protocols keep `NSWorkspace`/`Process`/filesystem out of the tested logic:
 
 - **Core:** `ConfigStore`, `ProfileReading`, `BrowserLaunching` — pure protocols Core
   defines so it never reaches for the system itself.
-- **App-side:** `PickerPresenting`, `InstalledBrowsersProviding`, `LastUsedRecording` —
-  narrow seams the App defines over its concrete adapters (`PickerPanelController`,
-  `WorkspaceBrowserProvider`, `LastUsedStore`) so `RoutingService` and the view models
-  can be tested with mocks.
+- **App-side:** `PickerPresenting`, `InstalledBrowsersProviding`, `LastUsedRecording`,
+  `RulePersisting`, `BrowserIconProviding` — narrow seams the App defines over its concrete
+  adapters (`PickerPanelController`, `WorkspaceBrowserProvider`, `LastUsedStore`,
+  `ConfigRuleStore`, `WorkspaceBrowserIconProvider`) so `RoutingService` and the view models
+  can be tested with mocks. `RulePersisting` wraps `ConfigStore` so the picker can persist a
+  "remember this site" routing rule; `BrowserIconProviding` wraps `NSWorkspace` to supply a
+  browser's real app icon to the picker.
 
 When adding behavior that touches the system, define/extend a seam rather than calling
 `NSWorkspace`/`Process` directly from logic that should be testable.
