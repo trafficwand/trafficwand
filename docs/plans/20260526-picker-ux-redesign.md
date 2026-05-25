@@ -78,11 +78,11 @@ Reused, do not reinvent:
 - Modify: `TrafficWandCore/Sources/TrafficWandCore/Models/AppConfig.swift`
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/AppConfigUpsertTests.swift`
 
-- [ ] write failing tests: `upserting(_:)` on a config with no matching pattern appends the rule;
+- [x] write failing tests: `upserting(_:)` on a config with no matching pattern appends the rule;
       with an existing rule of the same `pattern` it replaces that rule's `target` and re-enables it
       (no duplicate); preserves order of other rules
-- [ ] implement `func upserting(_ rule: Rule) -> AppConfig` (pure, returns a new value)
-- [ ] run `task test-core` — must pass before Task 3
+- [x] implement `func upserting(_ rule: Rule) -> AppConfig` (pure, returns a new value)
+- [x] run `task test-core` — must pass before Task 3
 
 ### Task 3: App — RulePersisting seam + ConfigRuleStore adapter
 
