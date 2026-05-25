@@ -1,9 +1,5 @@
 import Foundation
 
-// Future extension: a `GlobScope` (e.g. `.host` / `.fullURL`) plus a `Rule.scope`
-// field can be added with a schema bump when full-URL matching lands. v1 matches
-// the host only, so no scope type is needed yet.
-
 /// A user-defined routing rule: a glob pattern paired with the browser/profile
 /// target to use when it matches.
 ///

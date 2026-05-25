@@ -40,9 +40,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private let statusItem: NSStatusItem
     private let defaultBrowserManager: DefaultBrowserManager
 
-    /// Invoked when the user picks "Settings…". A placeholder hook until Task 15
-    /// installs the real Settings window; defaults to a no-op so there is no
-    /// dead/broken reference now.
+    /// Invoked when the user picks "Settings…". Defaults to a no-op for
+    /// testability; `AppMain` injects the real Settings-open hook.
     private let onOpenSettings: () -> Void
 
     /// The default-browser item, retained so `menuWillOpen` can refresh its
@@ -52,8 +51,8 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     /// - Parameters:
     ///   - defaultBrowserManager: Source of truth for whether TrafficWand is the
     ///     default browser and the way to request becoming it.
-    ///   - onOpenSettings: Hook invoked for the "Settings…" item. Task 15 fills
-    ///     this in with the real Settings window; defaults to a no-op.
+    ///   - onOpenSettings: Hook invoked for the "Settings…" item. Defaults to a
+    ///     no-op for testability; `AppMain` injects the real Settings-open hook.
     init(
         defaultBrowserManager: DefaultBrowserManager = DefaultBrowserManager(),
         onOpenSettings: @escaping () -> Void = {}

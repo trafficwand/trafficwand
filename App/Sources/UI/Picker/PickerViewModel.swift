@@ -16,7 +16,7 @@ import TrafficWandCore
 ///    write is the controller's / view's thin closure), keeping the decision
 ///    (what string to copy) testable.
 ///  - `cancel()` → invokes `onCancel`; no selection is produced (the picker is
-///    simply dismissed and the link dropped, per Task 16 semantics).
+///    simply dismissed and the link dropped).
 ///
 /// SwiftUI views observe the `@Observable` state (`urlString`, `browsers`) and
 /// call these methods; the floating `NSPanel` host (`PickerPanelController`)

@@ -9,12 +9,11 @@ import os
 /// `Info.plist`), and forwards every link the system hands to
 /// `application(_:open:)` to `RoutingService`.
 ///
-/// The status-bar menu (Task 14), Settings (Task 15), and the picker panel
-/// (Task 16) compose the rest of the app; `.prompt` decisions are presented by the
-/// real `PickerPanelController`.
+/// The status-bar menu, Settings, and the picker panel compose the rest of the
+/// app; `.prompt` decisions are presented by the real `PickerPanelController`.
 @main
 final class AppMain: NSObject, NSApplicationDelegate {
-    private static let logger = Logger(subsystem: "com.tomakado.TrafficWand", category: "intake")
+    private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "intake")
 
     /// The composed routing pipeline (Core `Router` + App adapters). Built once in
     /// `applicationDidFinishLaunching`; used for every incoming link.

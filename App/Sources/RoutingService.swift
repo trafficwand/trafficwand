@@ -42,7 +42,7 @@ extension LastUsedStore: LastUsedRecording {}
 /// system effects live behind the injected protocols.
 @MainActor
 final class RoutingService {
-    private static let logger = Logger(subsystem: "com.tomakado.TrafficWand", category: "routing")
+    private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "routing")
 
     private let configStore: ConfigStore
     private let browserProvider: InstalledBrowsersProviding

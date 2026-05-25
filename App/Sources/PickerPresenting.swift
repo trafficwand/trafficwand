@@ -7,8 +7,8 @@ import TrafficWandCore
 /// `RoutingService` makes no UI decisions — when `Router.decide` returns
 /// `.prompt(url:browsers:)`, the service simply forwards the URL and the available
 /// browsers to a `PickerPresenting`. The concrete floating-panel implementation
-/// (`PickerPanelController`) arrives in Task 16 and conforms to this protocol;
-/// tests inject a mock that records the call.
+/// (`PickerPanelController`) conforms to this protocol; tests inject a mock that
+/// records the call.
 @MainActor
 protocol PickerPresenting {
     /// Presents the interactive browser/profile picker for `url`.

@@ -23,7 +23,7 @@ import os
 /// handling are the untested parts (Post-Completion manual verification).
 @MainActor
 final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate {
-    private static let logger = Logger(subsystem: "com.tomakado.TrafficWand", category: "picker")
+    private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "picker")
 
     private let launcher: BrowserLaunching
     private let lastUsedStore: LastUsedRecording

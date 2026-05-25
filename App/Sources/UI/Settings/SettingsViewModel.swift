@@ -18,7 +18,7 @@ import os
 @MainActor
 @Observable
 final class SettingsViewModel {
-    private static let logger = Logger(subsystem: "com.tomakado.TrafficWand", category: "settings")
+    private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "settings")
 
     /// The ordered routing rules currently shown in the UI (first match wins).
     private(set) var rules: [Rule] = []
