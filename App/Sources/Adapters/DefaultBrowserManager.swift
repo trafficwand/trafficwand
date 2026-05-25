@@ -92,7 +92,9 @@ public struct DefaultBrowserManager {
 
         func recordResult(_ error: Error?) {
             lock.lock()
-            if firstError == nil { firstError = error }
+            // Record only the first NON-nil error: a success (nil) on an earlier
+            // scheme must not shadow a real error arriving on a later one.
+            if firstError == nil, let error { firstError = error }
             remaining -= 1
             let done = remaining <= 0
             let reportedError = firstError

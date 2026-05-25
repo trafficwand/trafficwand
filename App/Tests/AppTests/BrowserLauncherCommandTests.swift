@@ -121,25 +121,50 @@ final class BrowserLauncherCommandTests: XCTestCase {
 
     // MARK: - Safari / no-profile
 
-    func testSafariCommandHasOnlyURLInTail() {
+    func testSafariWithProfileIDUsesPlainOpenWithoutNewInstance() {
         let safari = browser(
             bundleID: "com.apple.Safari",
             name: "Safari",
             appURL: URL(fileURLWithPath: "/Applications/Safari.app")
         )
-        // Safari has no CLI profile selection; even a profileID is ignored.
+        // Safari has no CLI profile selection; even a (stale) profileID is ignored.
+        // Crucially this must NOT trigger the new-instance path: `open -n` would
+        // spawn a DUPLICATE Safari rather than open a tab in the running one
+        // (spike §3). The `-n` decision keys off the family-aware argv tail, not the
+        // raw profileID, so a lingering profileID cannot resurrect `-n`.
         let target = BrowserTarget(bundleID: "com.apple.Safari", profileID: "ignored")
 
         let command = BrowserLaunchCommand.make(target: target, browser: safari, url: url)
 
         XCTAssertEqual(command.arguments, [
-            "-n",
             "-a",
             "/Applications/Safari.app",
-            "--args",
             url.absoluteString
         ])
+        XCTAssertFalse(command.arguments.contains("-n"))
+        XCTAssertFalse(command.arguments.contains("--args"))
         XCTAssertEqual(command.arguments.last, url.absoluteString)
+    }
+
+    func testUnknownFamilyWithProfileIDUsesPlainOpenWithoutNewInstance() {
+        // Same guard for `.other` families: a non-empty profileID (e.g. hand-edited
+        // config) must not force a new instance, since no profile flag is emitted.
+        let unknown = browser(
+            bundleID: "com.example.MysteryBrowser",
+            name: "Mystery",
+            appURL: URL(fileURLWithPath: "/Applications/Mystery.app")
+        )
+        let target = BrowserTarget(bundleID: "com.example.MysteryBrowser", profileID: "ignored")
+
+        let command = BrowserLaunchCommand.make(target: target, browser: unknown, url: url)
+
+        XCTAssertEqual(command.arguments, [
+            "-a",
+            "/Applications/Mystery.app",
+            url.absoluteString
+        ])
+        XCTAssertFalse(command.arguments.contains("-n"))
+        XCTAssertFalse(command.arguments.contains("--args"))
     }
 
     func testUnknownFamilyNoProfileUsesPlainOpenWithoutNewInstance() {

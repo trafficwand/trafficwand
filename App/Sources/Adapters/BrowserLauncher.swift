@@ -26,9 +26,13 @@ extension BrowserLaunchCommand {
     /// Builds the launch command for opening `url` in `browser` with `target`'s
     /// optional profile — the **pure** core of `BrowserLauncher`.
     ///
-    /// Two shapes, per the launch-mechanism spike §3/§4:
+    /// Two shapes, per the launch-mechanism spike §3/§4. The choice is driven by
+    /// whether the family-aware argv tail (`LaunchArguments.build`) actually carries
+    /// a profile flag — **not** by raw `target.profileID` presence — so the launcher
+    /// and Core stay in lock-step (a stale profileID on Safari/`.other` emits no flag
+    /// and therefore takes the no-`-n` path):
     ///
-    /// - **With a profile** (`target.profileID != nil`):
+    /// - **Tail carries a profile flag** (chromium/firefox with a non-empty profile):
     ///
     ///       /usr/bin/open -n -a <app path> --args <argv tail…>
     ///
@@ -38,10 +42,10 @@ extension BrowserLaunchCommand {
     ///   browser). The `--args` tail is exactly `LaunchArguments.build(for:url:)`
     ///   (Core), so the URL is always last and the profile flag is family-correct.
     ///
-    /// - **Without a profile** (`target.profileID == nil`, incl. Safari): there is
-    ///   no argv contract to honor, so spawning a brand-new instance is wrong (for
-    ///   Safari `-n` opens a *duplicate* app rather than a tab in the running one —
-    ///   spike §3). Use the plain open-document path:
+    /// - **Tail is just the URL** (Safari, `.other`, or any target without a profile
+    ///   flag): there is no argv contract to honor, so spawning a brand-new instance
+    ///   is wrong (for Safari `-n` opens a *duplicate* app rather than a tab in the
+    ///   running one — spike §3). Use the plain open-document path:
     ///
     ///       /usr/bin/open -a <app path> <url>
     ///
@@ -55,15 +59,25 @@ extension BrowserLaunchCommand {
     /// - Returns: The executable + argv to run, never launched here.
     public static func make(target: BrowserTarget, browser: Browser, url: URL) -> BrowserLaunchCommand {
         let appPath = browser.appURL.path
-        let hasProfile = target.profileID?
-            .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+
+        // Derive `-n` from the SAME signal that produces a profile flag, so the
+        // launcher and `LaunchArguments` cannot drift: build the tail first and use
+        // the new-instance path only when that tail actually carries a profile flag.
+        // A profile flag is emitted only for CLI-profile-capable families (chromium /
+        // firefox) with a non-empty profileID — never for Safari or `.other`, even if
+        // a stale profileID lingers in config. Concretely the tail is more than just
+        // `[url]` exactly when a profile flag is present.
+        let argvTail = LaunchArguments.build(for: target, url: url)
+        let tailHasProfileFlag = argvTail.count > 1
+
         let arguments: [String]
-        if hasProfile {
-            // Profile selected → new instance so argv reaches the browser parser.
-            let argvTail = LaunchArguments.build(for: target, url: url)
+        if tailHasProfileFlag {
+            // Profile flag present → new instance so argv reaches the browser parser.
             arguments = ["-n", "-a", appPath, "--args"] + argvTail
         } else {
-            // No profile → no argv contract; plain open-document path (no -n).
+            // No profile flag (Safari / .other / no profile) → no argv contract; use
+            // the plain open-document path (no -n) so we reuse the running browser
+            // rather than spawning a duplicate instance (spike §3).
             arguments = ["-a", appPath, url.absoluteString]
         }
         return BrowserLaunchCommand(executableURL: openExecutableURL, arguments: arguments)
