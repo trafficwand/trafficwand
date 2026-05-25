@@ -95,9 +95,15 @@ final class LastUsedStoreTests: XCTestCase {
     // MARK: - Isolation guard
 
     func testStoreDoesNotPolluteStandardDefaults() {
+        // The app host shares `UserDefaults.standard` with the real app, which
+        // legitimately records a last-used target when it runs. Assert our isolated
+        // store leaves standard UNCHANGED (not that it starts empty), so the test is
+        // robust whether or not the app has been used on this machine.
+        let before = UserDefaults.standard.data(forKey: LastUsedStore.defaultsKey)
+
         store.set(BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1"))
 
-        // The standard defaults must not carry our key.
-        XCTAssertNil(UserDefaults.standard.data(forKey: LastUsedStore.defaultsKey))
+        let after = UserDefaults.standard.data(forKey: LastUsedStore.defaultsKey)
+        XCTAssertEqual(before, after, "isolated store must not write to standard defaults")
     }
 }
