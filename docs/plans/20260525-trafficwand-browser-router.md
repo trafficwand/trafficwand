@@ -436,10 +436,22 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `App/Sources/Adapters/DefaultBrowserManager.swift`, `App/Sources/Adapters/LastUsedStore.swift`
 - Create: `App/Tests/AppTests/LastUsedStoreTests.swift`, `App/Tests/AppTests/DefaultBrowserStatusTests.swift`
 
-- [ ] write failing tests: `LastUsedStore` (UserDefaults with a test suite name) set/get/clear
-- [ ] write failing tests: the **pure** "is current bundle the default?" comparison helper
-- [ ] implement `LastUsedStore` and `DefaultBrowserManager` (`isDefault`; `setAsDefault()` http+https)
-- [ ] run `xcodebuild test` — must pass before Task 13
+- [x] write failing tests: `LastUsedStore` (UserDefaults with a test suite name) set/get/clear
+      (`LastUsedStoreTests`: isolated `UserDefaults(suiteName:)` per test with
+      `removePersistentDomain(forName:)` teardown; covers empty→nil, set/get round trip with and
+      without a profile, overwrite, clear, persistence across store instances on the same suite, and
+      a guard asserting `UserDefaults.standard` is never polluted)
+- [x] write failing tests: the **pure** "is current bundle the default?" comparison helper
+      (`DefaultBrowserStatusTests` on `DefaultBrowserManager.isCurrentDefault(currentDefaultBundleID:ourBundleID:)`:
+      matching id → true; case-insensitive match → true; different id → false; nil → false; empty → false)
+- [x] implement `LastUsedStore` and `DefaultBrowserManager` (`isDefault`; `setAsDefault()` http+https)
+      (`LastUsedStore` JSON-encodes the `Codable` `BrowserTarget` under one key with an injected
+      `UserDefaults`; `DefaultBrowserManager.isDefault` combines the pure helper with the thin
+      `NSWorkspace.urlForApplication(toOpen:)` query, `setAsDefault()` calls
+      `NSWorkspace.setDefaultApplication(at:toOpenURLsWithScheme:)` for both http and https)
+- [x] run `xcodebuild test` — must pass before Task 13
+      (`task test`: 32 App tests pass incl. 8 `LastUsedStoreTests` + 5 `DefaultBrowserStatusTests`;
+      `task test-core`/`swift test`: 81 Core tests pass + AppKit-import guard clean)
       <!-- setAsDefault() system prompt covered by Post-Completion manual verification -->
 
 ### Task 13: AppDelegate + URL intake + RoutingService wiring
