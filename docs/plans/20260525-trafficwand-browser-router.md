@@ -562,11 +562,30 @@ The app is "done" (Task 17) when all of these hold:
   `PickerPanelController.swift` (conforms to `PickerPresenting`)
 - Create: `App/Tests/AppTests/PickerViewModelTests.swift`
 
-- [ ] write failing tests for `PickerViewModel`: selecting a browser/profile yields the chosen
+- [x] write failing tests for `PickerViewModel`: selecting a browser/profile yields the chosen
       `BrowserTarget`; "copy URL"; cancel yields no selection
-- [ ] implement `PickerViewModel`, `BrowserPickerView` (URL + browsers/profiles, keyboard select,
+      (`PickerViewModelTests`: 5 tests over a `PickerViewModel` whose three outcomes are captured via
+      injected closures into an `Outcomes` recorder. Covers select-no-profile → `BrowserTarget(bundleID,
+      profileID: nil)`, select-with-profile → `BrowserTarget(bundleID, profileID: chosen profile id)`,
+      `copyURL()` → the url's `absoluteString` (and asserts copy is **not** a selection), `cancel()` →
+      no selection and no copy, plus an exposed-`urlString` assertion)
+- [x] implement `PickerViewModel`, `BrowserPickerView` (URL + browsers/profiles, keyboard select,
       Esc to cancel), and `PickerPanelController` (floating centered `NSPanel`, records last-used)
-- [ ] run `xcodebuild test` — must pass before Task 17
+      (`App/Sources/UI/Picker/PickerViewModel.swift`: `@MainActor @Observable`; holds `url` + `[Browser]`,
+      `select(browser:profile:)` resolves a `BrowserTarget` and fires `onSelect`, `copyURL()` fires
+      `onCopy(urlString)`, `cancel()` fires `onCancel` — all side effects injected, no AppKit. `BrowserPickerView.swift`:
+      SwiftUI showing the routed URL + a per-browser list with default + per-profile selection buttons, a
+      Copy URL affordance, and a Cancel button bound to `.cancelAction` (Esc). `PickerPanelController.swift`:
+      conforms to `PickerPresenting`; builds the view model, hosts `BrowserPickerView` in a floating, centered
+      nonactivating utility `NSPanel`; on selection launches the chosen target via the injected `BrowserLaunching`
+      and records it via the injected `LastUsedRecording`, on cancel just dismisses, on copy writes to
+      `NSPasteboard.general`. Wired in `AppMain`: `RoutingService` now gets the real `PickerPanelController`
+      (sharing the same `BrowserLauncher` + `LastUsedStore`); the Task-13 logging placeholder presenter was removed.
+      Live panel rendering + keyboard/Esc selection are Post-Completion manual verification.)
+- [x] run `xcodebuild test` — must pass before Task 17
+      (`task test`: 53 App tests pass incl. 5 new `PickerViewModelTests`; `task test-core`/`swift test`:
+      81 Core tests pass + AppKit-import guard clean; `task build` succeeds — the SwiftUI view + `NSPanel`
+      controller compile. New Picker files have zero lint findings)
 
 ### Task 17: Verify acceptance criteria
 

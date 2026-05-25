@@ -9,9 +9,9 @@ import os
 /// `Info.plist`), and forwards every link the system hands to
 /// `application(_:open:)` to `RoutingService`.
 ///
-/// The status-bar menu (Task 14), Settings (Task 15), and the real picker panel
-/// (Task 16) are added in later tasks; until then `.prompt` decisions are handed
-/// to a logging placeholder presenter.
+/// The status-bar menu (Task 14), Settings (Task 15), and the picker panel
+/// (Task 16) compose the rest of the app; `.prompt` decisions are presented by the
+/// real `PickerPanelController`.
 @main
 final class AppMain: NSObject, NSApplicationDelegate {
     private static let logger = Logger(subsystem: "com.tomakado.TrafficWand", category: "intake")
@@ -82,15 +82,18 @@ final class AppMain: NSObject, NSApplicationDelegate {
     /// `FileConfigStore` points at `~/Library/Application Support/TrafficWand`,
     /// `WorkspaceBrowserProvider` enumerates installed browsers, `BrowserLauncher`
     /// performs the spike-chosen launch, and `LastUsedStore` persists the last-used
-    /// target. The picker is the Task 16 placeholder for now.
+    /// target. `.prompt` decisions are presented by `PickerPanelController`, which
+    /// reuses the same launcher + last-used store to act on the user's choice.
     @MainActor
     private static func makeRoutingService() -> RoutingService {
-        RoutingService(
+        let launcher = BrowserLauncher()
+        let lastUsedStore = LastUsedStore()
+        return RoutingService(
             configStore: FileConfigStore(directory: configDirectory()),
             browserProvider: WorkspaceBrowserProvider(),
-            launcher: BrowserLauncher(),
-            lastUsedStore: LastUsedStore(),
-            picker: PlaceholderPickerPresenter()
+            launcher: launcher,
+            lastUsedStore: lastUsedStore,
+            picker: PickerPanelController(launcher: launcher, lastUsedStore: lastUsedStore)
         )
     }
 
@@ -100,20 +103,5 @@ final class AppMain: NSObject, NSApplicationDelegate {
             ?? FileManager.default.homeDirectoryForCurrentUser
                 .appendingPathComponent("Library/Application Support")
         return base.appendingPathComponent("TrafficWand", isDirectory: true)
-    }
-}
-
-/// Temporary `PickerPresenting` until the real floating panel lands in Task 16.
-///
-/// Logs the request so `.prompt` decisions are observable during interim manual
-/// testing; replaced by `PickerPanelController` in Task 16.
-@MainActor
-private struct PlaceholderPickerPresenter: PickerPresenting {
-    private static let logger = Logger(subsystem: "com.tomakado.TrafficWand", category: "picker")
-
-    func presentPicker(url: URL, browsers: [Browser]) {
-        Self.logger.log(
-            "Picker requested for \(url.absoluteString, privacy: .public) over \(browsers.count) browser(s) (placeholder; Task 16)."
-        )
     }
 }
