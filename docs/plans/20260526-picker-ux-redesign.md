@@ -124,10 +124,10 @@ Reused, do not reinvent:
 **Files:**
 - Create: `App/Sources/Adapters/BrowserIconProvider.swift`
 
-- [ ] define `protocol BrowserIconProviding { func icon(for browser: Browser) -> NSImage }`
-- [ ] implement `WorkspaceBrowserIconProvider` using `NSWorkspace.shared.icon(forFile: browser.appURL.path)`
+- [x] define `protocol BrowserIconProviding { func icon(for browser: Browser) -> NSImage }`
+- [x] implement `WorkspaceBrowserIconProvider` using `NSWorkspace.shared.icon(forFile: browser.appURL.path)`
       at a fixed display size
-- [ ] (no automated test — system/visual; the seam exists so the view can be previewed with a stub;
+- [x] (no automated test — system/visual; the seam exists so the view can be previewed with a stub;
       covered by Post-Completion manual verification)
 
 ### Task 6: App — redesign BrowserPickerView
