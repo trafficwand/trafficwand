@@ -47,8 +47,8 @@ final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate 
         let viewModel = PickerViewModel(
             url: url,
             browsers: browsers,
-            onSelect: { [weak self] target in
-                self?.handleSelection(target: target, url: url, browsers: browsers)
+            onSelect: { [weak self] target, remember in
+                self?.handleSelection(target: target, url: url, browsers: browsers, remember: remember)
             },
             onCancel: { [weak self] in
                 self?.dismiss()
@@ -71,7 +71,9 @@ final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate 
     /// the user can pick again, and the unresolvable target is NOT recorded as
     /// last-used. On a resolvable selection, last-used is recorded and the chosen
     /// target launched; a launch failure is logged, never fatal.
-    private func handleSelection(target: BrowserTarget, url: URL, browsers: [Browser]) {
+    private func handleSelection(target: BrowserTarget, url: URL, browsers: [Browser], remember: Bool) {
+        // TODO(Task 7): persist a rule via RulePersisting when `remember` is true.
+        _ = remember
         guard let browser = browsers.first(where: { $0.bundleID == target.bundleID }) else {
             Self.logger.error(
                 """

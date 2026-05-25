@@ -106,18 +106,18 @@ Reused, do not reinvent:
 - Modify: `App/Sources/UI/Picker/PickerViewModel.swift`
 - Modify: `App/Tests/AppTests/PickerViewModelTests.swift`
 
-- [ ] add `var rememberChoice: Bool = false` and `var rememberHost: String?` (computed via
+- [x] add `var rememberChoice: Bool = false` and `var rememberHost: String?` (computed via
       `RegistrableDomain.of` so the label matches exactly what Task 1 persists)
-- [ ] add a flattened `selectableItems` (ordered `(browser, profile?)` sequence: each browser's
+- [x] add a flattened `selectableItems` (ordered `(browser, profile?)` sequence: each browser's
       default row, then its profiles, in display order) and `selectedIndex` (default 0)
-- [ ] add `moveSelection(by:)` (clamps to `0..<count`) and `activateSelection()` (selects the
+- [x] add `moveSelection(by:)` (clamps to `0..<count`) and `activateSelection()` (selects the
       highlighted item)
-- [ ] change `onSelect` to `(BrowserTarget, _ remember: Bool) -> Void`; `select(browser:profile:)`
+- [x] change `onSelect` to `(BrowserTarget, _ remember: Bool) -> Void`; `select(browser:profile:)`
       passes `rememberChoice`
-- [ ] update existing tests for the new `onSelect` signature; add tests: default `rememberChoice`
+- [x] update existing tests for the new `onSelect` signature; add tests: default `rememberChoice`
       is false; select forwards the flag; flattening order; `moveSelection` clamping at both ends;
       `activateSelection` targets the highlighted item; `rememberHost` for sample URLs
-- [ ] run `task test` — must pass before Task 5
+- [x] run `task test` — must pass before Task 5
 
 ### Task 5: App — Browser icon provider seam
 
