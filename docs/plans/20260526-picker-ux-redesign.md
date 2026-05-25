@@ -154,13 +154,13 @@ Reused, do not reinvent:
 - Modify: `App/Sources/UI/Picker/PickerPanelController.swift`
 - Modify: `App/Sources/AppMain.swift`
 
-- [ ] add `rulePersister: RulePersisting` and `iconProvider: BrowserIconProviding` to
+- [x] add `rulePersister: RulePersisting` and `iconProvider: BrowserIconProviding` to
       `PickerPanelController.init`; pass the icon provider into `BrowserPickerView`
-- [ ] update `handleSelection` to accept `remember: Bool`; when true, call
+- [x] update `handleSelection` to accept `remember: Bool`; when true, call
       `rulePersister.remember(url:target:)` before launching
-- [ ] in `AppMain.makeRoutingService`, hoist `FileConfigStore` into a shared `let configStore`, pass it
+- [x] in `AppMain.makeRoutingService`, hoist `FileConfigStore` into a shared `let configStore`, pass it
       to both `RoutingService` and `ConfigRuleStore(configStore:)`; construct `WorkspaceBrowserIconProvider()`
-- [ ] run `task test` — must pass before Task 8
+- [x] run `task test` — must pass before Task 8
 
 ### Task 8: Verify acceptance criteria
 - [ ] verify the three asks: profiles hover/are obviously clickable; browsers show real icons;

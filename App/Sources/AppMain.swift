@@ -78,21 +78,31 @@ final class AppMain: NSObject, NSApplicationDelegate {
 
     /// Assembles the real `RoutingService` from the concrete adapters.
     ///
-    /// `FileConfigStore` points at `~/Library/Application Support/TrafficWand`,
-    /// `WorkspaceBrowserProvider` enumerates installed browsers, `BrowserLauncher`
-    /// performs the spike-chosen launch, and `LastUsedStore` persists the last-used
-    /// target. `.prompt` decisions are presented by `PickerPanelController`, which
-    /// reuses the same launcher + last-used store to act on the user's choice.
+    /// `FileConfigStore` points at `~/Library/Application Support/TrafficWand` and is
+    /// hoisted into a shared `configStore` so the router and the picker's
+    /// `ConfigRuleStore` read/write the *same* config — a remembered choice persisted
+    /// by the picker is then seen by routing. `WorkspaceBrowserProvider` enumerates
+    /// installed browsers, `BrowserLauncher` performs the spike-chosen launch, and
+    /// `LastUsedStore` persists the last-used target. `.prompt` decisions are
+    /// presented by `PickerPanelController`, which reuses the same launcher +
+    /// last-used store, persists remembered choices through `ConfigRuleStore`, and
+    /// renders real browser icons via `WorkspaceBrowserIconProvider`.
     @MainActor
     private static func makeRoutingService() -> RoutingService {
+        let configStore = FileConfigStore(directory: configDirectory())
         let launcher = BrowserLauncher()
         let lastUsedStore = LastUsedStore()
         return RoutingService(
-            configStore: FileConfigStore(directory: configDirectory()),
+            configStore: configStore,
             browserProvider: WorkspaceBrowserProvider(),
             launcher: launcher,
             lastUsedStore: lastUsedStore,
-            picker: PickerPanelController(launcher: launcher, lastUsedStore: lastUsedStore)
+            picker: PickerPanelController(
+                launcher: launcher,
+                lastUsedStore: lastUsedStore,
+                rulePersister: ConfigRuleStore(configStore: configStore),
+                iconProvider: WorkspaceBrowserIconProvider()
+            )
         )
     }
 

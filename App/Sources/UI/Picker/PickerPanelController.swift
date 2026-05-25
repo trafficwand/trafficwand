@@ -13,20 +13,24 @@ import os
 /// view model's outcomes:
 ///
 ///  - **selection** → launch the chosen `BrowserTarget` via the injected
-///    `BrowserLaunching` and record it via the injected `LastUsedRecording`, then
-///    dismiss;
+///    `BrowserLaunching`, record it via the injected `LastUsedRecording`, and (when
+///    the user ticked "remember") persist a routing rule via the injected
+///    `RulePersisting`, then dismiss;
 ///  - **cancel** → just dismiss;
 ///  - **copy URL** → write the string to the general `NSPasteboard`.
 ///
-/// The launcher and last-used store are injected so the controller is
-/// constructible and its wiring is reviewable; the live panel display + keyboard
-/// handling are the untested parts (Post-Completion manual verification).
+/// The launcher, last-used store, rule persister, and icon provider are injected so
+/// the controller is constructible and its wiring is reviewable; the live panel
+/// display + keyboard handling are the untested parts (Post-Completion manual
+/// verification).
 @MainActor
 final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate {
     private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "picker")
 
     private let launcher: BrowserLaunching
     private let lastUsedStore: LastUsedRecording
+    private let rulePersister: RulePersisting
+    private let iconProvider: BrowserIconProviding
 
     /// The currently-shown panel, retained while visible so it is not deallocated
     /// mid-display; cleared on dismiss.
@@ -35,9 +39,18 @@ final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate 
     /// - Parameters:
     ///   - launcher: Launches the chosen target on selection.
     ///   - lastUsedStore: Records the chosen target as last-used on selection.
-    init(launcher: BrowserLaunching, lastUsedStore: LastUsedRecording) {
+    ///   - rulePersister: Persists a routing rule when the user ticks "remember".
+    ///   - iconProvider: Supplies each browser's real app icon to the picker view.
+    init(
+        launcher: BrowserLaunching,
+        lastUsedStore: LastUsedRecording,
+        rulePersister: RulePersisting,
+        iconProvider: BrowserIconProviding
+    ) {
         self.launcher = launcher
         self.lastUsedStore = lastUsedStore
+        self.rulePersister = rulePersister
+        self.iconProvider = iconProvider
         super.init()
     }
 
@@ -58,7 +71,7 @@ final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate 
             }
         )
 
-        showPanel(hosting: BrowserPickerView(viewModel: viewModel))
+        showPanel(hosting: BrowserPickerView(viewModel: viewModel, iconProvider: iconProvider))
     }
 
     // MARK: - Outcomes
@@ -69,11 +82,10 @@ final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate 
     /// should not happen — the picker only offers targets from that very list — but
     /// defend against it), the link is NOT dropped: the picker is re-presented so
     /// the user can pick again, and the unresolvable target is NOT recorded as
-    /// last-used. On a resolvable selection, last-used is recorded and the chosen
-    /// target launched; a launch failure is logged, never fatal.
+    /// last-used nor remembered. On a resolvable selection, last-used is recorded,
+    /// the choice is persisted as a routing rule when `remember` is set, and the
+    /// chosen target launched; a launch failure is logged, never fatal.
     private func handleSelection(target: BrowserTarget, url: URL, browsers: [Browser], remember: Bool) {
-        // TODO(Task 7): persist a rule via RulePersisting when `remember` is true.
-        _ = remember
         guard let browser = browsers.first(where: { $0.bundleID == target.bundleID }) else {
             Self.logger.error(
                 """
@@ -87,6 +99,10 @@ final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate 
         }
 
         lastUsedStore.set(target)
+
+        if remember {
+            rulePersister.remember(url: url, target: target)
+        }
 
         defer { dismiss() }
 
