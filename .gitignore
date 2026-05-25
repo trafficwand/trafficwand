@@ -11,3 +11,5 @@ DerivedData/
 # Swift Package Manager
 Package.resolved
 .swiftpm/
+
+.claude/
