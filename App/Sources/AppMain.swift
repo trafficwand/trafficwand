@@ -24,6 +24,10 @@ final class AppMain: NSObject, NSApplicationDelegate {
     /// status item stays installed; built in `applicationDidFinishLaunching`.
     private var statusBarController: StatusBarController?
 
+    /// The Settings window controller. Retained so the window persists across
+    /// open/close; built lazily in `applicationDidFinishLaunching`.
+    private var settingsWindowController: SettingsWindowController?
+
     static func main() {
         let app = NSApplication.shared
         let delegate = AppMain()
@@ -35,7 +39,16 @@ final class AppMain: NSObject, NSApplicationDelegate {
         // Menu-bar agent: no Dock icon, no main menu activation.
         NSApp.setActivationPolicy(.accessory)
         routingService = Self.makeRoutingService()
-        // Settings… is a placeholder hook until Task 15 installs the real window.
+
+        // Settings window: the view model depends only on Core (FileConfigStore) and
+        // the App provider seam (WorkspaceBrowserProvider); the window controller
+        // hosts the SwiftUI views and activates the app when shown.
+        let settingsViewModel = SettingsViewModel(
+            configStore: FileConfigStore(directory: Self.configDirectory()),
+            browserProvider: WorkspaceBrowserProvider()
+        )
+        settingsWindowController = SettingsWindowController(viewModel: settingsViewModel)
+
         statusBarController = StatusBarController(
             onOpenSettings: { [weak self] in self?.openSettings() }
         )
@@ -54,12 +67,14 @@ final class AppMain: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Placeholder hook for the status-bar "Settings…" item.
+    /// Shows the Settings window (status-bar "Settings…" item hook).
     ///
-    /// Task 15 replaces this with the real Settings window; for now it logs so the
-    /// action is observable and there is no dead/broken reference.
+    /// The window controller activates the app and brings the window forward, since
+    /// TrafficWand is an `.accessory`/`LSUIElement` agent with no regular windows.
+    @MainActor
     private func openSettings() {
-        Self.logger.log("Settings requested (placeholder; Task 15).")
+        Self.logger.log("Opening Settings window.")
+        settingsWindowController?.show()
     }
 
     /// Assembles the real `RoutingService` from the concrete adapters.

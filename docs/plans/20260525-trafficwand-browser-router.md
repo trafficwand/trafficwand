@@ -522,14 +522,38 @@ The app is "done" (Task 17) when all of these hold:
   `RuleEditorView.swift`, `SettingsWindowController.swift`
 - Create: `App/Tests/AppTests/SettingsViewModelTests.swift`
 
-- [ ] write failing tests for `SettingsViewModel` (mock `ConfigStore` + stub provider): load
+- [x] write failing tests for `SettingsViewModel` (mock `ConfigStore` + stub provider): load
       populates rules/browsers; add/edit/delete/reorder rule mutates config **and** persists;
       changing fallback policy persists
-- [ ] implement `SettingsViewModel` (depends only on Core protocols)
-- [ ] implement SwiftUI views (General: fallback policy, default browser, Set-as-Default button;
+      (`SettingsViewModelTests`: 11 tests over a `MockConfigStore` recording every `save`/saved config
+      + a `StubBrowserProvider`. Covers load populating rules/browsers/fallback, corrupt-config →
+      `AppConfig.default`, add/edit/delete/reorder/toggle each mutating in-memory state AND persisting
+      via `ConfigStore.save` exactly once, edit of an unknown rule → no-op/no save, fallback change to
+      `.defaultBrowser`/`.lastUsed` persisting, and a save preserving the rest of the config + schemaVersion)
+- [x] implement `SettingsViewModel` (depends only on Core protocols)
+      (`App/Sources/UI/Settings/SettingsViewModel.swift`: `@MainActor @Observable`; depends only on Core
+      `ConfigStore` + App `InstalledBrowsersProviding` seam — no `NSWorkspace`. `load()` populates
+      `rules`/`browsers`/`fallback`; `addRule`/`updateRule`/`setRule(_:enabled:)`/`deleteRules(at:)`/
+      `moveRules(fromOffsets:toOffset:)`/`setFallback` each mutate then `persist()` via `ConfigStore.save`,
+      preserving the loaded `schemaVersion`. A failed save is logged; atomic store leaves prior file intact)
+- [x] implement SwiftUI views (General: fallback policy, default browser, Set-as-Default button;
       Rules list with reorder; Rule editor with glob examples + browser/profile pickers + enable)
-- [ ] host `SettingsRootView` via `NSHostingController` in `SettingsWindowController`
-- [ ] run `xcodebuild test` — must pass before Task 16
+      (`GeneralSettingsView` — radio-group fallback picker mapping the 3 `FallbackPolicy` modes; reveals a
+      browser+profile picker for `.defaultBrowser`; default-browser status row + Set-as-Default button via
+      injected `DefaultBrowserManager`. `RulesListView` — reorderable `List` (onMove) + onDelete + Add,
+      per-row enable `Toggle`, tap-to-edit; empty state. `RuleEditorView` — pattern field with documented
+      glob examples, browser picker, profile picker driven by the chosen browser's profiles, enable toggle,
+      Cancel/Save sheet committing only on Save. `SettingsRootView` — `TabView` (General + Rules), loads on appear)
+- [x] host `SettingsRootView` via `NSHostingController` in `SettingsWindowController`
+      (`SettingsWindowController`: lazily builds an `NSWindow(contentViewController: NSHostingController(...))`,
+      `isReleasedWhenClosed = false`, reused across shows; `show()` calls `viewModel.load()`, then
+      `NSApp.activate(ignoringOtherApps:)` + `makeKeyAndOrderFront` so the window comes forward despite the
+      `.accessory`/`LSUIElement` agent policy. Wired in `AppMain`: the status-bar `onOpenSettings` hook now
+      builds a `SettingsViewModel` (FileConfigStore + WorkspaceBrowserProvider) and shows the window)
+- [x] run `xcodebuild test` — must pass before Task 16
+      (`task test`: 48 App tests pass incl. 11 new `SettingsViewModelTests`; `task test-core`/`swift test`:
+      81 Core tests pass + AppKit-import guard clean; `task build` succeeds — SwiftUI views compile. New
+      Settings files have zero lint findings; live SwiftUI rendering is Post-Completion manual verification)
 
 ### Task 16: Picker popup (SwiftUI in NSPanel)
 
