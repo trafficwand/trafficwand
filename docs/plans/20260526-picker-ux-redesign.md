@@ -163,11 +163,21 @@ Reused, do not reinvent:
 - [x] run `task test` — must pass before Task 8
 
 ### Task 8: Verify acceptance criteria
-- [ ] verify the three asks: profiles hover/are obviously clickable; browsers show real icons;
-      remember-choice persists a `*domain` rule
-- [ ] verify keyboard nav (arrows + Return), highlight, Esc-cancel, Copy URL still work
-- [ ] run `task test-core`, `task test`, `task lint` — all green
-- [ ] `task build` succeeds
+- [x] verify the three asks: profiles hover/are obviously clickable; browsers show real icons;
+      remember-choice persists a `*domain` rule — verified statically (live UX is Post-Completion
+      manual verification): rows are `Button` + `.onHover` highlight + `.pointerStyle(.link)` +
+      `PickerRowButtonStyle` press feedback; `Image(nsImage: iconProvider.icon(for:))` with
+      `WorkspaceBrowserIconProvider` injected via controller from AppMain; `remember` →
+      `rulePersister.remember` → `ConfigRuleStore` → `RememberRule` (`*<registrableDomain>`) +
+      `AppConfig.upserting` + save, over a shared `FileConfigStore`
+- [x] verify keyboard nav (arrows + Return), highlight, Esc-cancel, Copy URL still work — verified
+      statically (live UX is Post-Completion manual verification): `.focusable()`/`.focused` + focus
+      on appear; `.onKeyPress(.upArrow/.downArrow)` → `moveSelection`, `.onKeyPress(.return)` →
+      `activateSelection`; `selectedIndex` row highlighted; Cancel `.keyboardShortcut(.cancelAction)`;
+      Copy URL button present
+- [x] run `task test-core`, `task test`, `task lint` — all green — task test-core: 117 passed
+      (incl. AppKit-import guard); task test: 78 passed; task lint: clean
+- [x] `task build` succeeds — BUILD SUCCEEDED
 
 ### Task 9: [Final] Docs + plan housekeeping
 - [ ] note the new seams (`RulePersisting`, `BrowserIconProviding`) in `CLAUDE.md` "Protocol seams" if warranted
