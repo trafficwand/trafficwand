@@ -49,6 +49,31 @@ struct RegistrableDomainTests {
         #expect(RegistrableDomain.of(host: "WWW.X.COM") == "x.com")
     }
 
+    @Test("Mixed-case host with a multi-label suffix is lowercased and kept")
+    func lowercasesHostWithMultiLabelSuffix() {
+        #expect(RegistrableDomain.of(host: "WWW.EXAMPLE.CO.UK") == "example.co.uk")
+    }
+
+    @Test("Surrounding whitespace is trimmed before extraction")
+    func trimsWhitespace() {
+        #expect(RegistrableDomain.of(host: " x.com ") == "x.com")
+    }
+
+    @Test("A trailing-dot FQDN yields nil (empty trailing label)")
+    func trailingDotFQDNNil() {
+        #expect(RegistrableDomain.of(host: "x.com.") == nil)
+    }
+
+    @Test("Consecutive dots yield nil (empty label)")
+    func consecutiveDotsNil() {
+        #expect(RegistrableDomain.of(host: "x..com") == nil)
+    }
+
+    @Test("A leading dot yields nil (empty leading label)")
+    func leadingDotNil() {
+        #expect(RegistrableDomain.of(host: ".x.com") == nil)
+    }
+
     @Test("Single-label host yields nil")
     func singleLabelHostNil() {
         #expect(RegistrableDomain.of(host: "localhost") == nil)

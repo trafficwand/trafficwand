@@ -169,6 +169,24 @@ final class PickerViewModelTests: XCTestCase {
         XCTAssertNil(vm.rememberHost)
     }
 
+    func testRememberHostFallsBackToLowercasedSingleLabelHost() {
+        let (vm, _) = makeViewModel(
+            browsers: [chrome],
+            url: URL(string: "http://localhost:3000/")!
+        )
+        // No registrable domain → falls back to the lowercased exact host, matching
+        // the lowercase pattern RememberRule persists for single-label hosts.
+        XCTAssertEqual(vm.rememberHost, "localhost")
+    }
+
+    func testRememberHostLowercasesRawHostFallback() {
+        let (vm, _) = makeViewModel(
+            browsers: [chrome],
+            url: URL(string: "http://LOCALHOST:3000/")!
+        )
+        XCTAssertEqual(vm.rememberHost, "localhost")
+    }
+
     // MARK: - selectable items flattening
 
     func testSelectableItemsFlattensBrowsersThenProfiles() {
@@ -193,6 +211,36 @@ final class PickerViewModelTests: XCTestCase {
 
         // IDs are stable and unique.
         XCTAssertEqual(Set(items.map(\.id)).count, items.count)
+    }
+
+    func testSelectableItemIDsDoNotCollideWithDefaultNamedProfile() throws {
+        // Firefox profiles are commonly named literally "default"/"default-release",
+        // and BrowserProfile.id is that name. Ensure the default-row sentinel id can
+        // never collide with a profile whose id is "default".
+        let firefox = Browser(
+            bundleID: "org.mozilla.firefox",
+            name: "Firefox",
+            appURL: URL(fileURLWithPath: "/Applications/Firefox.app"),
+            profiles: [
+                BrowserProfile(id: "default", name: "default"),
+                BrowserProfile(id: "default-release", name: "default-release")
+            ]
+        )
+        let (vm, _) = makeViewModel(browsers: [firefox])
+
+        let items = vm.selectableItems
+        XCTAssertEqual(items.count, 3) // default row + 2 profiles
+
+        // All ids are unique despite the "default"-named profile.
+        XCTAssertEqual(Set(items.map(\.id)).count, items.count)
+
+        // The browser-default item (profile == nil) and the "default"-named profile
+        // item are distinct entries with distinct ids.
+        let defaultRow = try XCTUnwrap(items.first(where: { $0.profile == nil }))
+        let defaultNamedProfileRow = try XCTUnwrap(
+            items.first(where: { $0.profile?.id == "default" })
+        )
+        XCTAssertNotEqual(defaultRow.id, defaultNamedProfileRow.id)
     }
 
     // MARK: - keyboard navigation

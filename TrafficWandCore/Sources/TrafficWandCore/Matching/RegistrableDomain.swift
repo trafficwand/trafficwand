@@ -53,12 +53,11 @@ public enum RegistrableDomain {
         guard labels.count >= 2, !labels.contains(where: \.isEmpty) else { return nil }
 
         // Recognized multi-label public suffix → eTLD+1 has three labels.
-        if labels.count >= 2 {
-            let lastTwo = labels.suffix(2).joined(separator: ".")
-            if multiLabelSuffixes.contains(lastTwo) {
-                guard labels.count >= 3 else { return nil }
-                return labels.suffix(3).joined(separator: ".")
-            }
+        let lastTwo = labels.suffix(2).joined(separator: ".")
+        if multiLabelSuffixes.contains(lastTwo) {
+            // A bare multi-label suffix (e.g. "co.uk") has no registrable label.
+            guard labels.count >= 3 else { return nil }
+            return labels.suffix(3).joined(separator: ".")
         }
 
         // Default: assume a single-label public suffix → eTLD+1 is the last two labels.

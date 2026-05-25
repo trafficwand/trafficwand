@@ -30,6 +30,11 @@ struct BrowserPickerView: View {
     /// The row id the mouse is currently hovering, if any (drives the hover highlight).
     @State private var hoveredItemID: PickerViewModel.SelectableItem.ID?
 
+    /// Whether the user has navigated with the keyboard yet. The keyboard-selection
+    /// fill is suppressed until this is true so row 0 isn't pre-highlighted before
+    /// any keyboard interaction (hover still highlights immediately).
+    @State private var keyboardNavigated = false
+
     /// Owns keyboard focus so arrow keys / Return are delivered to the list.
     @FocusState private var listFocused: Bool
 
@@ -66,10 +71,12 @@ struct BrowserPickerView: View {
         .focused($listFocused)
         .onAppear { listFocused = true }
         .onKeyPress(.upArrow) {
+            keyboardNavigated = true
             viewModel.moveSelection(by: -1)
             return .handled
         }
         .onKeyPress(.downArrow) {
+            keyboardNavigated = true
             viewModel.moveSelection(by: 1)
             return .handled
         }
@@ -121,7 +128,15 @@ struct BrowserPickerView: View {
         .pointerStyle(.link)
         .background(highlightBackground(for: item, at: index))
         .onHover { hovering in
-            hoveredItemID = hovering ? item.id : (hoveredItemID == item.id ? nil : hoveredItemID)
+            if hovering {
+                hoveredItemID = item.id
+                // Keep keyboard and mouse in agreement: hovering a row makes it the
+                // selection target, so a subsequent Return activates the hovered row.
+                viewModel.selectedIndex = index
+                keyboardNavigated = false
+            } else if hoveredItemID == item.id {
+                hoveredItemID = nil
+            }
         }
         // Extra top spacing before each browser group, except the very first row.
         .padding(.top, isBrowserRow && !isFirst ? 6 : 0)
@@ -152,11 +167,13 @@ struct BrowserPickerView: View {
         }
     }
 
-    /// Background fill for a row: hover wins, otherwise the keyboard-selected row.
+    /// Background fill for a row: hover wins, otherwise the keyboard-selected row
+    /// (only once the user has actually navigated with the keyboard, so row 0 isn't
+    /// pre-highlighted before any interaction).
     @ViewBuilder
     private func highlightBackground(for item: PickerViewModel.SelectableItem, at index: Int) -> some View {
         let isHovered = hoveredItemID == item.id
-        let isSelected = index == viewModel.selectedIndex
+        let isSelected = keyboardNavigated && index == viewModel.selectedIndex
         let fill: Color? = {
             if isHovered { return Color.accentColor.opacity(0.18) }
             if isSelected { return Color.accentColor.opacity(0.12) }

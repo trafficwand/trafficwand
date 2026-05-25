@@ -21,7 +21,7 @@ struct AppConfigUpsertTests {
     @Test("Appends the rule when no existing rule has the same pattern")
     func appendsWhenNoMatch() {
         let existing = rule("*github.com", bundleID: "com.apple.Safari")
-        let config = AppConfig(rules: [existing], fallback: .picker)
+        let config = AppConfig(schemaVersion: 1, rules: [existing], fallback: .lastUsed)
 
         let incoming = rule("*google.com", bundleID: "com.google.Chrome")
         let result = config.upserting(incoming)
@@ -29,6 +29,9 @@ struct AppConfigUpsertTests {
         #expect(result.rules.count == 2)
         #expect(result.rules[0] == existing)
         #expect(result.rules[1] == incoming)
+        // Upserting touches only the rule list — schemaVersion and fallback survive.
+        #expect(result.schemaVersion == config.schemaVersion)
+        #expect(result.fallback == config.fallback)
     }
 
     @Test("Appends when config has no rules at all")

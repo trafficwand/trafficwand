@@ -20,11 +20,13 @@ TrafficWand is two layers, and keeping them separate is the whole point of the d
 
 - **`TrafficWandCore`** — a local SPM package of **pure Swift (Foundation only, NO
   AppKit)**. All decision-shaped logic lives here: models (`Rule`, `BrowserTarget`,
-  `FallbackPolicy`, `AppConfig`, `Browser`, `BrowserProfile`, `RoutingDecision`), glob
-  matching (`GlobPattern`, `RuleMatcher`), routing (`Router.decide`), config persistence
-  (`FileConfigStore`), profile parsing (`ChromeProfileReader`, `FirefoxProfileReader`),
-  and launch-arg construction (`BrowserFamily`, `LaunchArguments`). It is unit-tested
-  exhaustively via `swift test`.
+  `FallbackPolicy`, `AppConfig` — including `AppConfig.upserting` for inserting-or-updating
+  a rule by pattern, `Browser`, `BrowserProfile`, `RoutingDecision`), glob matching
+  (`GlobPattern`, `RuleMatcher`), registrable-domain extraction and remember-rule
+  construction (`RegistrableDomain`, `RememberRule`), routing (`Router.decide`), config
+  persistence (`FileConfigStore`), profile parsing (`ChromeProfileReader`,
+  `FirefoxProfileReader`), and launch-arg construction (`BrowserFamily`,
+  `LaunchArguments`). It is unit-tested exhaustively via `swift test`.
   - **Enforced purity:** `task test-core` includes a grep guard that fails the build if
     any Core source imports AppKit. Do not import AppKit (or any UI framework) in Core.
 

@@ -89,6 +89,27 @@ final class ConfigRuleStoreTests: XCTestCase {
         XCTAssertEqual(matching.first?.target, latest)
     }
 
+    func testRememberPreservesExistingUnrelatedRule() {
+        let unrelated = Rule(
+            pattern: "*github.com",
+            target: firefoxTarget("Personal"),
+            isEnabled: true
+        )
+        let store = MockConfigStore(loaded: AppConfig(rules: [unrelated], fallback: .picker))
+        let sut = ConfigRuleStore(configStore: store)
+
+        let target = chromeTarget("Work")
+        sut.remember(url: URL(string: "https://www.x.com/some/path")!, target: target)
+
+        XCTAssertEqual(store.saveCount, 1)
+        let rules = store.lastSaved?.rules ?? []
+        // The pre-existing rule survives, and the new domain rule is appended after it.
+        XCTAssertEqual(rules.count, 2)
+        XCTAssertEqual(rules.first, unrelated)
+        XCTAssertEqual(rules.last?.pattern, "*x.com")
+        XCTAssertEqual(rules.last?.target, target)
+    }
+
     func testRememberHostlessURLSavesNothing() {
         let store = MockConfigStore(loaded: AppConfig(rules: [], fallback: .picker))
         let sut = ConfigRuleStore(configStore: store)
@@ -107,6 +128,8 @@ final class ConfigRuleStoreTests: XCTestCase {
         sut.remember(url: URL(string: "https://www.x.com/a")!, target: chromeTarget())
 
         XCTAssertEqual(store.saveCount, 1, "A save was attempted.")
+        // The save threw before mirroring, so the persisted/loaded config is unchanged.
+        XCTAssertTrue(store.loaded.rules.isEmpty)
     }
 
     func testRememberSwallowsLoadError() {

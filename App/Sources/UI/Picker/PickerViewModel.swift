@@ -41,20 +41,25 @@ final class PickerViewModel {
     /// The host label shown next to the "Remember choice" checkbox.
     ///
     /// Computed from the URL's host via `RegistrableDomain.of(host:)` so the label
-    /// matches exactly what gets persisted. Falls back to the raw `url.host` when
-    /// there is no registrable domain (e.g. an IP literal) so the checkbox can
-    /// still show something sensible, and is `nil` when the URL has no host at all
-    /// (the view hides the checkbox when `nil`).
+    /// matches exactly what gets persisted. Falls back to the lowercased `url.host`
+    /// when there is no registrable domain (e.g. an IP literal or a single-label
+    /// host such as `localhost`) so the checkbox label matches the lowercased
+    /// exact-host pattern `RememberRule` will persist, and is `nil` when the URL has
+    /// no host at all (the view hides the checkbox when `nil`).
     var rememberHost: String? {
         guard let host = url.host else { return nil }
-        return RegistrableDomain.of(host: host) ?? host
+        return RegistrableDomain.of(host: host) ?? host.lowercased()
     }
 
     /// One selectable destination in the flattened picker list: a browser's
     /// default (when `profile == nil`) or a specific profile of that browser.
     struct SelectableItem: Identifiable {
-        /// Stable identity: the browser's bundle ID plus the profile id (or a
-        /// sentinel for the default), unique within the list.
+        /// Stable identity: the browser's bundle ID plus a structurally-distinct
+        /// suffix for the default row (`#self`) versus a profile row
+        /// (`#profile:<profile.id>`). The `profile:` prefix keeps a profile whose
+        /// id happens to be `self` — or, more realistically, a Firefox profile
+        /// literally named `default`/`default-release` — from ever colliding with
+        /// the default-row sentinel. Unique within the list.
         let id: String
         let browser: Browser
         /// The chosen profile, or `nil` for the browser's default profile.
@@ -102,13 +107,13 @@ final class PickerViewModel {
         // Flatten browsers → (default, then profiles) into one ordered list.
         self.selectableItems = browsers.flatMap { browser -> [SelectableItem] in
             let defaultItem = SelectableItem(
-                id: "\(browser.bundleID)#default",
+                id: "\(browser.bundleID)#self",
                 browser: browser,
                 profile: nil
             )
             let profileItems = browser.profiles.map { profile in
                 SelectableItem(
-                    id: "\(browser.bundleID)#\(profile.id)",
+                    id: "\(browser.bundleID)#profile:\(profile.id)",
                     browser: browser,
                     profile: profile
                 )

@@ -156,8 +156,12 @@ them route the link without a profile.
 
 For links that match no rule, choose one of:
 
-- **Picker** — a floating panel appears listing your installed browsers (and their
-  profiles); pick where the link goes. You can also copy the URL or cancel.
+- **Picker** — a floating panel appears listing your installed browsers (shown with their
+  real app icons) and their profiles; pick where the link goes. Navigate with the keyboard
+  (arrow keys move the highlight, Return activates the highlighted destination, Esc
+  cancels) or the mouse. Tick **"Remember choice for `<domain>`"** before choosing to
+  persist a rule that automatically routes that whole domain (apex + subdomains) to the
+  picked browser/profile from then on. You can also copy the URL or cancel.
 - **Single default browser** — the link always opens in one configured browser/profile,
   no panel.
 - **Last-used** — the link reuses whichever browser/profile you last routed to. If
