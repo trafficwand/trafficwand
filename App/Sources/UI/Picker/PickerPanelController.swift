@@ -116,6 +116,10 @@ final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate 
         dismiss()
 
         let hosting = NSHostingController(rootView: view)
+        // Drive the window size from the SwiftUI content's ideal size. Without this
+        // the panel keeps its default (too-short) content height and the browser
+        // list — laid out below the header — is clipped off the bottom.
+        hosting.sizingOptions = [.preferredContentSize]
         let panel = NSPanel(contentViewController: hosting)
         panel.styleMask = [.titled, .closable, .utilityWindow, .nonactivatingPanel]
         // Observe the title-bar close button: closing that way bypasses the
@@ -128,6 +132,9 @@ final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate 
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        // Size the content to the SwiftUI fitting size before centering, so the full
+        // browser list is visible (belt-and-suspenders with `sizingOptions` above).
+        panel.setContentSize(hosting.view.fittingSize)
         panel.center()
 
         self.panel = panel
