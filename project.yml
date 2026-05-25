@@ -1,0 +1,82 @@
+name: TrafficWand
+
+options:
+  bundleIdPrefix: com.tomakado
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+
+# Local SPM package providing the pure, testable core. Both the app target and
+# the app's test target depend on it (wired below under each target's
+# dependencies).
+packages:
+  TrafficWandCore:
+    path: TrafficWandCore
+
+settings:
+  base:
+    # Developer ID distribution, Hardened Runtime on, manual signing left to the
+    # signer. During the Task 1 reality check, sign-to-run locally with an ad-hoc
+    # or Development identity; release builds use a Developer ID Application cert.
+    #
+    # Task 1 reality-check findings:
+    #   - With CODE_SIGN_IDENTITY "-" (ad-hoc), Xcode emits:
+    #     "Disabling hardened runtime with ad-hoc codesigning." Hardened Runtime
+    #     only takes effect with a real Developer ID / Development identity, so
+    #     ENABLE_HARDENED_RUNTIME below is a no-op for ad-hoc local builds and
+    #     becomes meaningful at release signing (Post-Completion: notarization).
+    #   - After building + `lsregister -f`, the app registers cleanly and shows
+    #     "claimed schemes: http:, https:", so it appears in
+    #     System Settings ▸ Default web browser. The Info.plist CFBundleURLTypes
+    #     (http/https, LSHandlerRank=Default) + LSUIElement are sufficient; no
+    #     extra signing setting was required to make the app a selectable default
+    #     browser locally.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    ENABLE_HARDENED_RUNTIME: YES
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  TrafficWand:
+    type: application
+    platform: macOS
+    sources:
+      - path: App/Sources
+    resources:
+      - path: App/Resources/Assets.xcassets
+    dependencies:
+      - package: TrafficWandCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tomakado.TrafficWand
+        PRODUCT_NAME: TrafficWand
+        INFOPLIST_FILE: App/Resources/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/Resources/TrafficWand.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        # Menu-bar agent: no Dock icon (mirrors LSUIElement in Info.plist).
+        LSUIElement: YES
+
+  TrafficWandTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: App/Tests/AppTests
+    dependencies:
+      - target: TrafficWand
+      - package: TrafficWandCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tomakado.TrafficWandTests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  TrafficWand:
+    build:
+      targets:
+        TrafficWand: all
+        TrafficWandTests: [test]
+    test:
+      targets:
+        - TrafficWandTests

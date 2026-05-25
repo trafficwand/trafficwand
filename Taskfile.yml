@@ -1,0 +1,58 @@
+version: "3"
+
+vars:
+  SCHEME: TrafficWand
+  CORE_DIR: TrafficWandCore
+  CORE_SOURCES: TrafficWandCore/Sources/TrafficWandCore
+
+tasks:
+  default:
+    desc: Generate project, build, lint, and run all tests
+    cmds:
+      - task: generate
+      - task: build
+      - task: lint
+      - task: test-core
+      - task: test
+
+  generate:
+    desc: Generate the Xcode project from project.yml
+    cmds:
+      - xcodegen generate
+
+  build:
+    desc: Build the app target
+    deps: [generate]
+    cmds:
+      - xcodebuild build -project TrafficWand.xcodeproj -scheme {{.SCHEME}} -destination 'platform=macOS'
+
+  test-core:
+    desc: Run the Core package tests and enforce the no-AppKit-import guard
+    cmds:
+      # Architecture guard: no Core source may import AppKit (keeps the core pure
+      # and unit-testable without a UI runtime).
+      - |
+        if grep -R -n -E '^\s*import\s+AppKit' {{.CORE_SOURCES}} ; then
+          echo "ERROR: TrafficWandCore must not import AppKit." >&2
+          exit 1
+        fi
+      - cd {{.CORE_DIR}} && swift test
+
+  test:
+    desc: Run the app test target (includes Core via SPM)
+    deps: [generate]
+    cmds:
+      - xcodebuild test -project TrafficWand.xcodeproj -scheme {{.SCHEME}} -destination 'platform=macOS'
+
+  lint:
+    desc: Run SwiftLint across the repo
+    cmds:
+      - swiftlint lint --quiet
+
+  run:
+    desc: Build and launch the app
+    deps: [build]
+    cmds:
+      - |
+        APP_PATH=$(xcodebuild -project TrafficWand.xcodeproj -scheme {{.SCHEME}} -showBuildSettings 2>/dev/null | awk -F' = ' '/ BUILT_PRODUCTS_DIR /{d=$2}/ FULL_PRODUCT_NAME /{n=$2}END{print d"/"n}')
+        open "$APP_PATH"

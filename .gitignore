@@ -1,0 +1,13 @@
+# Build artifacts
+.build/
+DerivedData/
+
+# Generated Xcode project (regenerated via `task generate`)
+*.xcodeproj
+
+# macOS
+.DS_Store
+
+# Swift Package Manager
+Package.resolved
+.swiftpm/

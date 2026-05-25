@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  TrafficWand is intentionally NON-sandboxed (Developer ID distribution).
+	  App Sandbox is disabled so the app can:
+	    - read other browsers' profile config under ~/Library/Application Support
+	      (Chrome "Local State", Firefox "profiles.ini"), and
+	    - launch target browsers with profile/URL launch arguments.
+	  These would otherwise require sandbox exceptions we deliberately avoid.
+	-->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+
+	<!--
+	  Hardened Runtime is enabled at build time (ENABLE_HARDENED_RUNTIME in
+	  project.yml) for notarization. The launch mechanism finalized in Task 2 may
+	  spawn a child process (e.g. /usr/bin/open or a browser binary). If the
+	  chosen mechanism is Process/exec, the following exception permits executing
+	  another program from this Hardened-Runtime process. Confirm/trim in Task 2.
+	-->
+	<key>com.apple.security.cs.allow-jit</key>
+	<false/>
+</dict>
+</plist>

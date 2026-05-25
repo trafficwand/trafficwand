@@ -1,0 +1,42 @@
+# SwiftLint configuration for TrafficWand
+
+included:
+  - TrafficWandCore/Sources
+  - TrafficWandCore/Tests
+  - App/Sources
+  - App/Tests
+
+excluded:
+  - .build
+  - DerivedData
+  - "**/.build"
+
+disabled_rules:
+  - todo
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - explicit_init
+  - first_where
+  - sorted_first_last
+
+line_length:
+  warning: 120
+  error: 160
+  ignores_comments: true
+  ignores_urls: true
+
+identifier_name:
+  min_length:
+    warning: 2
+    error: 1
+  excluded:
+    - id
+    - to
+    - x
+    - y
+
+type_name:
+  min_length:
+    warning: 3

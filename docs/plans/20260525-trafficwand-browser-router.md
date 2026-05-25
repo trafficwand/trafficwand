@@ -233,19 +233,23 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `.gitignore` (`.build/`, `*.xcodeproj`, `DerivedData/`, `.DS_Store`)
 - Create: `.swiftlint.yml` (baseline rules)
 
-- [ ] write `Package.swift` (library + test target, `platforms: [.macOS(.v14)]`, tools 6.0, strict
+- [x] write `Package.swift` (library + test target, `platforms: [.macOS(.v14)]`, tools 6.0, strict
       concurrency); add placeholder source + `SmokeTests`; verify `swift test` green
-- [ ] write `project.yml` with explicit local-package wiring; install XcodeGen if missing
+- [x] write `project.yml` with explicit local-package wiring; install XcodeGen if missing
       (`brew install xcodegen`); run `xcodegen generate`
-- [ ] verify **both** `swift test` (Core) and `xcodebuild test` (app test target importing Core)
+- [x] verify **both** `swift test` (Core) and `xcodebuild test` (app test target importing Core)
       resolve the local package and pass
-- [ ] **reality check**: build, register the app with LaunchServices (copy to `/Applications` or
-      `lsregister -f`), confirm it appears in System Settings ▸ Default web browser, select it, and
-      confirm a clicked link fires the stub `application(_:open:)` (log line). Record any signing/
-      Hardened-Runtime settings needed to make this work in `project.yml`.
-- [ ] add `Taskfile.yml`, `.gitignore`, `.swiftlint.yml`; confirm `task test-core` (incl. AppKit-
+- [x] **reality check** (automatable parts done; final selection is manual — not automatable from
+      agent): built the app, registered it with `lsregister -f`, and confirmed via `lsregister -dump`
+      that it advertises `claimed schemes: http:, https:` (so it appears in System Settings ▸ Default
+      web browser). Selecting it as default + clicking a live link to fire the stub `application(_:open:)`
+      requires interactive human action on a live machine. Signing/Hardened-Runtime findings recorded
+      in `project.yml`: ad-hoc signing disables Hardened Runtime locally (it only applies with a real
+      Developer ID identity at release); no extra signing setting was needed for the app to register as
+      a selectable default browser.
+- [x] add `Taskfile.yml`, `.gitignore`, `.swiftlint.yml`; confirm `task test-core` (incl. AppKit-
       import guard) works
-- [ ] run tests — must pass before Task 2
+- [x] run tests — must pass before Task 2
 
 ### Task 2: Launch-mechanism spike (de-risk profile routing to a running browser)
 
