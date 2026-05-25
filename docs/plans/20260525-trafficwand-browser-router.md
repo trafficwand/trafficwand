@@ -412,12 +412,22 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `App/Sources/Adapters/BrowserLauncher.swift` (conforms to `BrowserLaunching`)
 - Create: `App/Tests/AppTests/BrowserLauncherCommandTests.swift`
 
-- [ ] write failing tests for the **pure** command-builder that turns `(Browser, BrowserTarget, URL)`
+- [x] write failing tests for the **pure** command-builder that turns `(Browser, BrowserTarget, URL)`
       into the concrete invocation (executable URL/path + argv) per the spike decision — without
       actually launching
-- [ ] implement `BrowserLauncher` using the spike-chosen mechanism (likely `Process`/`open -na
+      (`BrowserLauncherCommandTests` asserts the full `BrowserLaunchCommand.make` output —
+      executable `/usr/bin/open`, fixed `["-n", "-a", <appPath>, "--args"]` prefix, app path taken
+      from `browser.appURL.path`, URL last — for chromium-with-profile, firefox-with-profile,
+      safari/no-profile, and unknown-family; one test pins the tail to Core `LaunchArguments.build`)
+- [x] implement `BrowserLauncher` using the spike-chosen mechanism (likely `Process`/`open -na
       --args` or direct binary); the live launch call is the only untested line
-- [ ] run `xcodebuild test` — must pass before Task 12
+      (added Core `BrowserLaunching` protocol — Foundation-only, no AppKit; App `BrowserLauncher`
+      conforms to it. Pure `BrowserLaunchCommand.make` builds `open -n -a <appPath> --args` +
+      `LaunchArguments.build(...)`; the thin runner's `process.run()` is the only untested line,
+      covered by Post-Completion manual verification per spike §5/§8)
+- [x] run `xcodebuild test` — must pass before Task 12
+      (`task test`: 19 App tests pass incl. 8 new `BrowserLauncherCommandTests`; `task test-core`:
+      81 Core tests pass + AppKit-import guard clean; `swift test` green)
       <!-- live launch covered by Post-Completion manual verification, already de-risked by Task 2 -->
 
 ### Task 12: Default-browser management + last-used store (App)
