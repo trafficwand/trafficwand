@@ -13,7 +13,7 @@ struct BrowserFamilyTests {
             "com.microsoft.edgemac",
             "com.brave.Browser",
             "com.vivaldi.Vivaldi",
-            "org.chromium.Chromium",
+            "org.chromium.Chromium"
         ]
     )
     func chromiumBundleIDs(_ bundleID: String) {
@@ -70,7 +70,7 @@ struct LaunchArgumentsTests {
             "com.microsoft.edgemac",
             "com.brave.Browser",
             "com.vivaldi.Vivaldi",
-            "org.chromium.Chromium",
+            "org.chromium.Chromium"
         ]
         for bundleID in bundleIDs {
             let target = BrowserTarget(bundleID: bundleID, profileID: "Default")

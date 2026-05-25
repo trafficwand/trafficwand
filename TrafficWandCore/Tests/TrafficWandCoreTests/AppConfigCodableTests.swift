@@ -67,11 +67,11 @@ struct AppConfigCodableTests {
         let withoutProfile = BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)
         let encoder = JSONEncoder()
         let decoder = JSONDecoder()
-        let a = try decoder.decode(BrowserTarget.self, from: encoder.encode(withProfile))
-        let b = try decoder.decode(BrowserTarget.self, from: encoder.encode(withoutProfile))
-        #expect(a == withProfile)
-        #expect(b == withoutProfile)
-        #expect(b.profileID == nil)
+        let decodedWithProfile = try decoder.decode(BrowserTarget.self, from: encoder.encode(withProfile))
+        let decodedWithoutProfile = try decoder.decode(BrowserTarget.self, from: encoder.encode(withoutProfile))
+        #expect(decodedWithProfile == withProfile)
+        #expect(decodedWithoutProfile == withoutProfile)
+        #expect(decodedWithoutProfile.profileID == nil)
     }
 
     @Test("Default config has empty rules, .picker fallback, and schemaVersion 1")
@@ -95,6 +95,11 @@ struct AppConfigJSONShapeTests {
     private func decode(_ json: String) throws -> AppConfig {
         let data = Data(json.utf8)
         return try JSONDecoder().decode(AppConfig.self, from: data)
+    }
+
+    /// Decodes UTF-8 JSON `Data` to a `String`, failing the test if it is not valid UTF-8.
+    private func jsonString(_ data: Data) throws -> String {
+        try #require(String(bytes: data, encoding: .utf8))
     }
 
     @Test("Decodes a hand-written sample with a .picker fallback (locks on-disk format)")
@@ -145,7 +150,8 @@ struct AppConfigJSONShapeTests {
         """
         let config = try decode(json)
         #expect(config.rules.isEmpty)
-        #expect(config.fallback == .defaultBrowser(BrowserTarget(bundleID: "org.mozilla.firefox", profileID: "Personal")))
+        let expectedTarget = BrowserTarget(bundleID: "org.mozilla.firefox", profileID: "Personal")
+        #expect(config.fallback == .defaultBrowser(expectedTarget))
     }
 
     @Test("Decodes a hand-written sample with a .lastUsed fallback (no nested payload)")
@@ -167,7 +173,7 @@ struct AppConfigJSONShapeTests {
     func encodeOmitsNilProfileID() throws {
         let target = BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)
         let data = try JSONEncoder().encode(target)
-        let string = String(decoding: data, as: UTF8.self)
+        let string = try #require(String(bytes: data, encoding: .utf8))
         #expect(!string.contains("profileID"))
         #expect(string.contains("bundleID"))
     }
@@ -175,11 +181,12 @@ struct AppConfigJSONShapeTests {
     @Test("FallbackPolicy uses the stable discriminator key 'type'")
     func fallbackUsesTypeDiscriminator() throws {
         let encoder = JSONEncoder()
-        let pickerData = try encoder.encode(FallbackPolicy.picker)
-        let lastUsedData = try encoder.encode(FallbackPolicy.lastUsed)
-        let defaultData = try encoder.encode(FallbackPolicy.defaultBrowser(BrowserTarget(bundleID: "x", profileID: nil)))
-        #expect(String(decoding: pickerData, as: UTF8.self).contains("\"picker\""))
-        #expect(String(decoding: lastUsedData, as: UTF8.self).contains("\"lastUsed\""))
-        #expect(String(decoding: defaultData, as: UTF8.self).contains("\"defaultBrowser\""))
+        let defaultTarget = BrowserTarget(bundleID: "x", profileID: nil)
+        let pickerJSON = try jsonString(encoder.encode(FallbackPolicy.picker))
+        let lastUsedJSON = try jsonString(encoder.encode(FallbackPolicy.lastUsed))
+        let defaultJSON = try jsonString(encoder.encode(FallbackPolicy.defaultBrowser(defaultTarget)))
+        #expect(pickerJSON.contains("\"picker\""))
+        #expect(lastUsedJSON.contains("\"lastUsed\""))
+        #expect(defaultJSON.contains("\"defaultBrowser\""))
     }
 }

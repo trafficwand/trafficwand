@@ -589,10 +589,73 @@ The app is "done" (Task 17) when all of these hold:
 
 ### Task 17: Verify acceptance criteria
 
-- [ ] verify every item in **Acceptance Criteria** is met (rules, profiles incl. running-browser
+- [x] verify every item in **Acceptance Criteria** is met (rules, profiles incl. running-browser
       case, full fallback matrix, menu bar, Settings, picker, set-as-default)
-- [ ] run full Core suite: `task test-core` (`swift test` + AppKit-import guard)
-- [ ] run full App suite: `task test` (`xcodebuild test`); run `task lint` and resolve findings
+      (verification summary below; decision logic for every criterion is implemented + unit-tested,
+      with the live-machine-only steps deferred to Post-Completion manual verification)
+- [x] run full Core suite: `task test-core` (`swift test` + AppKit-import guard)
+      (81 Core tests pass; AppKit-import guard clean — no Core source imports AppKit)
+- [x] run full App suite: `task test` (`xcodebuild test`); run `task lint` and resolve findings
+      (53 App tests pass; `task lint` now fully clean — 0 findings — after resolving 17 findings
+      incl. the known RoutingService line-length **error**; see resolved-findings list below)
+
+#### Acceptance Criteria verification
+
+Legend: **[automated]** = decision logic implemented and covered by unit tests; **[deferred]** =
+the thin final system call can only be confirmed on a live machine → Post-Completion manual
+verification (de-risked earlier by the Task 2 spike where relevant).
+
+1. **Selectable as system default browser; clicked links invoke `application(_:open:)`.**
+   - [automated] `Info.plist` declares `CFBundleURLTypes` for `http`+`https` (`LSHandlerRank=Default`)
+     and `LSUIElement`; `AppMain.application(_:open:)` forwards each URL to `RoutingService.route(url:)`.
+     Task 1 reality check confirmed via `lsregister -dump` it advertises `claimed schemes: http:, https:`.
+   - [deferred] Actually selecting it in System Settings and a real click reaching the callback are
+     live-machine steps (Post-Completion).
+2. **Rule-matched link opens in that rule's browser AND profile.**
+   - [automated] `RuleMatcher.firstMatch` (host extraction, first-match-wins, disabled-rule skip) +
+     `GlobPattern` + `Router.decide` → `.open(target)`; profile flag built by
+     `LaunchArguments.build` (Chromium `--profile-directory=<dir>`, Firefox `-P <name>`, URL last) and
+     wrapped by `BrowserLaunchCommand.make`. `RoutingService` resolves the `Browser` and launches.
+   - [deferred] A real profile window opening per family (Post-Completion).
+3. **Profile routing works even when the target browser is already running.**
+   - [automated] Encoded by the spike-validated mechanism `open -n -a <app> --args …` in
+     `BrowserLaunchCommand.make`/`BrowserLauncher`; argv contract unit-tested.
+   - [deferred] Live already-running confirmation per family (Post-Completion; Firefox profile
+     selection best-effort for the running case per spike §8 — already documented, not a scope cut).
+4. **Fallback matrix for a no-rule link.**
+   - [automated] `Router.decide`: `.picker` → `.prompt`; `.defaultBrowser(target)` → `.open(target)`;
+     `.lastUsed` recorded → `.open(lastUsed)`; `.lastUsed` with nothing recorded → `.prompt`. All four
+     branches covered in `RouterTests`; `RoutingService` maps `.prompt`→`PickerPanelController` and
+     `.open`→`BrowserLauncher` + `LastUsedStore`.
+   - [deferred] The panel actually appearing / a real browser opening (Post-Completion).
+5. **Settings: add/edit/reorder/delete rules + change fallback persist across relaunch.**
+   - [automated] `SettingsViewModel` mutations each call `ConfigStore.save`; `FileConfigStore` does an
+     atomic JSON write (failed save leaves the prior file intact). `SettingsViewModelTests` +
+     `FileConfigStoreTests` cover every mutation, persistence, corrupt-config reset, and round-trip.
+   - [deferred] Visual editing + observing persistence after a real relaunch (Post-Completion).
+6. **Menu-bar agent (no Dock icon); Set-as-Default, Settings, Quit.**
+   - [automated] `AppMain` sets `.accessory` + `LSUIElement`; `StatusBarController` builds the
+     `NSStatusItem` menu (Set as Default Browser…, Settings…, Quit) with the title/checkmark from the
+     pure `StatusMenuState` helper (`StatusMenuStateTests`); `DefaultBrowserManager.setAsDefault()`
+     calls `NSWorkspace.setDefaultApplication(...)` for http+https, `isCurrentDefault` comparison is
+     unit-tested (`DefaultBrowserStatusTests`).
+   - [deferred] Live menu visuals in light/dark, no Dock icon, and the macOS set-as-default prompt
+     (Post-Completion).
+
+#### Lint findings resolved (17 total → 0)
+
+- `App/Sources/RoutingService.swift`: the known line-length **error** at the launch-failure log line
+  (>160 chars, Task 13) + a second >120 warning on the no-browser log line — both rewrapped using
+  local bindings + multiline string continuations (message text unchanged).
+- `App/Tests/AppTests/RoutingServiceTests.swift`: 2 nesting warnings — hoisted the nested `Call`
+  structs out of the mock classes to file-scope `LaunchCall`/`PickerCall`.
+- `TrafficWandCore/Sources/TrafficWandCore/Browsers/BrowserFamily.swift`: 2 trailing-comma warnings.
+- `TrafficWandCore/Tests/.../AppConfigCodableTests.swift`: 2 identifier-name (`a`/`b`), 2 line-length,
+  and 4 optional-data-string-conversion warnings — renamed locals, extracted a `BrowserTarget`/JSON
+  local, and switched `String(decoding:as:)` to `#require(String(bytes:encoding:))` via a `jsonString`
+  helper.
+- `TrafficWandCore/Tests/.../ChromeProfileReaderTests.swift` + `LaunchArgumentsTests.swift`: 3
+  trailing-comma warnings.
 
 ### Task 18: [Final] Documentation & finalize
 

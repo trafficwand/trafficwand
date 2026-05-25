@@ -2,6 +2,19 @@ import XCTest
 import TrafficWandCore
 @testable import TrafficWand
 
+/// A recorded `BrowserLaunching.launch` call (file-scope to avoid deep nesting).
+private struct LaunchCall: Equatable {
+    let target: BrowserTarget
+    let browserBundleID: String
+    let url: URL
+}
+
+/// A recorded `PickerPresenting.presentPicker` call (file-scope to avoid deep nesting).
+private struct PickerCall: Equatable {
+    let url: URL
+    let browserBundleIDs: [String]
+}
+
 /// Tests for `RoutingService.route(url:)` (Task 13).
 ///
 /// `RoutingService` composes the pure Core `Router` with the App's injected
@@ -34,14 +47,9 @@ final class RoutingServiceTests: XCTestCase {
     /// holds mutable recording state; the tests use it single-threaded on the main
     /// actor, so the unchecked escape is safe here.
     private final class MockLauncher: BrowserLaunching, @unchecked Sendable {
-        struct Call: Equatable {
-            let target: BrowserTarget
-            let browserBundleID: String
-            let url: URL
-        }
-        private(set) var calls: [Call] = []
+        private(set) var calls: [LaunchCall] = []
         func launch(target: BrowserTarget, browser: Browser, url: URL) throws {
-            calls.append(Call(target: target, browserBundleID: browser.bundleID, url: url))
+            calls.append(LaunchCall(target: target, browserBundleID: browser.bundleID, url: url))
         }
     }
 
@@ -58,13 +66,9 @@ final class RoutingServiceTests: XCTestCase {
 
     /// Mock picker presenter recording `presentPicker` calls.
     private final class MockPicker: PickerPresenting {
-        struct Call: Equatable {
-            let url: URL
-            let browserBundleIDs: [String]
-        }
-        private(set) var calls: [Call] = []
+        private(set) var calls: [PickerCall] = []
         func presentPicker(url: URL, browsers: [Browser]) {
-            calls.append(Call(url: url, browserBundleIDs: browsers.map(\.bundleID)))
+            calls.append(PickerCall(url: url, browserBundleIDs: browsers.map(\.bundleID)))
         }
     }
 

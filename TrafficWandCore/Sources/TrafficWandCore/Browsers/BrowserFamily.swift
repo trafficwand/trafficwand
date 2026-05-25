@@ -27,12 +27,12 @@ public enum BrowserFamily: Equatable, Sendable {
         "com.microsoft.edgemac",
         "com.brave.Browser",
         "com.vivaldi.Vivaldi",
-        "org.chromium.Chromium",
+        "org.chromium.Chromium"
     ]
 
     /// Firefox-family bundle identifiers (spike §4).
     private static let firefoxBundleIDs: Set<String> = [
-        "org.mozilla.firefox",
+        "org.mozilla.firefox"
     ]
 
     /// Safari bundle identifier.

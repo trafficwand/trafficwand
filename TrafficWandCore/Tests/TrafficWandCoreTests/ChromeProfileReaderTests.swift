@@ -16,7 +16,7 @@ struct ChromeProfileReaderTests {
         #expect(profiles == [
             BrowserProfile(id: "Default", name: "Personal"),
             BrowserProfile(id: "Profile 1", name: "Work"),
-            BrowserProfile(id: "Profile 2", name: "Side Project"),
+            BrowserProfile(id: "Profile 2", name: "Side Project")
         ])
     }
 

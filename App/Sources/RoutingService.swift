@@ -104,8 +104,13 @@ final class RoutingService {
         lastUsedStore.set(target)
 
         guard let browser = browsers.first(where: { $0.bundleID == target.bundleID }) else {
+            let bundleID = target.bundleID
+            let link = url.absoluteString
             Self.logger.error(
-                "No installed browser for target bundle ID \(target.bundleID, privacy: .public); cannot launch \(url.absoluteString, privacy: .public)"
+                """
+                No installed browser for target bundle ID \(bundleID, privacy: .public); \
+                cannot launch \(link, privacy: .public)
+                """
             )
             return
         }
@@ -113,8 +118,14 @@ final class RoutingService {
         do {
             try launcher.launch(target: target, browser: browser, url: url)
         } catch {
+            let bundleID = target.bundleID
+            let link = url.absoluteString
+            let reason = String(describing: error)
             Self.logger.error(
-                "Failed to launch \(url.absoluteString, privacy: .public) in \(target.bundleID, privacy: .public): \(String(describing: error), privacy: .public)"
+                """
+                Failed to launch \(link, privacy: .public) in \(bundleID, privacy: .public): \
+                \(reason, privacy: .public)
+                """
             )
         }
     }
