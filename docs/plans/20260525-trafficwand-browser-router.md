@@ -493,11 +493,26 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `App/Sources/UI/StatusBarController.swift`
 - Create: `App/Tests/AppTests/StatusMenuStateTests.swift`
 
-- [ ] write failing tests for the **pure** menu-state helper (default-browser item title/checkmark
+- [x] write failing tests for the **pure** menu-state helper (default-browser item title/checkmark
       from `DefaultBrowserManager.isDefault`)
-- [ ] implement `StatusBarController` (`NSStatusItem`, SF Symbol icon; items: Set as Default
+      (`StatusMenuStateTests` on `StatusMenuState.defaultBrowserItem(isDefault:)`: `true` →
+      title "TrafficWand is your default browser" + checked; `false` → title "Set as Default
+      Browser…" + unchecked. This pure helper is the unit-tested decision logic.)
+- [x] implement `StatusBarController` (`NSStatusItem`, SF Symbol icon; items: Set as Default
       Browser…, Settings…, Quit) and wire actions
-- [ ] run `xcodebuild test` — must pass before Task 15
+      (`App/Sources/UI/StatusBarController.swift`: `NSStatusItem` with the "wand.and.stars" SF
+      Symbol template image; menu items Set as Default Browser… (title/checkmark from the pure
+      `StatusMenuState` helper, driven by `DefaultBrowserManager.isDefault`), Settings…, Quit
+      TrafficWand. Actions: Set as Default → `DefaultBrowserManager.setAsDefault()` (no-op when
+      already default); Settings… → a placeholder `onOpenSettings` hook for Task 15; Quit →
+      `NSApp.terminate`. `NSMenuDelegate.menuWillOpen` refreshes the default-browser item so the
+      checkmark reflects current status. Installed from `AppMain.applicationDidFinishLaunching`,
+      retained for the app's lifetime; the Settings… hook is wired to an `AppMain.openSettings`
+      logging placeholder until Task 15. Live menu-bar visuals are Post-Completion manual
+      verification.)
+- [x] run `xcodebuild test` — must pass before Task 15
+      (`task test`: 37 App tests pass incl. 2 new `StatusMenuStateTests`; `task test-core`: 81 Core
+      tests pass + AppKit-import guard clean; `swift test` green)
 
 ### Task 15: Settings UI (SwiftUI, hosted)
 

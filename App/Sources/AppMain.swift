@@ -20,6 +20,10 @@ final class AppMain: NSObject, NSApplicationDelegate {
     /// `applicationDidFinishLaunching`; used for every incoming link.
     private var routingService: RoutingService?
 
+    /// The menu-bar status item controller. Retained for the app's lifetime so the
+    /// status item stays installed; built in `applicationDidFinishLaunching`.
+    private var statusBarController: StatusBarController?
+
     static func main() {
         let app = NSApplication.shared
         let delegate = AppMain()
@@ -31,6 +35,10 @@ final class AppMain: NSObject, NSApplicationDelegate {
         // Menu-bar agent: no Dock icon, no main menu activation.
         NSApp.setActivationPolicy(.accessory)
         routingService = Self.makeRoutingService()
+        // Settings… is a placeholder hook until Task 15 installs the real window.
+        statusBarController = StatusBarController(
+            onOpenSettings: { [weak self] in self?.openSettings() }
+        )
         Self.logger.log("TrafficWand launched.")
     }
 
@@ -44,6 +52,14 @@ final class AppMain: NSObject, NSApplicationDelegate {
             Self.logger.log("Routing URL: \(url.absoluteString, privacy: .public)")
             routingService.route(url: url)
         }
+    }
+
+    /// Placeholder hook for the status-bar "Settings…" item.
+    ///
+    /// Task 15 replaces this with the real Settings window; for now it logs so the
+    /// action is observable and there is no dead/broken reference.
+    private func openSettings() {
+        Self.logger.log("Settings requested (placeholder; Task 15).")
     }
 
     /// Assembles the real `RoutingService` from the concrete adapters.
