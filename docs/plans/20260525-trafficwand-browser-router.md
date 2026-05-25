@@ -389,12 +389,22 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `App/Sources/Adapters/ProfilePathResolver.swift` (per-family Application Support paths)
 - Create: `App/Tests/AppTests/BrowserProviderMergeTests.swift`
 
-- [ ] write failing tests for a **pure** merge helper (installed bundle IDs + stub `ProfileReading`
+- [x] write failing tests for a **pure** merge helper (installed bundle IDs + stub `ProfileReading`
       → `[Browser]`): self-exclusion of TrafficWand; a non-browser http handler is filtered by the
       allowlist; a real non-default browser still appears; profiles attached correctly
-- [ ] implement `WorkspaceBrowserProvider` (`NSWorkspace.urlsForApplications(toOpen:)`) using the helper
-- [ ] implement `ProfilePathResolver` (real `~/Library/Application Support` paths per family)
-- [ ] run `xcodebuild test` and `swift test` — must pass before Task 11
+      (`BrowserProviderMergeTests` covers `BrowserMerger.merge`: self-exclusion, allowlist filtering
+      of a non-browser http handler, non-default Brave retained, profiles attached via stub
+      `ProfileReading`, throwing reader → `[]`, deterministic name sort)
+- [x] implement `WorkspaceBrowserProvider` (`NSWorkspace.urlsForApplications(toOpen:)`) using the helper
+      (thin adapter converts `NSWorkspace` results → plain `BrowserCandidate`s then delegates to the
+      pure `BrowserMerger`; the live `NSWorkspace.urlsForApplications(toOpen:)` call is the only
+      untested line, covered by Post-Completion manual verification)
+- [x] implement `ProfilePathResolver` (real `~/Library/Application Support` paths per family)
+      (per-family canonical sub-paths keyed on bundle ID over an injected base dir; Safari/unknown →
+      `nil`; path construction unit-tested with a fixed base dir)
+- [x] run `xcodebuild test` and `swift test` — must pass before Task 11
+      (`task test`: 12 App tests pass; `task test-core`: 81 Core tests pass + AppKit-import guard
+      clean; `swift test` green)
 
 ### Task 11: Browser launcher (App, built around the Task 2 mechanism)
 
