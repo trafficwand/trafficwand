@@ -11,16 +11,18 @@ import TrafficWandCore
 ///
 ///  - `select(browser:profile:)` → resolves a `BrowserTarget` (bundle ID + the
 ///    chosen profile's family-native id, or `nil` for the default profile) and
-///    hands it to `onSelect`. The controller launches it and records last-used.
+///    hands it to `onSelect` along with the current `rememberChoice` flag. The
+///    controller launches it and records last-used, and when `rememberChoice` is
+///    true it also persists a routing rule for the site.
 ///  - `copyURL()` → hands the URL string to `onCopy` (the actual `NSPasteboard`
 ///    write is the controller's / view's thin closure), keeping the decision
 ///    (what string to copy) testable.
 ///  - `cancel()` → invokes `onCancel`; no selection is produced (the picker is
 ///    simply dismissed and the link dropped).
 ///
-/// SwiftUI views observe the `@Observable` state (`urlString`, `browsers`) and
-/// call these methods; the floating `NSPanel` host (`PickerPanelController`)
-/// supplies the closures.
+/// SwiftUI views observe the `@Observable` state (`selectableItems`,
+/// `selectedIndex`, `rememberChoice`, `rememberHost`) and call these methods; the
+/// floating `NSPanel` host (`PickerPanelController`) supplies the closures.
 @MainActor
 @Observable
 final class PickerViewModel {
