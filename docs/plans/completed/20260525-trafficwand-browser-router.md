@@ -662,13 +662,13 @@ verification (de-risked earlier by the Task 2 spike where relevant).
 **Files:**
 - Create: `README.md`, `CLAUDE.md`
 
-- [ ] write `README.md`: what it is, build/run (`task generate`/`build`/`run`), how to set as
+- [x] write `README.md`: what it is, build/run (`task generate`/`build`/`run`), how to set as
       default browser, glob rule syntax + examples, profile support notes (+ the spike's findings),
       distribution/notarization pointer
-- [ ] write repo `CLAUDE.md`: Core/App split, protocol seams, `task` commands — and an explicit
+- [x] write repo `CLAUDE.md`: Core/App split, protocol seams, `task` commands — and an explicit
       note that the Go/gommon golden rules in the global `~/.claude/CLAUDE.md` do **not** apply to
       this Swift project
-- [ ] move this plan to `docs/plans/completed/`
+- [x] move this plan to `docs/plans/completed/`
 
 ## Post-Completion
 *Items requiring manual intervention or external systems — no checkboxes, informational only*
