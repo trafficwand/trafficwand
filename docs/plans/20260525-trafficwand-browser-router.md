@@ -344,12 +344,12 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `…/Config/FileConfigStore.swift`
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/FileConfigStoreTests.swift`
 
-- [ ] write failing tests (temp dir): save → load round trip; missing file → default config;
+- [x] write failing tests (temp dir): save → load round trip; missing file → default config;
       corrupt JSON → recoverable error / reset
-- [ ] write failing test: a **failed save leaves the previously-saved file intact** (inject failure
+- [x] write failing test: a **failed save leaves the previously-saved file intact** (inject failure
       via a read-only directory, then assert the prior file still loads)
-- [ ] define `ConfigStore` protocol; implement `FileConfigStore(directory:)` with atomic JSON
-- [ ] run `swift test` — must pass before Task 8
+- [x] define `ConfigStore` protocol; implement `FileConfigStore(directory:)` with atomic JSON
+- [x] run `swift test` — must pass before Task 8
 
 ### Task 8: Launch-argument construction by browser family
 
