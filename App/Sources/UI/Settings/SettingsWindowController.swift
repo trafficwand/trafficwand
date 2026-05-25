@@ -10,11 +10,30 @@ import TrafficWandCore
 /// focus). The controller lazily builds the window on first show and reuses it on
 /// subsequent shows, re-loading the view model each time so the window reflects the
 /// latest persisted config and installed browsers.
+///
+/// Dual-writer note: the picker is a *second* writer to `config.json` (it persists
+/// a remembered rule via `ConfigRuleStore` while Settings holds an in-memory rule
+/// array). To avoid a lost update when Settings is left open and the user remembers
+/// a choice in the picker elsewhere, the controller also reloads the view model
+/// whenever this window *becomes key* (regains focus). That re-reads the latest
+/// on-disk config — picking up any picker-added rule — before the user edits.
+/// A theoretical instant-of-edit race (an external save landing between a keystroke
+/// and `persist()`, with no focus change) remains; closing it would require an
+/// optimistic-merge/locking persistence refactor that is out of scope here.
 @MainActor
 final class SettingsWindowController {
     private let viewModel: SettingsViewModel
     private let defaultBrowserManager: DefaultBrowserManager
     private var windowController: NSWindowController?
+
+    /// Observer token for the window's `didBecomeKeyNotification`, kept so it can be
+    /// removed and so the closure (which captures `self` weakly) doesn't leak.
+    ///
+    /// `nonisolated(unsafe)` so the `nonisolated deinit` can read it to deregister;
+    /// this is safe because the token is only assigned once on the main actor during
+    /// `makeWindowController()` and is never mutated thereafter, and
+    /// `NotificationCenter.removeObserver(_:)` is itself thread-safe.
+    private nonisolated(unsafe) var didBecomeKeyObserver: NSObjectProtocol?
 
     /// - Parameters:
     ///   - viewModel: The shared Settings view model (depends only on Core + the
@@ -58,6 +77,26 @@ final class SettingsWindowController {
         window.isReleasedWhenClosed = false
         window.center()
 
+        // Reload whenever this specific window regains focus so returning to an
+        // already-open Settings window re-reads the latest on-disk config (e.g. a
+        // rule the picker remembered while Settings was open) before the user edits.
+        // `weak self` avoids a retain cycle; the token is removed on deinit.
+        didBecomeKeyObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didBecomeKeyNotification,
+            object: window,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.viewModel.load()
+            }
+        }
+
         return NSWindowController(window: window)
+    }
+
+    deinit {
+        if let didBecomeKeyObserver {
+            NotificationCenter.default.removeObserver(didBecomeKeyObserver)
+        }
     }
 }

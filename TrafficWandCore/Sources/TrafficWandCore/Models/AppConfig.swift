@@ -39,14 +39,18 @@ public struct AppConfig: Codable, Equatable, Sendable {
 
     /// Returns a new config with `rule` inserted-or-updated by its `pattern`.
     ///
-    /// The `pattern` string is the deduplication key. If an existing rule shares
-    /// the incoming rule's pattern, that rule's `target` is replaced and it is
-    /// re-enabled (`isEnabled = true`), keeping its position and `id`; every other
-    /// rule keeps its order. If no rule has that pattern, the incoming rule is
-    /// appended. This is pure: the receiver is not mutated.
+    /// The `pattern` string is the deduplication key, **matched
+    /// case-insensitively** to mirror `GlobPattern` (rule matching is
+    /// case-insensitive). If an existing rule shares the incoming rule's pattern
+    /// (ignoring case), that rule's `target` is replaced and it is re-enabled
+    /// (`isEnabled = true`), keeping its position, `id`, and its original pattern
+    /// string; every other rule keeps its order. If no rule has that pattern, the
+    /// incoming rule is appended. This is pure: the receiver is not mutated.
     public func upserting(_ rule: Rule) -> AppConfig {
         var updated = self
-        if let index = updated.rules.firstIndex(where: { $0.pattern == rule.pattern }) {
+        if let index = updated.rules.firstIndex(where: {
+            $0.pattern.caseInsensitiveCompare(rule.pattern) == .orderedSame
+        }) {
             updated.rules[index].target = rule.target
             updated.rules[index].isEnabled = true
         } else {

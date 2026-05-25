@@ -13,9 +13,12 @@ import TrafficWandCore
 ///
 /// Rows are driven by `viewModel.selectableItems` (a flattened browser-default →
 /// profiles sequence). Each row is a hoverable, pointer-cursor button with press
-/// feedback; the keyboard `selectedIndex` row is highlighted, and hover takes
-/// visual precedence when the mouse is over a row. Arrow keys move the highlight,
-/// Return activates it, Esc cancels.
+/// feedback. The panel takes keyboard focus on appear, so the `selectedIndex` row
+/// — the row Return will activate — is highlighted from the start (row 0 by
+/// default); hover takes visual precedence while the mouse is over a row, and
+/// leaving a row leaves the highlight on the last-hovered (== activatable) row.
+/// The visible highlight and the Return target are therefore always the same row.
+/// Arrow keys move the highlight, Return activates it, Esc cancels.
 ///
 /// The view performs no launching or pasteboard work itself; those are the
 /// closures the panel controller injects into the view model. Live rendering and
@@ -29,11 +32,6 @@ struct BrowserPickerView: View {
 
     /// The row id the mouse is currently hovering, if any (drives the hover highlight).
     @State private var hoveredItemID: PickerViewModel.SelectableItem.ID?
-
-    /// Whether the user has navigated with the keyboard yet. The keyboard-selection
-    /// fill is suppressed until this is true so row 0 isn't pre-highlighted before
-    /// any keyboard interaction (hover still highlights immediately).
-    @State private var keyboardNavigated = false
 
     /// Owns keyboard focus so arrow keys / Return are delivered to the list.
     @FocusState private var listFocused: Bool
@@ -71,12 +69,10 @@ struct BrowserPickerView: View {
         .focused($listFocused)
         .onAppear { listFocused = true }
         .onKeyPress(.upArrow) {
-            keyboardNavigated = true
             viewModel.moveSelection(by: -1)
             return .handled
         }
         .onKeyPress(.downArrow) {
-            keyboardNavigated = true
             viewModel.moveSelection(by: 1)
             return .handled
         }
@@ -131,9 +127,9 @@ struct BrowserPickerView: View {
             if hovering {
                 hoveredItemID = item.id
                 // Keep keyboard and mouse in agreement: hovering a row makes it the
-                // selection target, so a subsequent Return activates the hovered row.
+                // selection target, so a subsequent Return activates the hovered row
+                // and, once the mouse leaves, the highlight stays on that row.
                 viewModel.selectedIndex = index
-                keyboardNavigated = false
             } else if hoveredItemID == item.id {
                 hoveredItemID = nil
             }
@@ -167,13 +163,13 @@ struct BrowserPickerView: View {
         }
     }
 
-    /// Background fill for a row: hover wins, otherwise the keyboard-selected row
-    /// (only once the user has actually navigated with the keyboard, so row 0 isn't
-    /// pre-highlighted before any interaction).
+    /// Background fill for a row: hover wins, otherwise the keyboard-selected row.
+    /// The selected row is highlighted from the start (the panel takes focus on
+    /// appear), so the visibly highlighted row always matches the Return target.
     @ViewBuilder
     private func highlightBackground(for item: PickerViewModel.SelectableItem, at index: Int) -> some View {
         let isHovered = hoveredItemID == item.id
-        let isSelected = keyboardNavigated && index == viewModel.selectedIndex
+        let isSelected = index == viewModel.selectedIndex
         let fill: Color? = {
             if isHovered { return Color.accentColor.opacity(0.18) }
             if isSelected { return Color.accentColor.opacity(0.12) }

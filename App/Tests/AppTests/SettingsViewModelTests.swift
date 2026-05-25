@@ -109,6 +109,28 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(vm.fallback, .lastUsed)
     }
 
+    /// A second `load()` after an external writer (e.g. the picker's
+    /// `ConfigRuleStore`) saved a new rule must reflect that rule. This underpins
+    /// the dual-writer fix in `SettingsWindowController`, which reloads the view
+    /// model when the Settings window regains focus so an in-memory edit doesn't
+    /// clobber a picker-added rule.
+    func testReloadAfterExternalSavePicksUpNewRules() {
+        let existing = Rule(pattern: "*github.com", target: chromeTarget(), isEnabled: true)
+        let (vm, store) = makeViewModel(config: AppConfig(rules: [existing], fallback: .picker))
+        vm.load()
+        XCTAssertEqual(vm.rules, [existing])
+
+        // Simulate an external writer (the picker) appending a remembered rule and
+        // changing the fallback while the view model already holds the old state.
+        let remembered = Rule(pattern: "*example.com", target: firefoxTarget(), isEnabled: true)
+        store.loaded = AppConfig(rules: [existing, remembered], fallback: .lastUsed)
+
+        vm.load()
+
+        XCTAssertEqual(vm.rules, [existing, remembered], "Reload reflects the externally-added rule.")
+        XCTAssertEqual(vm.fallback, .lastUsed, "Reload reflects the externally-changed fallback.")
+    }
+
     func testLoadWithCorruptConfigFallsBackToDefault() {
         let (vm, store) = makeViewModel(config: AppConfig(rules: [], fallback: .picker))
         store.loadError = ConfigStoreError.corruptConfiguration

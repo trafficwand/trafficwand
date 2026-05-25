@@ -74,6 +74,30 @@ struct AppConfigUpsertTests {
         #expect(result.rules[0].pattern == "*google.com")
     }
 
+    @Test("Matches an existing pattern case-insensitively (no duplicate, target replaced)")
+    func matchesPatternCaseInsensitively() {
+        // A manually-created mixed-case rule; rule matching is case-insensitive,
+        // so upserting the lowercase form must update this rule, not append a dup.
+        let original = rule(
+            "*X.com",
+            bundleID: "com.apple.Safari",
+            isEnabled: false
+        )
+        let config = AppConfig(rules: [original], fallback: .picker)
+
+        let incoming = rule("*x.com", bundleID: "com.google.Chrome")
+        let result = config.upserting(incoming)
+
+        // No duplicate created.
+        #expect(result.rules.count == 1)
+        // Existing rule's identity and original pattern string are preserved.
+        #expect(result.rules[0].id == original.id)
+        #expect(result.rules[0].pattern == "*X.com")
+        // Target replaced and rule re-enabled.
+        #expect(result.rules[0].target == BrowserTarget(bundleID: "com.google.Chrome", profileID: nil))
+        #expect(result.rules[0].isEnabled == true)
+    }
+
     @Test("Preserves the order of other rules when upserting an existing pattern")
     func preservesOrderOfOtherRules() {
         let first = rule("*github.com", bundleID: "com.apple.Safari")
