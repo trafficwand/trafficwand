@@ -1,0 +1,27 @@
+{
+  "browser": {
+    "enabled_labs_experiments": []
+  },
+  "profile": {
+    "info_cache": {
+      "Default": {
+        "active_time": 1700000000.0,
+        "is_using_default_avatar": true,
+        "is_using_default_name": false,
+        "name": "Personal"
+      },
+      "Profile 1": {
+        "active_time": 1700000100.0,
+        "is_using_default_avatar": false,
+        "is_using_default_name": false,
+        "name": "Work"
+      },
+      "Profile 2": {
+        "active_time": 1700000200.0,
+        "name": "Side Project"
+      }
+    },
+    "last_used": "Profile 1",
+    "profiles_order": ["Default", "Profile 1", "Profile 2"]
+  }
+}

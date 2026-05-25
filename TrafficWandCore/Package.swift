@@ -22,6 +22,10 @@ let package = Package(
         .testTarget(
             name: "TrafficWandCoreTests",
             dependencies: ["TrafficWandCore"],
+            // Fixtures are loaded from disk via `#filePath` (see FixtureLoader),
+            // not bundled as SPM resources, so exclude them from the build to
+            // silence the unhandled-files warning.
+            exclude: ["Fixtures"],
             swiftSettings: [
                 .enableExperimentalFeature("StrictConcurrency")
             ]

@@ -375,12 +375,12 @@ The app is "done" (Task 17) when all of these hold:
   `profiles.ini`, `installs.ini`)
 - Create: `…/ChromeProfileReaderTests.swift`, `…/FirefoxProfileReaderTests.swift`
 
-- [ ] add fixtures, including a multi-profile/multi-install Firefox set and a single-implicit-profile case
-- [ ] write failing tests: Chrome `Local State` → `[BrowserProfile]`; missing/empty/garbled → `[]`/error
-- [ ] write failing tests: Firefox `profiles.ini` (+`installs.ini` defaulting) → `[BrowserProfile]`;
+- [x] add fixtures, including a multi-profile/multi-install Firefox set and a single-implicit-profile case
+- [x] write failing tests: Chrome `Local State` → `[BrowserProfile]`; missing/empty/garbled → `[]`/error
+- [x] write failing tests: Firefox `profiles.ini` (+`installs.ini` defaulting) → `[BrowserProfile]`;
       missing/garbled → `[]`; single implicit profile handled
-- [ ] define `ProfileReading`; implement both readers (base dir injected)
-- [ ] run `swift test` — must pass before Task 10
+- [x] define `ProfileReading`; implement both readers (base dir injected)
+- [x] run `swift test` — must pass before Task 10 (81 tests pass; `task test-core` AppKit guard clean)
 
 ### Task 10: Browser provider + merge helper + profile-path resolver (App)
 
