@@ -293,11 +293,11 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `…/Models/Browser.swift`, `…/Models/BrowserProfile.swift`
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/AppConfigCodableTests.swift`
 
-- [ ] write failing Codable round-trip tests for `AppConfig` (incl. each `FallbackPolicy` case)
-- [ ] write failing tests for default config (empty rules, `.picker`) and `schemaVersion`
-- [ ] implement the model types with stable `Codable` keys and `FallbackPolicy` custom coding
-- [ ] add a JSON-shape assertion test (decode a hand-written sample JSON string)
-- [ ] run `swift test` — must pass before Task 4
+- [x] write failing Codable round-trip tests for `AppConfig` (incl. each `FallbackPolicy` case)
+- [x] write failing tests for default config (empty rules, `.picker`) and `schemaVersion`
+- [x] implement the model types with stable `Codable` keys and `FallbackPolicy` custom coding
+- [x] add a JSON-shape assertion test (decode a hand-written sample JSON string)
+- [x] run `swift test` — must pass before Task 4
 
 ### Task 4: Glob pattern engine
 
