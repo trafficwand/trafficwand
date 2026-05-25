@@ -331,11 +331,11 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `…/Routing/Router.swift`
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/RouterTests.swift`
 
-- [ ] write failing tests: rule match → `.open(target)`; no match + `.defaultBrowser` → `.open`;
+- [x] write failing tests: rule match → `.open(target)`; no match + `.defaultBrowser` → `.open`;
       no match + `.picker` → `.prompt`; no match + `.lastUsed(recorded)` → `.open(recorded)`
-- [ ] write failing edge test: `.lastUsed` with no recorded value → `.prompt`
-- [ ] implement `Router.decide(url:config:lastUsed:availableBrowsers:) -> RoutingDecision`
-- [ ] run `swift test` — must pass before Task 7
+- [x] write failing edge test: `.lastUsed` with no recorded value → `.prompt`
+- [x] implement `Router.decide(url:config:lastUsed:availableBrowsers:) -> RoutingDecision`
+- [x] run `swift test` — must pass before Task 7
 
 ### Task 7: Config persistence (FileConfigStore)
 
