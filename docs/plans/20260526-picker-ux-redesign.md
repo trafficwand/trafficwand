@@ -135,18 +135,18 @@ Reused, do not reinvent:
 **Files:**
 - Modify: `App/Sources/UI/Picker/BrowserPickerView.swift`
 
-- [ ] replace `BrowserRow` with row views driven by `selectableItems`: real app icon (from injected
+- [x] replace `BrowserRow` with row views driven by `selectableItems`: real app icon (from injected
       `BrowserIconProviding`) for browser rows, indented smaller icon for profile sub-rows
-- [ ] add hover highlight (`.onHover` → highlight fill) + pointer cursor (`.pointerStyle(.link)`) +
+- [x] add hover highlight (`.onHover` → highlight fill) + pointer cursor (`.pointerStyle(.link)`) +
       press feedback (custom `ButtonStyle`); show the keyboard-`selectedIndex` row highlighted
       (hover takes visual precedence when the mouse is over a row)
-- [ ] add a `Toggle("Remember choice for \(host)", isOn: $viewModel.rememberChoice)`
+- [x] add a `Toggle("Remember choice for \(host)", isOn: $viewModel.rememberChoice)`
       (`.toggleStyle(.checkbox)`), shown only when `rememberHost != nil`, placed above the footer
-- [ ] wire keyboard nav: `.focusable()` + focus on appear; `.onKeyPress(.upArrow/.downArrow)` →
+- [x] wire keyboard nav: `.focusable()` + focus on appear; `.onKeyPress(.upArrow/.downArrow)` →
       `moveSelection`, `.onKeyPress(.return)` → `activateSelection`; Esc still cancels
-- [ ] restyle header/footer for cohesion (link glyph, spacing/typography hierarchy); add `#Preview`s
+- [x] restyle header/footer for cohesion (link glyph, spacing/typography hierarchy); add `#Preview`s
       with a stub icon provider + sample browsers (with/without profiles)
-- [ ] (live rendering verified in Post-Completion; no unit test for the view itself)
+- [x] (live rendering verified in Post-Completion; no unit test for the view itself)
 
 ### Task 7: App — wire persistence + icons through the controller
 
