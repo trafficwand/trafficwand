@@ -358,13 +358,13 @@ The app is "done" (Task 17) when all of these hold:
 - Create: `…/Browsers/LaunchArguments.swift`
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/LaunchArgumentsTests.swift`
 
-- [ ] write failing tests: bundleID → family mapping (chromium set, firefox, safari, unknown)
-- [ ] write failing tests asserting the **full argv including the URL position** per the Task 2
+- [x] write failing tests: bundleID → family mapping (chromium set, firefox, safari, unknown)
+- [x] write failing tests asserting the **full argv including the URL position** per the Task 2
       decision: chromium with profile → e.g. `["--profile-directory=<dir>", "<url>"]`; firefox →
-      e.g. `["-P", "<name>", "<url>"]` (+`-no-remote` if the spike requires it); safari/unknown or
+      e.g. `["-P", "<name>", "<url>"]` (per spike §4: **no** `-no-remote`); safari/unknown or
       no profile → just `["<url>"]`
-- [ ] implement `BrowserFamily(bundleID:)` and `LaunchArguments.build(for: BrowserTarget, url: URL)`
-- [ ] run `swift test` — must pass before Task 9
+- [x] implement `BrowserFamily(bundleID:)` and `LaunchArguments.build(for: BrowserTarget, url: URL)`
+- [x] run `swift test` — must pass before Task 9 (66 tests pass; `task test-core` AppKit guard clean)
 
 ### Task 9: Profile discovery readers (Chrome + Firefox)
 
