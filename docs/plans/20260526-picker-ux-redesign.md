@@ -61,16 +61,16 @@ Reused, do not reinvent:
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/RegistrableDomainTests.swift`
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/RememberRuleTests.swift`
 
-- [ ] write failing `RegistrableDomainTests` covering: `www.x.com`→`x.com`, `news.x.com`→`x.com`,
+- [x] write failing `RegistrableDomainTests` covering: `www.x.com`→`x.com`, `news.x.com`→`x.com`,
       `a.b.x.co.uk`→`x.co.uk` (embedded common 2-level suffixes: co.uk, com.au, co.jp, etc.),
       bare `x.com`→`x.com`, single-label host (`localhost`)→nil, IPv4/IPv6 literal→nil, empty→nil
-- [ ] implement `RegistrableDomain.of(host:) -> String?` (heuristic eTLD+1 with a small embedded
+- [x] implement `RegistrableDomain.of(host:) -> String?` (heuristic eTLD+1 with a small embedded
       multi-label-suffix set; document the no-PSL limitation in a doc comment)
-- [ ] write failing `RememberRuleTests`: a URL with a host yields a `Rule` with pattern
+- [x] write failing `RememberRuleTests`: a URL with a host yields a `Rule` with pattern
       `*<registrableDomain>`, `isEnabled: true`, and the passed-in `BrowserTarget`; IP-literal host →
       exact-host pattern (no leading `*`); hostless URL (`mailto:`/`file:`) → nil
-- [ ] implement `RememberRule.rule(forURL:target:) -> Rule?` reusing `RegistrableDomain.of`
-- [ ] run `task test-core` — must pass (incl. AppKit-import guard) before Task 2
+- [x] implement `RememberRule.rule(forURL:target:) -> Rule?` reusing `RegistrableDomain.of`
+- [x] run `task test-core` — must pass (incl. AppKit-import guard) before Task 2
 
 ### Task 2: Core — upsert-a-rule-by-pattern on AppConfig (TDD)
 
