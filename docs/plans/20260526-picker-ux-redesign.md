@@ -90,15 +90,15 @@ Reused, do not reinvent:
 - Create: `App/Sources/Adapters/ConfigRuleStore.swift` (defines `protocol RulePersisting` + concrete adapter)
 - Create: `App/Tests/AppTests/ConfigRuleStoreTests.swift`
 
-- [ ] define `protocol RulePersisting { func remember(url: URL, target: BrowserTarget) }` (App-side seam,
+- [x] define `protocol RulePersisting { func remember(url: URL, target: BrowserTarget) }` (App-side seam,
       mirroring `LastUsedRecording`)
-- [ ] implement `ConfigRuleStore` wrapping a `ConfigStore`: load → `RememberRule.rule(...)` →
+- [x] implement `ConfigRuleStore` wrapping a `ConfigStore`: load → `RememberRule.rule(...)` →
       `AppConfig.upserting(...)` → save; swallow + log load/save errors (never crash routing)
-- [ ] write XCTest with the existing `MockConfigStore` pattern: remembering `https://www.x.com/...` for a
+- [x] write XCTest with the existing `MockConfigStore` pattern: remembering `https://www.x.com/...` for a
       target saves a config containing a `*x.com` rule with that target
-- [ ] write tests: remembering the same domain twice updates (not duplicates) the rule; a hostless URL
+- [x] write tests: remembering the same domain twice updates (not duplicates) the rule; a hostless URL
       saves nothing; a save error is swallowed (no throw)
-- [ ] run `task test` — must pass before Task 4
+- [x] run `task test` — must pass before Task 4
 
 ### Task 4: App — PickerViewModel: remember flag, flattened selectable list, keyboard nav
 
