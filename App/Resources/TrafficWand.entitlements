@@ -14,13 +14,11 @@
 	<false/>
 
 	<!--
-	  Hardened Runtime is enabled at build time (ENABLE_HARDENED_RUNTIME in
-	  project.yml) for notarization. The launch mechanism finalized in Task 2 may
-	  spawn a child process (e.g. /usr/bin/open or a browser binary). If the
-	  chosen mechanism is Process/exec, the following exception permits executing
-	  another program from this Hardened-Runtime process. Confirm/trim in Task 2.
+	  No com.apple.security.cs.allow-* entitlement is required for the launch
+	  mechanism: spawning subprocesses (/usr/bin/open or a browser binary) from a
+	  Hardened-Runtime app is allowed without any allow-* key (the allow-* family
+	  governs loading code into *our* process, not spawning others). See
+	  docs/spikes/launch-mechanism.md §6.
 	-->
-	<key>com.apple.security.cs.allow-jit</key>
-	<false/>
 </dict>
 </plist>

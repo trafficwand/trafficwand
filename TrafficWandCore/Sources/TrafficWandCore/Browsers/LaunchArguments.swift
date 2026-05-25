@@ -12,6 +12,9 @@ import Foundation
 ///   (it breaks the already-running-browser case; remoting must stay on).
 /// - Safari, unknown families, or any target without a profile → `["<url>"]`.
 ///
+/// An empty or whitespace-only `profileID` is treated as **no profile** (no flag
+/// is emitted) rather than producing an empty flag value.
+///
 /// The URL element is `url.absoluteString`.
 public enum LaunchArguments {
     /// Returns the argv tail for launching `url` in `target`'s browser/profile.
@@ -23,8 +26,13 @@ public enum LaunchArguments {
     public static func build(for target: BrowserTarget, url: URL) -> [String] {
         let urlArg = url.absoluteString
 
-        // No profile selected → there is no flag to add for any family.
-        guard let profileID = target.profileID else { return [urlArg] }
+        // No profile selected → there is no flag to add for any family. An empty
+        // (or whitespace-only) profileID is treated as *no profile*: emitting an
+        // empty flag value (e.g. `--profile-directory=`) would be a broken argument.
+        guard let profileID = target.profileID,
+              !profileID.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return [urlArg]
+        }
 
         switch BrowserFamily(bundleID: target.bundleID) {
         case .chromium:

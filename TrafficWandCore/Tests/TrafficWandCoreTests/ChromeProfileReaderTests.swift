@@ -72,6 +72,20 @@ struct ChromeProfileReaderTests {
         #expect(profiles.isEmpty)
     }
 
+    @Test("a present-but-empty info_cache returns an empty array (installed, no profiles)")
+    func emptyInfoCacheReturnsEmpty() throws {
+        // Distinct from a missing info_cache: the key is present but empty, i.e. the
+        // browser is installed but has no profiles registered yet.
+        let directory = try FixtureLoader.directory(
+            withFile: "Local State",
+            contents: #"{ "profile": { "info_cache": {} } }"#
+        )
+        defer { FixtureLoader.cleanUp(directory) }
+
+        let profiles = try ChromeProfileReader().readProfiles(applicationSupportDirectory: directory)
+        #expect(profiles.isEmpty)
+    }
+
     @Test("an entry without a name falls back to the directory name")
     func missingNameFallsBackToDirectory() throws {
         let directory = try FixtureLoader.directory(

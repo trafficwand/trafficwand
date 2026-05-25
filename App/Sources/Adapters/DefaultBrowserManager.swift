@@ -54,19 +54,52 @@ public struct DefaultBrowserManager {
     /// its prompt are not automatable and are covered by Post-Completion manual
     /// verification.
     ///
-    /// - Parameter completion: Optional callback invoked after each scheme's
-    ///   request resolves, with any error reported by the system.
+    /// - Parameter completion: Optional callback invoked **once**, after both
+    ///   scheme requests have resolved, with the first error reported (if any).
     public func setAsDefault(completion: ((Error?) -> Void)? = nil) {
         guard let appURL = Bundle.main.bundleURL as URL? else {
             completion?(nil)
             return
         }
+
+        // Coalesce the two per-scheme callbacks into a single completion so callers
+        // refresh once, not twice. `NSWorkspace` invokes these on a background
+        // queue, so guard the shared counters/first-error with a small lock.
+        let group = SchemeCompletion(remaining: Self.handledSchemes.count, completion: completion)
         for scheme in Self.handledSchemes {
             NSWorkspace.shared.setDefaultApplication(
                 at: appURL,
                 toOpenURLsWithScheme: scheme
             ) { error in
-                completion?(error)
+                group.recordResult(error)
+            }
+        }
+    }
+
+    /// Aggregates the per-scheme `setDefaultApplication` callbacks into one. Fires
+    /// the caller's completion exactly once, after the last scheme resolves, with
+    /// the first error seen (if any). Thread-safe (callbacks arrive off-main).
+    private final class SchemeCompletion: @unchecked Sendable {
+        private let lock = NSLock()
+        private var remaining: Int
+        private var firstError: Error?
+        private let completion: ((Error?) -> Void)?
+
+        init(remaining: Int, completion: ((Error?) -> Void)?) {
+            self.remaining = remaining
+            self.completion = completion
+        }
+
+        func recordResult(_ error: Error?) {
+            lock.lock()
+            if firstError == nil { firstError = error }
+            remaining -= 1
+            let done = remaining <= 0
+            let reportedError = firstError
+            lock.unlock()
+
+            if done {
+                completion?(reportedError)
             }
         }
     }

@@ -2,10 +2,10 @@ import Foundation
 
 /// An installed browser discovered on the system, with its known profiles.
 ///
-/// Not persisted in the config file — it is derived at runtime from the system
-/// browser provider and profile readers — but kept `Codable` so it can travel
-/// across boundaries (e.g. into the picker) uniformly.
-public struct Browser: Codable, Equatable, Hashable, Identifiable, Sendable {
+/// Not persisted — it is derived at runtime from the system browser provider and
+/// profile readers — so it is intentionally **not** `Codable`. It conforms to
+/// `Equatable`/`Hashable`/`Identifiable`/`Sendable` for SwiftUI lists and tests.
+public struct Browser: Equatable, Hashable, Identifiable, Sendable {
     /// Bundle identifier of the browser application.
     public let bundleID: String
     /// Human-readable application name.

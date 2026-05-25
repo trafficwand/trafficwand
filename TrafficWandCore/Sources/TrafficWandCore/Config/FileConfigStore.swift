@@ -67,6 +67,14 @@ public struct FileConfigStore: ConfigStore {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         let data = try encoder.encode(config)
+        // Ensure the containing directory exists. `Data.write(.atomic)` does NOT
+        // create intermediate directories, so on a clean install (where
+        // ~/Library/Application Support/TrafficWand has never been created) the
+        // first save would otherwise throw. Creating it here is idempotent.
+        try FileManager.default.createDirectory(
+            at: directory,
+            withIntermediateDirectories: true
+        )
         // Atomic write: writes to a temp sibling and renames into place. On
         // failure the rename never happens, leaving any prior file intact.
         try data.write(to: fileURL, options: .atomic)

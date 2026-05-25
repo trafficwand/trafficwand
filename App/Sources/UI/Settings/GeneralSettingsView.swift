@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import TrafficWandCore
 
@@ -54,10 +55,21 @@ struct GeneralSettingsView: View {
             Section("When no rule matches") {
                 Picker("Fallback", selection: fallbackModeBinding) {
                     ForEach(FallbackMode.allCases) { mode in
-                        Text(mode.title).tag(mode)
+                        // The "specific browser" mode needs a real browser to target;
+                        // disable it when no browsers are installed so we never persist
+                        // an unusable empty-bundleID target (mirrors the Rule editor).
+                        Text(mode.title)
+                            .tag(mode)
+                            .disabled(mode == .defaultBrowser && viewModel.browsers.isEmpty)
                     }
                 }
                 .pickerStyle(.radioGroup)
+
+                if viewModel.browsers.isEmpty {
+                    Text("Install a browser to route to a specific one.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
 
                 if currentMode == .defaultBrowser {
                     fallbackBrowserPickers
@@ -65,7 +77,18 @@ struct GeneralSettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .onAppear { isDefaultBrowser = defaultBrowserManager.isDefault }
+        .onAppear { refreshDefaultStatus() }
+        // The default-browser status can change outside the app (e.g. via System
+        // Settings). Re-read whenever the app becomes active so the row never goes
+        // stale while the Settings window stays open.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            refreshDefaultStatus()
+        }
+    }
+
+    /// Re-reads whether TrafficWand is currently the default browser.
+    private func refreshDefaultStatus() {
+        isDefaultBrowser = defaultBrowserManager.isDefault
     }
 
     // MARK: - Fallback mode binding
@@ -91,6 +114,10 @@ struct GeneralSettingsView: View {
                 case .lastUsed:
                     viewModel.setFallback(.lastUsed)
                 case .defaultBrowser:
+                    // Refuse to enter .defaultBrowser with no browsers: it would
+                    // persist an unusable empty-bundleID target. The option is also
+                    // visually disabled above; this is the load-bearing guard.
+                    guard !viewModel.browsers.isEmpty else { return }
                     viewModel.setFallback(.defaultBrowser(currentDefaultTarget))
                 }
             }

@@ -6,7 +6,10 @@ import Foundation
 /// the Chrome profile **directory name** (e.g. `"Default"`, `"Profile 1"`) or
 /// the Firefox **profile name** (e.g. `"Personal"`). `name` is the display
 /// label shown to the user.
-public struct BrowserProfile: Codable, Equatable, Hashable, Identifiable, Sendable {
+///
+/// Not persisted, so intentionally **not** `Codable`; only the conformances used
+/// by SwiftUI/tests are kept.
+public struct BrowserProfile: Equatable, Hashable, Identifiable, Sendable {
     /// Family-native profile identifier (Chrome dir name / Firefox profile name).
     public let id: String
     /// Human-readable display name.

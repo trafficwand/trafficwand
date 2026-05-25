@@ -189,4 +189,30 @@ struct AppConfigJSONShapeTests {
         #expect(lastUsedJSON.contains("\"lastUsed\""))
         #expect(defaultJSON.contains("\"defaultBrowser\""))
     }
+
+    // MARK: - FallbackPolicy decode-error paths
+
+    @Test("An unknown FallbackPolicy discriminator throws (never silently swallowed)")
+    func unknownDiscriminatorThrows() {
+        let json = Data(#"{ "type": "bogus" }"#.utf8)
+        #expect(throws: (any Error).self) {
+            _ = try JSONDecoder().decode(FallbackPolicy.self, from: json)
+        }
+    }
+
+    @Test("A .defaultBrowser missing its nested target throws")
+    func defaultBrowserMissingTargetThrows() {
+        let json = Data(#"{ "type": "defaultBrowser" }"#.utf8)
+        #expect(throws: (any Error).self) {
+            _ = try JSONDecoder().decode(FallbackPolicy.self, from: json)
+        }
+    }
+
+    @Test("A FallbackPolicy missing its discriminator key throws")
+    func missingDiscriminatorThrows() {
+        let json = Data(#"{ }"#.utf8)
+        #expect(throws: (any Error).self) {
+            _ = try JSONDecoder().decode(FallbackPolicy.self, from: json)
+        }
+    }
 }

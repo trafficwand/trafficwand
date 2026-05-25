@@ -115,6 +115,36 @@ final class BrowserProviderMergeTests: XCTestCase {
         XCTAssertEqual(browsers.map(\.bundleID), ["com.brave.Browser"])
     }
 
+    // MARK: - De-duplication by bundle ID
+
+    func testMergeDeduplicatesByBundleIDKeepingFirst() {
+        // NSWorkspace can list multiple copies of the same app (e.g. one in
+        // /Applications and one elsewhere). The merge must keep only the first
+        // occurrence per bundle ID.
+        let first = BrowserCandidate(
+            bundleID: "com.google.Chrome",
+            name: "Google Chrome",
+            appURL: URL(fileURLWithPath: "/Applications/Google Chrome.app")
+        )
+        let duplicate = BrowserCandidate(
+            bundleID: "com.google.Chrome",
+            name: "Google Chrome (copy)",
+            appURL: URL(fileURLWithPath: "/Users/me/Applications/Google Chrome.app")
+        )
+
+        let browsers = BrowserMerger.merge(
+            candidates: [first, duplicate],
+            selfBundleID: selfBundleID,
+            profileReaderForFamily: { _ in StubProfileReader() },
+            pathResolver: StubPathResolver(directories: [:])
+        )
+
+        XCTAssertEqual(browsers.count, 1, "Duplicate bundle IDs must collapse to one.")
+        // The first occurrence is kept (its name/url, not the duplicate's).
+        XCTAssertEqual(browsers.first?.name, "Google Chrome")
+        XCTAssertEqual(browsers.first?.appURL, URL(fileURLWithPath: "/Applications/Google Chrome.app"))
+    }
+
     // MARK: - Profiles attached
 
     func testMergeAttachesDiscoveredProfiles() {

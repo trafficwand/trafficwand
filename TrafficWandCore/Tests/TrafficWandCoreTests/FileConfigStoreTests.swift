@@ -58,6 +58,27 @@ struct FileConfigStoreTests {
         #expect(loaded == config)
     }
 
+    @Test("save creates the target directory on a clean install (round-trips)")
+    func saveCreatesMissingDirectory() throws {
+        // Simulate a clean install: the store's directory does not exist yet (and
+        // neither does an intermediate parent). `Data.write(.atomic)` does NOT
+        // create directories, so save must create them itself or the first save
+        // throws (NSCocoaErrorDomain 4) — the regression this test guards.
+        let parent = try makeTempDirectory()
+        defer { cleanUp(parent) }
+        let directory = parent
+            .appendingPathComponent("not-yet-created", isDirectory: true)
+            .appendingPathComponent("TrafficWand", isDirectory: true)
+        // Sanity: the directory really is absent before the first save.
+        #expect(!FileManager.default.fileExists(atPath: directory.path))
+
+        let store = FileConfigStore(directory: directory)
+        let config = sampleConfig()
+        try store.save(config)
+        let loaded = try store.load()
+        #expect(loaded == config)
+    }
+
     @Test("missing file returns AppConfig.default and does not throw")
     func missingFileReturnsDefault() throws {
         let directory = try makeTempDirectory()

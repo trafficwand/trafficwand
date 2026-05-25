@@ -167,11 +167,13 @@ final class RoutingServiceTests: XCTestCase {
 
     // MARK: - .open with target not in available browsers
 
-    func testOpenDecisionWithUnknownTargetDoesNotLaunchButStillRecords() throws {
-        // If the .open target's browser is not among the available browsers, the
-        // launcher cannot be invoked (no appURL to resolve); the service must not
-        // crash and must not call the launcher. Last-used is still recorded so the
-        // routing intent is remembered.
+    func testOpenDecisionWithUnknownTargetFallsBackToPicker() throws {
+        // If the .open target's browser is not among the available browsers (stale
+        // rule / removed-or-renamed default browser), the launcher cannot be
+        // invoked (no appURL to resolve). The link must NOT be dropped: the service
+        // falls back to presenting the picker so the user can still choose. The
+        // unresolvable target must NOT be recorded as last-used (it would mislead
+        // the .lastUsed fallback toward a browser that no longer exists).
         let target = BrowserTarget(bundleID: "com.unknown.Browser", profileID: nil)
         let config = AppConfig(rules: [], fallback: .defaultBrowser(target))
         let browsers = [browser("com.google.Chrome", "Google Chrome")]
@@ -187,7 +189,9 @@ final class RoutingServiceTests: XCTestCase {
         service.route(url: url)
 
         XCTAssertTrue(launcher.calls.isEmpty)
-        XCTAssertTrue(picker.calls.isEmpty)
-        XCTAssertEqual(lastUsed.recorded, [target])
+        XCTAssertEqual(picker.calls.count, 1)
+        XCTAssertEqual(picker.calls.first?.url, url)
+        XCTAssertEqual(picker.calls.first?.browserBundleIDs, ["com.google.Chrome"])
+        XCTAssertTrue(lastUsed.recorded.isEmpty)
     }
 }

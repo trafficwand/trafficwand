@@ -2,9 +2,9 @@ import Foundation
 
 /// Matches a URL against an ordered list of routing rules.
 ///
-/// Matching is performed against the URL's **host** only (per `GlobScope.host`):
-/// the host is lowercased and any port/userinfo is dropped (`URL.host` already
-/// excludes those), then compared against each rule's `GlobPattern`.
+/// Matching is performed against the URL's **host** only: the host is lowercased
+/// and any port/userinfo is dropped (`URL.host` already excludes those), then
+/// compared against each rule's `GlobPattern`.
 ///
 /// Semantics (locked during planning):
 /// - **First match wins** over the ordered `rules` array.

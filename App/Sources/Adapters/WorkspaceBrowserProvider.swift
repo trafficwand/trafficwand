@@ -25,32 +25,14 @@ public struct BrowserCandidate: Equatable, Sendable {
 ///
 /// Behavior:
 ///  - Excludes TrafficWand itself (`selfBundleID`).
-///  - Filters to **real browsers** via the known-browser allowlist (a random app
-///    that merely claims to handle http is dropped).
+///  - Filters to **real browsers** by family (`BrowserFamily(bundleID:) != .other`):
+///    a random app that merely claims to handle http is dropped.
 ///  - Does **not** filter by default-ness: a real non-default browser still shows.
 ///  - Attaches profiles per family via the injected `ProfileReading` (resolved by
 ///    `profileReaderForFamily`) and the per-family support path from `pathResolver`.
 ///    A missing support path or a throwing reader yields empty profiles.
 ///  - Returns browsers sorted by display name for deterministic UI ordering.
 public enum BrowserMerger {
-
-    /// Bundle IDs recognized as real browsers. Superset of the families
-    /// `BrowserFamily` knows about, used purely as the discovery allowlist so a
-    /// non-browser http handler is excluded.
-    static let browserBundleIDs: Set<String> = [
-        // Chromium family.
-        "com.google.Chrome",
-        "com.google.Chrome.beta",
-        "com.google.Chrome.canary",
-        "com.microsoft.edgemac",
-        "com.brave.Browser",
-        "com.vivaldi.Vivaldi",
-        "org.chromium.Chromium",
-        // Firefox family.
-        "org.mozilla.firefox",
-        // Safari.
-        "com.apple.Safari"
-    ]
 
     /// Merges raw candidates into Core `Browser`s.
     ///
@@ -73,10 +55,13 @@ public enum BrowserMerger {
         var seen: Set<String> = []
         let browsers: [Browser] = candidates.compactMap { candidate in
             guard candidate.bundleID != selfBundleID else { return nil }
-            guard browserBundleIDs.contains(candidate.bundleID) else { return nil }
+            let family = BrowserFamily(bundleID: candidate.bundleID)
+            // The allowlist is derived from `BrowserFamily` (single source of
+            // truth): any bundle ID in a known family (Chromium/Firefox/Safari) is
+            // a real browser; `.other` is a non-browser http handler and is dropped.
+            guard family != .other else { return nil }
             guard seen.insert(candidate.bundleID).inserted else { return nil }
 
-            let family = BrowserFamily(bundleID: candidate.bundleID)
             let profiles = discoverProfiles(
                 bundleID: candidate.bundleID,
                 family: family,

@@ -5,15 +5,20 @@ import TrafficWandCore
 /// Tests for the **pure** command builder behind `BrowserLauncher` (Task 11).
 ///
 /// The builder turns `(Browser, BrowserTarget, URL)` into the concrete invocation
-/// `(executableURL, arguments)` per the launch-mechanism spike §5, **without**
-/// launching anything. The shape is:
+/// `(executableURL, arguments)` per the launch-mechanism spike §3/§4, **without**
+/// launching anything. There are two shapes:
 ///
-///   executableURL = /usr/bin/open
-///   arguments     = ["-n", "-a", <app path>, "--args"] + LaunchArguments.build(...)
+/// - **With a profile** (spike §4):
+///     executableURL = /usr/bin/open
+///     arguments     = ["-n", "-a", <app path>, "--args"] + LaunchArguments.build(...)
+///   `-n` forces a new instance so argv reaches the browser's own parser.
 ///
-/// The argv tail (from Core `LaunchArguments`) always ends with the URL, so the
-/// last element of `arguments` must be `url.absoluteString` in every case. The live
-/// `process.run()` is the only line not exercised here (manual verification).
+/// - **Without a profile** (spike §3 — no argv contract, so no `-n`; for Safari
+///   `-n` would open a duplicate app rather than a tab in the running one):
+///     arguments     = ["-a", <app path>, <url>]
+///
+/// The URL is always the last element of `arguments`. The live `process.run()` is
+/// the only line not exercised here (manual verification).
 final class BrowserLauncherCommandTests: XCTestCase {
 
     private let url = URL(string: "https://example.com/path?q=1")!
@@ -28,13 +33,14 @@ final class BrowserLauncherCommandTests: XCTestCase {
 
     // MARK: - Executable + open flags
 
-    func testCommandUsesUsrBinOpenWithNAArgsFlags() {
+    func testProfiledCommandUsesUsrBinOpenWithNAArgsFlags() {
         let chrome = browser(
             bundleID: "com.google.Chrome",
             name: "Google Chrome",
             appURL: URL(fileURLWithPath: "/Applications/Google Chrome.app")
         )
-        let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)
+        // A profile is selected → new-instance path with the --args contract.
+        let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1")
 
         let command = BrowserLaunchCommand.make(target: target, browser: chrome, url: url)
 
@@ -136,7 +142,7 @@ final class BrowserLauncherCommandTests: XCTestCase {
         XCTAssertEqual(command.arguments.last, url.absoluteString)
     }
 
-    func testUnknownFamilyNoProfileCommandHasOnlyURLInTail() {
+    func testUnknownFamilyNoProfileUsesPlainOpenWithoutNewInstance() {
         let unknown = browser(
             bundleID: "com.example.MysteryBrowser",
             name: "Mystery",
@@ -146,13 +152,57 @@ final class BrowserLauncherCommandTests: XCTestCase {
 
         let command = BrowserLaunchCommand.make(target: target, browser: unknown, url: url)
 
+        // No profile → plain open-document path: no -n, no --args.
         XCTAssertEqual(command.arguments, [
-            "-n",
             "-a",
             "/Applications/Mystery.app",
-            "--args",
             url.absoluteString
         ])
+    }
+
+    // MARK: - No profile → no new instance (spike §3)
+
+    func testChromiumNoProfileUsesPlainOpenWithoutNewInstance() {
+        let chrome = browser(
+            bundleID: "com.google.Chrome",
+            name: "Google Chrome",
+            appURL: URL(fileURLWithPath: "/Applications/Google Chrome.app")
+        )
+        let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)
+
+        let command = BrowserLaunchCommand.make(target: target, browser: chrome, url: url)
+
+        // Without a profile there is no argv contract, so we must NOT force a new
+        // instance: plain `open -a <app> <url>` (spike §3).
+        XCTAssertEqual(command.executableURL, URL(fileURLWithPath: "/usr/bin/open"))
+        XCTAssertEqual(command.arguments, [
+            "-a",
+            "/Applications/Google Chrome.app",
+            url.absoluteString
+        ])
+        XCTAssertFalse(command.arguments.contains("-n"))
+        XCTAssertFalse(command.arguments.contains("--args"))
+        XCTAssertEqual(command.arguments.last, url.absoluteString)
+    }
+
+    func testSafariNoProfileUsesPlainOpenWithoutNewInstance() {
+        // The duplicate-Safari case the spike §3 warns about: a no-profile Safari
+        // target must reuse the running Safari (plain open), not spawn a new copy.
+        let safari = browser(
+            bundleID: "com.apple.Safari",
+            name: "Safari",
+            appURL: URL(fileURLWithPath: "/Applications/Safari.app")
+        )
+        let target = BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)
+
+        let command = BrowserLaunchCommand.make(target: target, browser: safari, url: url)
+
+        XCTAssertEqual(command.arguments, [
+            "-a",
+            "/Applications/Safari.app",
+            url.absoluteString
+        ])
+        XCTAssertFalse(command.arguments.contains("-n"))
     }
 
     // MARK: - Tail is exactly LaunchArguments.build

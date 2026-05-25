@@ -26,19 +26,27 @@ extension BrowserLaunchCommand {
     /// Builds the launch command for opening `url` in `browser` with `target`'s
     /// optional profile — the **pure** core of `BrowserLauncher`.
     ///
-    /// Per the launch-mechanism spike §5 the shape is:
+    /// Two shapes, per the launch-mechanism spike §3/§4:
     ///
-    ///     /usr/bin/open -n -a <app path> --args <argv tail…>
+    /// - **With a profile** (`target.profileID != nil`):
     ///
-    /// where:
-    ///   - `-n` requests a new instance so our argv reaches the browser's own
-    ///     argument parser (which then forwards to a running instance over the
-    ///     browser's IPC — the only way profile routing survives an already-running
-    ///     browser);
-    ///   - `-a <app path>` resolves the browser by the path we already have
-    ///     (`browser.appURL`), avoiding display-name ambiguity;
-    ///   - the argv **tail** is exactly `LaunchArguments.build(for:url:)` (Core),
-    ///     so the URL is always last and profile flags are family-correct.
+    ///       /usr/bin/open -n -a <app path> --args <argv tail…>
+    ///
+    ///   `-n` requests a new instance so our argv reaches the browser's own
+    ///   argument parser (which then forwards to a running instance over the
+    ///   browser's IPC — the only way profile routing survives an already-running
+    ///   browser). The `--args` tail is exactly `LaunchArguments.build(for:url:)`
+    ///   (Core), so the URL is always last and the profile flag is family-correct.
+    ///
+    /// - **Without a profile** (`target.profileID == nil`, incl. Safari): there is
+    ///   no argv contract to honor, so spawning a brand-new instance is wrong (for
+    ///   Safari `-n` opens a *duplicate* app rather than a tab in the running one —
+    ///   spike §3). Use the plain open-document path:
+    ///
+    ///       /usr/bin/open -a <app path> <url>
+    ///
+    /// In both cases `-a <app path>` resolves the browser by the path we already
+    /// have (`browser.appURL`), avoiding display-name ambiguity.
     ///
     /// - Parameters:
     ///   - target: The routing target (bundle ID + optional profile).
@@ -46,8 +54,18 @@ extension BrowserLaunchCommand {
     ///   - url: The link to open.
     /// - Returns: The executable + argv to run, never launched here.
     public static func make(target: BrowserTarget, browser: Browser, url: URL) -> BrowserLaunchCommand {
-        let argvTail = LaunchArguments.build(for: target, url: url)
-        let arguments = ["-n", "-a", browser.appURL.path, "--args"] + argvTail
+        let appPath = browser.appURL.path
+        let hasProfile = target.profileID?
+            .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        let arguments: [String]
+        if hasProfile {
+            // Profile selected → new instance so argv reaches the browser parser.
+            let argvTail = LaunchArguments.build(for: target, url: url)
+            arguments = ["-n", "-a", appPath, "--args"] + argvTail
+        } else {
+            // No profile → no argv contract; plain open-document path (no -n).
+            arguments = ["-a", appPath, url.absoluteString]
+        }
         return BrowserLaunchCommand(executableURL: openExecutableURL, arguments: arguments)
     }
 }

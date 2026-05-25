@@ -96,24 +96,28 @@ final class RoutingService {
 
     /// Launches `target` for `url`, recording it as last-used.
     ///
-    /// Records last-used regardless of whether the browser could be resolved, so a
-    /// `.lastUsed` fallback still reflects the user's most recent routing intent.
-    /// If the target's browser is not among the available browsers there is no
-    /// `appURL` to launch, so the launch is skipped (logged, never crashes).
+    /// If the target's browser is not among the available browsers (a stale rule or
+    /// a `.defaultBrowser` pointing at a removed/renamed browser) there is no
+    /// `appURL` to launch. Rather than silently drop the link, fall back to the
+    /// picker so the user can still choose a destination — the "never drop a link"
+    /// principle. In that case last-used is NOT recorded for the unresolvable
+    /// target (it would mislead the `.lastUsed` fallback toward a browser that no
+    /// longer exists); the picker records whatever the user actually picks.
     private func open(target: BrowserTarget, url: URL, browsers: [Browser]) {
-        lastUsedStore.set(target)
-
         guard let browser = browsers.first(where: { $0.bundleID == target.bundleID }) else {
             let bundleID = target.bundleID
             let link = url.absoluteString
             Self.logger.error(
                 """
                 No installed browser for target bundle ID \(bundleID, privacy: .public); \
-                cannot launch \(link, privacy: .public)
+                presenting picker for \(link, privacy: .public)
                 """
             )
+            picker.presentPicker(url: url, browsers: browsers)
             return
         }
+
+        lastUsedStore.set(target)
 
         do {
             try launcher.launch(target: target, browser: browser, url: url)

@@ -87,6 +87,23 @@ struct LaunchArgumentsTests {
         #expect(LaunchArguments.build(for: target, url: url) == ["https://x/"])
     }
 
+    @Test("Chromium with an empty profileID is treated as no profile (no empty flag)")
+    func chromiumEmptyProfileTreatedAsNoProfile() {
+        // An empty profileID must NOT produce a broken `--profile-directory=` flag.
+        let empty = BrowserTarget(bundleID: "com.google.Chrome", profileID: "")
+        #expect(LaunchArguments.build(for: empty, url: url) == ["https://x/"])
+
+        // Whitespace-only is also treated as absent.
+        let blank = BrowserTarget(bundleID: "com.google.Chrome", profileID: "   ")
+        #expect(LaunchArguments.build(for: blank, url: url) == ["https://x/"])
+    }
+
+    @Test("Firefox with an empty profileID is treated as no profile")
+    func firefoxEmptyProfileTreatedAsNoProfile() {
+        let empty = BrowserTarget(bundleID: "org.mozilla.firefox", profileID: "")
+        #expect(LaunchArguments.build(for: empty, url: url) == ["https://x/"])
+    }
+
     // MARK: Firefox
 
     @Test("Firefox with a profile → -P <name> then URL last (no -no-remote)")

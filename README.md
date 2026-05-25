@@ -38,7 +38,7 @@ for the full investigation behind this choice.
 
 - macOS 26 (Tahoe) or later for the app.
 - **Xcode 26+** (provides the Swift 6 toolchain and `xcodebuild`).
-- [XcodeGen](https://github.com/yonsei/XcodeGen) and
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) and
   [SwiftLint](https://github.com/realm/SwiftLint), installed via Homebrew:
 
   ```sh

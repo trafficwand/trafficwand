@@ -4,7 +4,7 @@
 *running* browser is deferred to Post-Completion manual verification (see the end
 of this note). All automatable analysis and the argv contract are final.
 
-**Task:** [Task 2 — Launch-mechanism spike](../plans/20260525-trafficwand-browser-router.md)
+**Task:** [Task 2 — Launch-mechanism spike](../plans/completed/20260525-trafficwand-browser-router.md)
 
 **Consumers of this decision:** Task 8 (`TrafficWandCore.LaunchArguments`) and
 Task 11 (`App.BrowserLauncher`). The argv contract below is the spec those tasks

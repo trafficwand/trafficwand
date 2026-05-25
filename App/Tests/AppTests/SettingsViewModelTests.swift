@@ -27,6 +27,8 @@ final class SettingsViewModelTests: XCTestCase {
         var loaded: AppConfig
         private(set) var saved: [AppConfig] = []
         var loadError: Error?
+        /// When set, `save` records the attempt then throws (mirrors a disk error).
+        var saveError: Error?
 
         init(loaded: AppConfig) {
             self.loaded = loaded
@@ -39,6 +41,7 @@ final class SettingsViewModelTests: XCTestCase {
 
         func save(_ config: AppConfig) throws {
             saved.append(config)
+            if let saveError { throw saveError }
             // Mirror persistence so a subsequent load reflects the saved value.
             loaded = config
         }
@@ -229,6 +232,33 @@ final class SettingsViewModelTests: XCTestCase {
 
         XCTAssertEqual(vm.fallback, .lastUsed)
         XCTAssertEqual(store.lastSaved?.fallback, .lastUsed)
+        XCTAssertEqual(store.saveCount, 1)
+    }
+
+    // MARK: - persist() save-error path
+
+    func testAddRuleKeepsInMemoryStateWhenSaveThrows() {
+        let (vm, store) = makeViewModel(config: AppConfig(rules: [], fallback: .picker))
+        vm.load()
+        // Make the next save fail (e.g. disk error); the mutation must still be
+        // reflected in memory so the UI shows the user's intent.
+        store.saveError = ConfigStoreError.corruptConfiguration
+
+        let newRule = Rule(pattern: "*.example.com", target: chromeTarget(), isEnabled: true)
+        vm.addRule(newRule)
+
+        XCTAssertEqual(vm.rules, [newRule], "Mutation is kept in memory even when save fails.")
+        XCTAssertEqual(store.saveCount, 1, "A save was attempted.")
+    }
+
+    func testSetFallbackKeepsInMemoryStateWhenSaveThrows() {
+        let (vm, store) = makeViewModel(config: AppConfig(rules: [], fallback: .picker))
+        vm.load()
+        store.saveError = ConfigStoreError.corruptConfiguration
+
+        vm.setFallback(.lastUsed)
+
+        XCTAssertEqual(vm.fallback, .lastUsed, "Fallback change is kept in memory even when save fails.")
         XCTAssertEqual(store.saveCount, 1)
     }
 

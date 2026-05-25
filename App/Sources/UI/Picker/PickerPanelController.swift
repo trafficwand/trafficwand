@@ -22,7 +22,7 @@ import os
 /// constructible and its wiring is reviewable; the live panel display + keyboard
 /// handling are the untested parts (Post-Completion manual verification).
 @MainActor
-final class PickerPanelController: PickerPresenting {
+final class PickerPanelController: NSObject, PickerPresenting, NSWindowDelegate {
     private static let logger = Logger(subsystem: "com.tomakado.TrafficWand", category: "picker")
 
     private let launcher: BrowserLaunching
@@ -38,6 +38,7 @@ final class PickerPanelController: PickerPresenting {
     init(launcher: BrowserLaunching, lastUsedStore: LastUsedRecording) {
         self.launcher = launcher
         self.lastUsedStore = lastUsedStore
+        super.init()
     }
 
     // MARK: - PickerPresenting
@@ -64,21 +65,28 @@ final class PickerPanelController: PickerPresenting {
 
     /// Launches the chosen target and records it as last-used, then dismisses.
     ///
-    /// Records last-used regardless of whether the browser resolves, mirroring
-    /// `RoutingService.open` so a `.lastUsed` fallback reflects the user's most
-    /// recent intent. A missing browser (no `appURL`) or a launch failure is
-    /// logged, never fatal.
+    /// If the selected target's browser cannot be resolved among `browsers` (it
+    /// should not happen — the picker only offers targets from that very list — but
+    /// defend against it), the link is NOT dropped: the picker is re-presented so
+    /// the user can pick again, and the unresolvable target is NOT recorded as
+    /// last-used. On a resolvable selection, last-used is recorded and the chosen
+    /// target launched; a launch failure is logged, never fatal.
     private func handleSelection(target: BrowserTarget, url: URL, browsers: [Browser]) {
+        guard let browser = browsers.first(where: { $0.bundleID == target.bundleID }) else {
+            Self.logger.error(
+                """
+                Picker selected a target with no installed browser: \
+                \(target.bundleID, privacy: .public); re-presenting picker
+                """
+            )
+            // Recover rather than lose the link: show the picker again.
+            presentPicker(url: url, browsers: browsers)
+            return
+        }
+
         lastUsedStore.set(target)
 
         defer { dismiss() }
-
-        guard let browser = browsers.first(where: { $0.bundleID == target.bundleID }) else {
-            Self.logger.error(
-                "Picker selected a target with no installed browser: \(target.bundleID, privacy: .public)"
-            )
-            return
-        }
 
         do {
             try launcher.launch(target: target, browser: browser, url: url)
@@ -110,6 +118,10 @@ final class PickerPanelController: PickerPresenting {
         let hosting = NSHostingController(rootView: view)
         let panel = NSPanel(contentViewController: hosting)
         panel.styleMask = [.titled, .closable, .utilityWindow, .nonactivatingPanel]
+        // Observe the title-bar close button: closing that way bypasses the
+        // in-view Cancel, so clear our retained reference (treat it as a cancel —
+        // the link simply isn't opened) instead of leaking the panel.
+        panel.delegate = self
         panel.title = "Open Link"
         panel.isFloatingPanel = true
         panel.level = .floating
@@ -126,7 +138,22 @@ final class PickerPanelController: PickerPresenting {
 
     /// Closes and releases the current panel, if any.
     private func dismiss() {
-        panel?.orderOut(nil)
+        // Avoid re-entrancy with `windowWillClose` (orderOut does not post that
+        // notification, but clearing first keeps the delegate callback a no-op).
+        let current = panel
+        panel = nil
+        current?.delegate = nil
+        current?.orderOut(nil)
+    }
+
+    // MARK: - NSWindowDelegate
+
+    /// Handles the title-bar close button: the user dismissed the picker without
+    /// choosing, so just drop our retained reference (a cancel — the link is not
+    /// opened) and avoid leaking the panel.
+    func windowWillClose(_ notification: Notification) {
+        guard (notification.object as? NSPanel) === panel else { return }
+        panel?.delegate = nil
         panel = nil
     }
 }
