@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: go-task/setup-task@v1
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      - name: Lint
+        run: task lint
+
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: go-task/setup-task@v1
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Build
+        run: task build
+
+  test:
+    runs-on: macos-26
+    strategy:
+      fail-fast: false
+      matrix:
+        leg: [core, app]
+    name: test (${{ matrix.leg }})
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: go-task/setup-task@v1
+      - name: Install XcodeGen
+        if: matrix.leg == 'app'
+        run: brew install xcodegen
+      - name: Test Core (swift test + no-AppKit guard)
+        if: matrix.leg == 'core'
+        run: task test-core
+      - name: Test app (xcodebuild test)
+        if: matrix.leg == 'app'
+        run: task test
