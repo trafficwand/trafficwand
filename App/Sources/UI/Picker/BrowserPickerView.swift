@@ -67,6 +67,10 @@ struct BrowserPickerView: View {
         .frame(width: 390)
         .focusable()
         .focused($listFocused)
+        // Keep keyboard focus (so arrow keys / Return reach the list) but suppress
+        // the system focus ring — this is a transient panel, not a form field, so the
+        // blue outline around the whole content reads as a glitch.
+        .focusEffectDisabled()
         .onAppear { listFocused = true }
         .onKeyPress(.upArrow) {
             viewModel.moveSelection(by: -1)
