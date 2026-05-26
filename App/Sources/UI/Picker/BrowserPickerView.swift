@@ -65,6 +65,17 @@ struct BrowserPickerView: View {
         }
         .padding(16)
         .frame(width: 390)
+        // Paint the popup's own card: the hosting NSPanel is borderless and
+        // transparent, so this background IS what the user sees as the "popup".
+        // Solid system background + rounded corners approximates a sheet-style
+        // card (the rule editor uses native SwiftUI .sheet chrome, not custom
+        // styling — so this is the closest match achievable without a parent
+        // window to sheet against).
+        .background(Color(nsColor: .windowBackgroundColor), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        )
         .focusable()
         .focused($listFocused)
         // Keep keyboard focus (so arrow keys / Return reach the list) but suppress
