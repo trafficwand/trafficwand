@@ -12,4 +12,7 @@ DerivedData/
 Package.resolved
 .swiftpm/
 
+# Generated build info (regenerated per-build by `task build-info`)
+BuildInfo.xcconfig
+
 .claude/

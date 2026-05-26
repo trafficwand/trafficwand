@@ -49,7 +49,8 @@ final class AppMain: NSObject, NSApplicationDelegate {
         settingsWindowController = SettingsWindowController(viewModel: settingsViewModel)
 
         statusBarController = StatusBarController(
-            onOpenSettings: { [weak self] in self?.openSettings() }
+            onOpenSettings: { [weak self] in self?.openSettings() },
+            onOpenAbout: { [weak self] in self?.openAbout() }
         )
         Self.logger.log("TrafficWand launched.")
     }
@@ -74,6 +75,14 @@ final class AppMain: NSObject, NSApplicationDelegate {
     private func openSettings() {
         Self.logger.log("Opening Settings window.")
         settingsWindowController?.show()
+    }
+
+    /// Shows the Settings window deep-linked to the About tab (status-bar
+    /// "About TrafficWand…" item hook).
+    @MainActor
+    private func openAbout() {
+        Self.logger.log("Opening About (Settings → About tab).")
+        settingsWindowController?.show(initialTab: .about)
     }
 
     /// Assembles the real `RoutingService` from the concrete adapters.

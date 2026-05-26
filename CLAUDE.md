@@ -58,6 +58,13 @@ These protocols keep `NSWorkspace`/`Process`/filesystem out of the tested logic:
 When adding behavior that touches the system, define/extend a seam rather than calling
 `NSWorkspace`/`Process` directly from logic that should be testable.
 
+The `SettingsTab` enum + the `SettingsSelection` `@Observable` holder are the
+deep-link coordination value between `StatusBarController` ("About TrafficWand…"
+menu item) and `SettingsRootView`'s `TabView` selection. The holder is owned by
+`SettingsWindowController` (not by `@State` inside the view) so deep-link
+writes survive across `rootView` updates and stay externally observable in
+tests.
+
 ## Commands
 
 | Command          | What it does                                                      |
@@ -79,6 +86,26 @@ For a fast TDD loop on Core, prefer `task test-core` (plain `swift test`, no Xco
 - **XcodeGen** generates `TrafficWand.xcodeproj` from `project.yml`. The `.xcodeproj` is
   **generated, not committed** — run `task generate` after cloning or after changing
   `project.yml`. Do not hand-edit the generated project; edit `project.yml` instead.
+
+## Build-info / commit-hash injection
+
+The About tab surfaces the current short commit hash. To keep the embedded `Info.plist`
+**signed and authoritative**, the hash is injected the Xcode-native way, not by
+post-build PlistBuddy mutation (which would invalidate the code signature):
+
+1. `task build-info` (a dependency of `build`, `run`, `test`, and the default task)
+   writes `BuildInfo.xcconfig` at the repo root with `GIT_COMMIT = <short hash>`
+   (or `unknown` outside a git work tree).
+2. `project.yml` wires that xcconfig into the `TrafficWand` target via
+   `configFiles`, exposing `GIT_COMMIT` as a build setting.
+3. `App/Resources/Info.plist` declares `GitCommitHash = $(GIT_COMMIT)`. Xcode's
+   "Process Info.plist file" phase substitutes the value **before** `_CodeSign` runs,
+   so the embedded plist is final at signing time.
+4. `BuildInfo.current` reads `Bundle.main.infoDictionary["GitCommitHash"]` at runtime.
+
+`BuildInfo.xcconfig` is gitignored (regenerated per build). Do not "fix" this by
+shelling out PlistBuddy after `xcodebuild` — that breaks the signature on release
+builds.
 
 ## Working conventions
 

@@ -44,22 +44,48 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     /// testability; `AppMain` injects the real Settings-open hook.
     private let onOpenSettings: () -> Void
 
+    /// Invoked when the user picks "About TrafficWand". Defaults to a no-op
+    /// for testability; `AppMain` injects the real About-open hook (which
+    /// deep-links the Settings window to the About tab).
+    private let onOpenAbout: () -> Void
+
     /// The default-browser item, retained so `menuWillOpen` can refresh its
     /// title/checkmark to reflect the current default-handler status.
     private let defaultBrowserMenuItem = NSMenuItem()
+
+    /// Test seam: exposes the live `NSMenu` so tests can locate items by
+    /// title and invoke their `action` via `perform(_:with:)` without
+    /// driving a real status-item click. Safe to expose — the menu is fully
+    /// owned by this controller and is set non-nil at the end of `init` via
+    /// `configureMenu()`, so this access is always safe in practice.
+    var menuForTesting: NSMenu? { statusItem.menu }
+
+    /// Test-only: removes the underlying `NSStatusItem` from the system status
+    /// bar. Without this, each test that constructs a controller would leak a
+    /// menu-bar item into the host process for the full test run.
+    /// Production code never needs to remove the status item — the controller is
+    /// retained for the app's lifetime.
+    func removeStatusItemForTesting() {
+        NSStatusBar.system.removeStatusItem(statusItem)
+    }
 
     /// - Parameters:
     ///   - defaultBrowserManager: Source of truth for whether TrafficWand is the
     ///     default browser and the way to request becoming it.
     ///   - onOpenSettings: Hook invoked for the "Settings…" item. Defaults to a
     ///     no-op for testability; `AppMain` injects the real Settings-open hook.
+    ///   - onOpenAbout: Hook invoked for the "About TrafficWand" item. Defaults
+    ///     to a no-op for testability; `AppMain` injects a hook that opens the
+    ///     Settings window deep-linked to the About tab.
     init(
         defaultBrowserManager: DefaultBrowserManager = DefaultBrowserManager(),
-        onOpenSettings: @escaping () -> Void = {}
+        onOpenSettings: @escaping () -> Void = {},
+        onOpenAbout: @escaping () -> Void = {}
     ) {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.defaultBrowserManager = defaultBrowserManager
         self.onOpenSettings = onOpenSettings
+        self.onOpenAbout = onOpenAbout
         super.init()
         configureButton()
         configureMenu()
@@ -85,6 +111,18 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         menu.addItem(defaultBrowserMenuItem)
 
         menu.addItem(.separator())
+
+        let aboutItem = NSMenuItem(
+            title: "About TrafficWand",
+            action: #selector(openAbout),
+            keyEquivalent: ""
+        )
+        aboutItem.target = self
+        aboutItem.image = NSImage(
+            systemSymbolName: "info.circle",
+            accessibilityDescription: nil
+        )
+        menu.addItem(aboutItem)
 
         let settingsItem = NSMenuItem(
             title: "Settings…",
@@ -136,6 +174,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func openSettings() {
         onOpenSettings()
+    }
+
+    @objc private func openAbout() {
+        onOpenAbout()
     }
 
     @objc private func quit() {

@@ -47,6 +47,9 @@ targets:
       - path: App/Resources/AppIcon.icon
     dependencies:
       - package: TrafficWandCore
+    configFiles:
+      Debug: BuildInfo.xcconfig
+      Release: BuildInfo.xcconfig
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tomakado.TrafficWand

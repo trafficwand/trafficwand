@@ -56,15 +56,16 @@ run `task generate` after a fresh clone.
 
 All workflows go through the `Taskfile`:
 
-| Command          | What it does                                                              |
-| ---------------- | ------------------------------------------------------------------------- |
-| `task generate`  | Generate `TrafficWand.xcodeproj` from `project.yml` (XcodeGen).           |
-| `task build`     | Build the app target (`xcodebuild build`).                                |
-| `task run`       | Build and launch the app.                                                 |
-| `task test`      | Run the app test target (`xcodebuild test`); includes Core via SPM.       |
-| `task test-core` | Run the pure Core package tests (`swift test`) + the no-AppKit guard.     |
-| `task lint`      | Run SwiftLint across the repo.                                            |
-| `task`           | Default: generate + build + lint + all tests.                            |
+| Command           | What it does                                                                                                  |
+| ----------------- | ------------------------------------------------------------------------------------------------------------- |
+| `task generate`   | Generate `TrafficWand.xcodeproj` from `project.yml` (XcodeGen).                                               |
+| `task build`      | Build the app target (`xcodebuild build`).                                                                    |
+| `task build-info` | Write `BuildInfo.xcconfig` with the current short git commit hash (auto-run by `build`/`run`/`test`/default). |
+| `task run`        | Build and launch the app.                                                                                     |
+| `task test`       | Run the app test target (`xcodebuild test`); includes Core via SPM.                                           |
+| `task test-core`  | Run the pure Core package tests (`swift test`) + the no-AppKit guard.                                         |
+| `task lint`       | Run SwiftLint across the repo.                                                                                |
+| `task`            | Default: generate + build + lint + all tests.                                                                 |
 
 Typical first run:
 
@@ -199,3 +200,10 @@ is signed with a Developer ID Application certificate, runs with **Hardened Runt
 
 Full signing/notarization/DMG packaging is out of scope for v1 — see the
 **Post-Completion** section of the implementation plan for the distribution checklist.
+
+---
+
+## License
+
+TrafficWand is released under the MIT License. See [`LICENSE`](LICENSE) for the
+full text.

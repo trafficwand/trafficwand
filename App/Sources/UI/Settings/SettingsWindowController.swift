@@ -26,6 +26,16 @@ final class SettingsWindowController {
     private let defaultBrowserManager: DefaultBrowserManager
     private var windowController: NSWindowController?
 
+    /// The live tab-selection observable.
+    ///
+    /// Owned here (not by `SettingsRootView`) so `show(initialTab:)` can write
+    /// the requested tab without rebuilding the hosting controller's `rootView`
+    /// and without relying on SwiftUI `@State`, which would preserve its prior
+    /// value across `rootView` reassignments and silently swallow deep-link
+    /// requests after the window's first mount. Exposed `internal` so tests can
+    /// observe the actual UI-bound selection, not a bookkeeping mirror.
+    let selection = SettingsSelection()
+
     /// Observer token for the window's `didBecomeKeyNotification`, kept so it can be
     /// removed and so the closure (which captures `self` weakly) doesn't leak.
     ///
@@ -52,9 +62,20 @@ final class SettingsWindowController {
     ///
     /// Activates the app and orders the window to the front so it is visible and
     /// focused even though the app is an accessory agent.
-    func show() {
+    ///
+    /// - Parameter initialTab: When non-nil, writes the value into the
+    ///   controller-owned `selection` observable so the bound `TabView` switches
+    ///   to that tab (used by the "About TrafficWand…" menu item). When nil,
+    ///   the current selection is left untouched — re-opening from `Settings…`
+    ///   preserves whatever tab the user was last on instead of pinning to a
+    ///   previous deep-link target.
+    func show(initialTab: SettingsTab? = nil) {
         let controller = windowController ?? makeWindowController()
         windowController = controller
+
+        if let initialTab {
+            selection.tab = initialTab
+        }
 
         // Refresh content each time it is shown so it reflects the latest config.
         viewModel.load()
@@ -64,10 +85,19 @@ final class SettingsWindowController {
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
+    /// Test-only: closes the live window (if any). Production code never needs
+    /// to dispose the window controller — `SettingsWindowController` itself is
+    /// retained for the app's lifetime and the window is hidden, not destroyed,
+    /// on close.
+    func closeWindowForTesting() {
+        windowController?.close()
+    }
+
     private func makeWindowController() -> NSWindowController {
         let root = SettingsRootView(
             viewModel: viewModel,
-            defaultBrowserManager: defaultBrowserManager
+            defaultBrowserManager: defaultBrowserManager,
+            selection: selection
         )
         let hosting = NSHostingController(rootView: root)
 
