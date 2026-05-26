@@ -18,7 +18,7 @@ final class LastUsedStoreTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        suiteName = "com.tomakado.TrafficWand.tests.lastUsed.\(UUID().uuidString)"
+        suiteName = "io.tomakado.TrafficWand.tests.lastUsed.\(UUID().uuidString)"
         defaults = UserDefaults(suiteName: suiteName)
         store = LastUsedStore(defaults: defaults)
     }

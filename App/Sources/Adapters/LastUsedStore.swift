@@ -13,7 +13,7 @@ import TrafficWandCore
 /// trip trivial to reason about and test.
 public struct LastUsedStore {
     /// The single defaults key holding the encoded last-used target.
-    static let defaultsKey = "com.tomakado.TrafficWand.lastUsedTarget"
+    static let defaultsKey = "io.tomakado.TrafficWand.lastUsedTarget"
 
     private let defaults: UserDefaults
 

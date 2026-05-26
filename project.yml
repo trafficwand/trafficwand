@@ -1,7 +1,7 @@
 name: TrafficWand
 
 options:
-  bundleIdPrefix: com.tomakado
+  bundleIdPrefix: io.tomakado
   deploymentTarget:
     macOS: "26.0"
   createIntermediateGroups: true
@@ -52,7 +52,7 @@ targets:
       Release: BuildInfo.xcconfig
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.tomakado.TrafficWand
+        PRODUCT_BUNDLE_IDENTIFIER: io.tomakado.TrafficWand
         PRODUCT_NAME: TrafficWand
         INFOPLIST_FILE: App/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: App/Resources/TrafficWand.entitlements
@@ -70,7 +70,7 @@ targets:
       - package: TrafficWandCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.tomakado.TrafficWandTests
+        PRODUCT_BUNDLE_IDENTIFIER: io.tomakado.TrafficWandTests
         GENERATE_INFOPLIST_FILE: YES
 
 schemes:

@@ -14,7 +14,7 @@ final class BrowserProviderMergeTests: XCTestCase {
 
     /// TrafficWand's own bundle identifier (matches `project.yml`'s
     /// `PRODUCT_BUNDLE_IDENTIFIER`). The merge helper must never list itself.
-    private let selfBundleID = "com.tomakado.TrafficWand"
+    private let selfBundleID = "io.tomakado.TrafficWand"
 
     // MARK: - Stub ProfileReading
 

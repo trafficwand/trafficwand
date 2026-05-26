@@ -6,5 +6,5 @@ import Foundation
 /// the app is defined in exactly one place.
 enum AppIdentity {
     /// The logging subsystem shared by every `os.Logger` in the app.
-    static let subsystem = "com.tomakado.TrafficWand"
+    static let subsystem = "io.tomakado.TrafficWand"
 }

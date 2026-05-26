@@ -12,8 +12,8 @@ final class DefaultBrowserStatusTests: XCTestCase {
     func testMatchingBundleIDIsDefault() {
         XCTAssertTrue(
             DefaultBrowserManager.isCurrentDefault(
-                currentDefaultBundleID: "com.tomakado.TrafficWand",
-                ourBundleID: "com.tomakado.TrafficWand"
+                currentDefaultBundleID: "io.tomakado.TrafficWand",
+                ourBundleID: "io.tomakado.TrafficWand"
             )
         )
     }
@@ -21,8 +21,8 @@ final class DefaultBrowserStatusTests: XCTestCase {
     func testCaseInsensitiveMatchIsDefault() {
         XCTAssertTrue(
             DefaultBrowserManager.isCurrentDefault(
-                currentDefaultBundleID: "COM.TOMAKADO.trafficwand",
-                ourBundleID: "com.tomakado.TrafficWand"
+                currentDefaultBundleID: "IO.TOMAKADO.trafficwand",
+                ourBundleID: "io.tomakado.TrafficWand"
             )
         )
     }
@@ -31,7 +31,7 @@ final class DefaultBrowserStatusTests: XCTestCase {
         XCTAssertFalse(
             DefaultBrowserManager.isCurrentDefault(
                 currentDefaultBundleID: "com.google.Chrome",
-                ourBundleID: "com.tomakado.TrafficWand"
+                ourBundleID: "io.tomakado.TrafficWand"
             )
         )
     }
@@ -40,7 +40,7 @@ final class DefaultBrowserStatusTests: XCTestCase {
         XCTAssertFalse(
             DefaultBrowserManager.isCurrentDefault(
                 currentDefaultBundleID: nil,
-                ourBundleID: "com.tomakado.TrafficWand"
+                ourBundleID: "io.tomakado.TrafficWand"
             )
         )
     }
@@ -49,7 +49,7 @@ final class DefaultBrowserStatusTests: XCTestCase {
         XCTAssertFalse(
             DefaultBrowserManager.isCurrentDefault(
                 currentDefaultBundleID: "",
-                ourBundleID: "com.tomakado.TrafficWand"
+                ourBundleID: "io.tomakado.TrafficWand"
             )
         )
     }
