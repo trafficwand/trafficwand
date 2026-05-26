@@ -68,7 +68,7 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     private func configureButton() {
         if let button = statusItem.button {
             button.image = NSImage(
-                systemSymbolName: "wand.and.stars",
+                systemSymbolName: "arrow.trianglehead.branch",
                 accessibilityDescription: "TrafficWand"
             )
             button.image?.isTemplate = true

@@ -44,8 +44,7 @@ targets:
     platform: macOS
     sources:
       - path: App/Sources
-    resources:
-      - path: App/Resources/Assets.xcassets
+      - path: App/Resources/AppIcon.icon
     dependencies:
       - package: TrafficWandCore
     settings:
