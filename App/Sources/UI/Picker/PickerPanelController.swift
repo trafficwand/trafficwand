@@ -17,12 +17,17 @@ import os
 ///    the user ticked "remember") persist a routing rule via the injected
 ///    `RulePersisting`, then dismiss;
 ///  - **cancel** → just dismiss;
-///  - **copy URL** → write the string to the general `NSPasteboard`.
+///  - **copy URL** → write the string to the general `NSPasteboard`;
+///  - **open settings** → invoke the injected `onOpenSettings` closure with the
+///    requested `SettingsTab` (gear button → `.rules`, `⌘,` → `.general`), then
+///    dismiss. Routed through `handleOpenSettings(tab:)`, which carries the same
+///    `isDismissing` re-entrancy protection as `handleSelection` so a stray
+///    second click / repeated keypress during the fade is a no-op.
 ///
-/// The launcher, last-used store, rule persister, and icon provider are injected so
-/// the controller is constructible and its wiring is reviewable; the live panel
-/// display + keyboard handling are the untested parts (Post-Completion manual
-/// verification).
+/// The launcher, last-used store, rule persister, icon provider, and
+/// settings-opener are injected so the controller is constructible and its wiring
+/// is reviewable; the live panel display + keyboard handling are the untested
+/// parts (Post-Completion manual verification).
 @MainActor
 final class PickerPanelController: NSObject, PickerPresenting {
     private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "picker")
@@ -35,17 +40,23 @@ final class PickerPanelController: NSObject, PickerPresenting {
     private let lastUsedStore: LastUsedRecording
     private let rulePersister: RulePersisting
     private let iconProvider: BrowserIconProviding
+    private let onOpenSettings: @MainActor (SettingsTab) -> Void
 
     /// The currently-shown panel, retained while visible so it is not deallocated
     /// mid-display; cleared on dismiss.
     private var panel: NSPanel?
 
-    /// Re-entrancy guard for `handleSelection`. The animated dismiss keeps the
-    /// panel hit-testable for ~0.18s while alpha fades; a second click (or
-    /// repeated Return) on a row during that window would otherwise re-enter
-    /// `handleSelection` and launch a second browser / overwrite last-used /
-    /// re-persist the remember rule. Set to true at the start of `dismiss()`,
-    /// reset when the fade completes or when a fresh panel is shown.
+    /// Whether a picker panel is currently presented. Internal so unit tests can
+    /// observe dismiss-on-action behaviour without driving the live AppKit fade.
+    var isPickerVisible: Bool { panel != nil }
+
+    /// Re-entrancy guard for `handleSelection` and `handleOpenSettings`. The
+    /// animated dismiss keeps the panel hit-testable for ~0.18s while alpha
+    /// fades; a second click (or repeated Return) on a row during that window
+    /// would otherwise re-enter `handleSelection` and launch a second browser /
+    /// overwrite last-used / re-persist the remember rule. Set to true at the
+    /// start of `dismiss()`, reset when the fade completes or when a fresh
+    /// panel is shown.
     private var isDismissing = false
 
     /// - Parameters:
@@ -53,23 +64,41 @@ final class PickerPanelController: NSObject, PickerPresenting {
     ///   - lastUsedStore: Records the chosen target as last-used on selection.
     ///   - rulePersister: Persists a routing rule when the user ticks "remember".
     ///   - iconProvider: Supplies each browser's real app icon to the picker view.
+    ///   - onOpenSettings: Invoked when the user asks to open Settings from the
+    ///     picker (gear button → `.rules`, `⌘,` → `.general`). The controller
+    ///     calls this with the requested tab, then animates the panel out.
     init(
         launcher: BrowserLaunching,
         lastUsedStore: LastUsedRecording,
         rulePersister: RulePersisting,
-        iconProvider: BrowserIconProviding
+        iconProvider: BrowserIconProviding,
+        onOpenSettings: @escaping @MainActor (SettingsTab) -> Void
     ) {
         self.launcher = launcher
         self.lastUsedStore = lastUsedStore
         self.rulePersister = rulePersister
         self.iconProvider = iconProvider
+        self.onOpenSettings = onOpenSettings
         super.init()
     }
 
     // MARK: - PickerPresenting
 
     func presentPicker(url: URL, browsers: [Browser]) {
-        let viewModel = PickerViewModel(
+        let viewModel = makeViewModel(url: url, browsers: browsers)
+        showPanel(hosting: BrowserPickerView(viewModel: viewModel, iconProvider: iconProvider))
+    }
+
+    /// Builds the `PickerViewModel` for `url`/`browsers` with all outcome
+    /// closures wired to this controller.
+    ///
+    /// Internal (not private) so unit tests can construct the wired view model
+    /// without driving the live `NSPanel`. The closures match what
+    /// `presentPicker` used to inline — selection routes through
+    /// `handleSelection`, cancel through `dismiss`, copy through
+    /// `copyToPasteboard`, and open-settings through `handleOpenSettings`.
+    func makeViewModel(url: URL, browsers: [Browser]) -> PickerViewModel {
+        PickerViewModel(
             url: url,
             browsers: browsers,
             onSelect: { [weak self] target, remember in
@@ -80,10 +109,11 @@ final class PickerPanelController: NSObject, PickerPresenting {
             },
             onCopy: { string in
                 Self.copyToPasteboard(string)
+            },
+            onOpenSettings: { [weak self] tab in
+                self?.handleOpenSettings(tab: tab)
             }
         )
-
-        showPanel(hosting: BrowserPickerView(viewModel: viewModel, iconProvider: iconProvider))
     }
 
     // MARK: - Outcomes
@@ -129,6 +159,24 @@ final class PickerPanelController: NSObject, PickerPresenting {
             let detail = "\(url.absoluteString) in \(target.bundleID): \(String(describing: error))"
             Self.logger.error("Picker launch failed: \(detail, privacy: .public)")
         }
+    }
+
+    /// Handles a request from the picker to open Settings on `tab` (gear
+    /// button → `.rules`, `⌘,` → `.general`).
+    ///
+    /// Re-entrancy-guarded by `isDismissing` (mirroring `handleSelection`) so a
+    /// stray second click or repeated `⌘,` press during the fade can't invoke
+    /// the opener twice.
+    ///
+    /// `dismiss()` runs **before** the opener: the fade is asynchronous but the
+    /// opener activates Settings synchronously, so starting the fade first
+    /// avoids the `.floating` picker stacking briefly above the Settings window.
+    ///
+    /// Internal (not private) so unit tests can call it directly.
+    func handleOpenSettings(tab: SettingsTab) {
+        guard !isDismissing else { return }
+        dismiss()
+        onOpenSettings(tab)
     }
 
     /// Writes `string` to the general pasteboard (the picker's "copy URL").

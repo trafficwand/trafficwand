@@ -41,11 +41,16 @@ final class PickerViewModelTests: XCTestCase {
     ///
     /// `selectedTarget` is the chosen `BrowserTarget` (nil until a selection is
     /// made); `rememberFlag` is the remember-choice flag passed alongside the
-    /// selection; `copiedString` is the copied URL string (nil until "copy URL").
+    /// selection; `copiedString` is the copied URL string (nil until "copy URL");
+    /// `cancelCount` increments each time `onCancel` fires; `openedSettingsTabs`
+    /// accumulates each tab the view model asked to open (empty until
+    /// `openSettings(tab:)` is called).
     private final class Outcomes: @unchecked Sendable {
         var selectedTarget: BrowserTarget?
         var rememberFlag: Bool?
         var copiedString: String?
+        var cancelCount: Int = 0
+        var openedSettingsTabs: [SettingsTab] = []
     }
 
     /// Builds a view model wired to a fresh `Outcomes` recorder, returning both.
@@ -61,8 +66,9 @@ final class PickerViewModelTests: XCTestCase {
                 outcomes.selectedTarget = target
                 outcomes.rememberFlag = remember
             },
-            onCancel: { },
-            onCopy: { outcomes.copiedString = $0 }
+            onCancel: { outcomes.cancelCount += 1 },
+            onCopy: { outcomes.copiedString = $0 },
+            onOpenSettings: { outcomes.openedSettingsTabs.append($0) }
         )
         return (vm, outcomes)
     }
@@ -112,6 +118,7 @@ final class PickerViewModelTests: XCTestCase {
 
         XCTAssertNil(outcomes.selectedTarget)
         XCTAssertNil(outcomes.copiedString)
+        XCTAssertEqual(outcomes.cancelCount, 1)
     }
 
     // MARK: - exposed url string
@@ -311,5 +318,28 @@ final class PickerViewModelTests: XCTestCase {
 
         vm.activateSelection()
         XCTAssertNil(outcomes.selectedTarget)
+    }
+
+    // MARK: - open settings
+
+    func testOpenSettingsRulesInvokesClosureWithRulesTab() {
+        let (vm, outcomes) = makeViewModel(browsers: [chrome])
+
+        vm.openSettings(tab: .rules)
+
+        XCTAssertEqual(outcomes.openedSettingsTabs, [.rules])
+        // Opening settings is not a selection / copy / cancel side-effect.
+        XCTAssertNil(outcomes.selectedTarget)
+        XCTAssertNil(outcomes.copiedString)
+        XCTAssertEqual(outcomes.cancelCount, 0)
+    }
+
+    func testOpenSettingsGeneralInvokesClosureWithGeneralTab() {
+        let (vm, outcomes) = makeViewModel(browsers: [chrome])
+
+        vm.openSettings(tab: .general)
+
+        XCTAssertEqual(outcomes.openedSettingsTabs, [.general])
+        XCTAssertEqual(outcomes.cancelCount, 0)
     }
 }

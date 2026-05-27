@@ -162,7 +162,9 @@ For links that match no rule, choose one of:
   (arrow keys move the highlight, Return activates the highlighted destination, Esc
   cancels) or the mouse. Tick **"Remember choice for `<domain>`"** before choosing to
   persist a rule that automatically routes that whole domain (apex + subdomains) to the
-  picked browser/profile from then on. You can also copy the URL or cancel.
+  picked browser/profile from then on. You can also copy the URL or cancel. The gear in
+  the picker header opens Settings on the Rules tab, and **⌘,** opens Settings on the
+  General tab — handy when the menu-bar icon is hidden behind the MacBook notch.
 - **Single default browser** — the link always opens in one configured browser/profile,
   no panel.
 - **Last-used** — the link reuses whichever browser/profile you last routed to. If

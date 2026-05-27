@@ -5,7 +5,7 @@ import TrafficWandCore
 /// The observable state and decision logic backing the picker popup.
 ///
 /// This is the fully unit-testable heart of the picker. It holds the URL being
-/// routed and the offered browsers, and turns a user action into one of three
+/// routed and the offered browsers, and turns a user action into one of four
 /// outcomes, each delivered through an injected closure so the view model itself
 /// performs **no** AppKit / launching / pasteboard work:
 ///
@@ -19,6 +19,9 @@ import TrafficWandCore
 ///    (what string to copy) testable.
 ///  - `cancel()` → invokes `onCancel`; no selection is produced (the picker is
 ///    simply dismissed and the link dropped).
+///  - `openSettings(tab:)` → hands the requested `SettingsTab` to
+///    `onOpenSettings` (gear button → `.rules`, `⌘,` → `.general`); the
+///    controller performs the actual window open + picker dismiss.
 ///
 /// SwiftUI views observe the `@Observable` state (`selectableItems`,
 /// `selectedIndex`, `rememberChoice`, `rememberHost`) and call these methods; the
@@ -85,6 +88,10 @@ final class PickerViewModel {
     /// Delivers the URL string to copy (the actual pasteboard write is injected).
     private let onCopy: (String) -> Void
 
+    /// Invoked when the user asks to open Settings from the picker (gear icon or
+    /// `⌘,` shortcut). The argument is the deep-link tab to land on.
+    private let onOpenSettings: (SettingsTab) -> Void
+
     /// - Parameters:
     ///   - url: The link being routed.
     ///   - browsers: The browsers (with profiles) to offer.
@@ -93,18 +100,23 @@ final class PickerViewModel {
     ///   - onCancel: Invoked when the user dismisses the picker without choosing.
     ///   - onCopy: Receives the URL string when the user copies it; the caller
     ///     performs the actual pasteboard write.
+    ///   - onOpenSettings: Receives the `SettingsTab` the user asked to land on
+    ///     when opening Settings from the picker (gear → `.rules`, `⌘,` →
+    ///     `.general`).
     init(
         url: URL,
         browsers: [Browser],
         onSelect: @escaping (BrowserTarget, _ remember: Bool) -> Void,
         onCancel: @escaping () -> Void,
-        onCopy: @escaping (String) -> Void
+        onCopy: @escaping (String) -> Void,
+        onOpenSettings: @escaping (SettingsTab) -> Void
     ) {
         self.url = url
         self.browsers = browsers
         self.onSelect = onSelect
         self.onCancel = onCancel
         self.onCopy = onCopy
+        self.onOpenSettings = onOpenSettings
 
         // Flatten browsers → (default, then profiles) into one ordered list.
         self.selectableItems = browsers.flatMap { browser -> [SelectableItem] in
@@ -157,5 +169,14 @@ final class PickerViewModel {
     /// Cancels the picker: invokes `onCancel`, producing no selection.
     func cancel() {
         onCancel()
+    }
+
+    /// Asks the host to open Settings on the given tab via the injected closure.
+    ///
+    /// The view model itself doesn't dismiss the picker or touch any window — the
+    /// controller (`PickerPanelController.handleOpenSettings`) is responsible for
+    /// performing the actual open + dismiss when this fires.
+    func openSettings(tab: SettingsTab) {
+        onOpenSettings(tab)
     }
 }

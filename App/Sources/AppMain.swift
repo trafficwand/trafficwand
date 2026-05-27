@@ -37,16 +37,24 @@ final class AppMain: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Menu-bar agent: no Dock icon, no main menu activation.
         NSApp.setActivationPolicy(.accessory)
-        routingService = Self.makeRoutingService()
 
         // Settings window: the view model depends only on Core (FileConfigStore) and
         // the App provider seam (WorkspaceBrowserProvider); the window controller
         // hosts the SwiftUI views and activates the app when shown.
+        //
+        // Built BEFORE `makeRoutingService` so the opener closure passed into the
+        // routing pipeline can deep-link through `settingsWindowController` at
+        // invocation time (the closure routes through `self?.openSettings(tab:)`,
+        // which reads the live property — see `openSettings(tab:)`).
         let settingsViewModel = SettingsViewModel(
             configStore: FileConfigStore(directory: Self.configDirectory()),
             browserProvider: WorkspaceBrowserProvider()
         )
         settingsWindowController = SettingsWindowController(viewModel: settingsViewModel)
+
+        routingService = Self.makeRoutingService(
+            onOpenSettings: { [weak self] tab in self?.openSettings(tab: tab) }
+        )
 
         statusBarController = StatusBarController(
             onOpenSettings: { [weak self] in self?.openSettings() },
@@ -85,6 +93,13 @@ final class AppMain: NSObject, NSApplicationDelegate {
         settingsWindowController?.show(initialTab: .about)
     }
 
+    /// Deep-link variant of `openSettings()`: always lands on `tab`.
+    @MainActor
+    private func openSettings(tab: SettingsTab) {
+        Self.logger.log("Opening Settings window on tab: \(String(describing: tab), privacy: .public).")
+        settingsWindowController?.show(initialTab: tab)
+    }
+
     /// Assembles the real `RoutingService` from the concrete adapters.
     ///
     /// `FileConfigStore` points at `~/Library/Application Support/TrafficWand` and is
@@ -96,8 +111,14 @@ final class AppMain: NSObject, NSApplicationDelegate {
     /// presented by `PickerPanelController`, which reuses the same launcher +
     /// last-used store, persists remembered choices through `ConfigRuleStore`, and
     /// renders real browser icons via `WorkspaceBrowserIconProvider`.
+    ///
+    /// - Parameter onOpenSettings: closure invoked by the picker (gear icon /
+    ///   `⌘,` shortcut) to deep-link Settings to a specific tab. Threading it in
+    ///   as a parameter keeps this factory `static`.
     @MainActor
-    private static func makeRoutingService() -> RoutingService {
+    private static func makeRoutingService(
+        onOpenSettings: @escaping @MainActor (SettingsTab) -> Void
+    ) -> RoutingService {
         let configStore = FileConfigStore(directory: configDirectory())
         let launcher = BrowserLauncher()
         let lastUsedStore = LastUsedStore()
@@ -110,7 +131,8 @@ final class AppMain: NSObject, NSApplicationDelegate {
                 launcher: launcher,
                 lastUsedStore: lastUsedStore,
                 rulePersister: ConfigRuleStore(configStore: configStore),
-                iconProvider: WorkspaceBrowserIconProvider()
+                iconProvider: WorkspaceBrowserIconProvider(),
+                onOpenSettings: onOpenSettings
             )
         )
     }

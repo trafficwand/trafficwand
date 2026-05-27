@@ -64,6 +64,20 @@ struct BrowserPickerView: View {
             footer
         }
         .padding(16)
+        // Zero-frame button hosting the ⌘, shortcut as a background so it joins
+        // the responder chain without reserving layout space. Do NOT use
+        // `.hidden()` — it removes the view from SwiftUI's event-delivery
+        // hierarchy and the shortcut would silently fail.
+        .background(
+            Button("") {
+                viewModel.openSettings(tab: .general)
+            }
+            .keyboardShortcut(",", modifiers: .command)
+            .opacity(0)
+            .allowsHitTesting(false)
+            .frame(width: 0, height: 0)
+            .accessibilityHidden(true)
+        )
         .frame(width: 390)
         // Paint the popup's own card: the hosting NSPanel is borderless and
         // transparent, so this background IS what the user sees as the "popup".
@@ -98,19 +112,37 @@ struct BrowserPickerView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                Image(systemName: "link")
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "link")
+                        .foregroundStyle(.secondary)
+                    Text("Open Link In…")
+                        .font(.headline)
+                }
+                Text(viewModel.urlString)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
-                Text("Open Link In…")
-                    .font(.headline)
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+                    .textSelection(.enabled)
             }
-            Text(viewModel.urlString)
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .lineLimit(2)
-                .truncationMode(.middle)
-                .textSelection(.enabled)
+
+            Spacer(minLength: 0)
+
+            Button {
+                viewModel.openSettings(tab: .rules)
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 14, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .padding(4)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .pointerStyle(.link)
+            .help("Edit Rules")
+            .accessibilityLabel("Edit Rules")
         }
     }
 
@@ -253,7 +285,8 @@ private func previewViewModel(browsers: [Browser]) -> PickerViewModel {
         browsers: browsers,
         onSelect: { _, _ in },
         onCancel: {},
-        onCopy: { _ in }
+        onCopy: { _ in },
+        onOpenSettings: { _ in }
     )
 }
 
