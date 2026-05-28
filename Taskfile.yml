@@ -75,3 +75,18 @@ tasks:
       - |
         APP_PATH=$(xcodebuild -project TrafficWand.xcodeproj -scheme {{.SCHEME}} -showBuildSettings 2>/dev/null | awk -F' = ' '/ BUILT_PRODUCTS_DIR /{d=$2}/ FULL_PRODUCT_NAME /{n=$2}END{print d"/"n}')
         open "$APP_PATH"
+
+  dmg:
+    desc: Build, sign, notarize, and package the app as a DMG (release)
+    # Requires four env vars: DEVELOPER_ID_APPLICATION, APPLE_ID, APPLE_TEAM_ID,
+    # APPLE_APP_SPECIFIC_PASSWORD. Run `./scripts/build-dmg.sh --preflight` to
+    # validate them (and tool availability) without invoking the expensive
+    # archive/notarize steps.
+    #
+    # `deps: [generate]` is for .xcodeproj freshness + BuildInfo.xcconfig
+    # materialization, not for compilation. The script's `xcodebuild archive`
+    # does its own full Release build from scratch — depending on `build` here
+    # would just build the Debug configuration uselessly before the archive.
+    deps: [generate]
+    cmds:
+      - ./scripts/build-dmg.sh

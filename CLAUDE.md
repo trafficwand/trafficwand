@@ -75,6 +75,7 @@ tests.
 | `task test`      | Run the app test target (`xcodebuild test`, includes Core).     |
 | `task test-core` | Run Core tests (`swift test`) + the no-AppKit import guard.     |
 | `task lint`      | Run SwiftLint.                                                   |
+| `task dmg`       | Build, sign, notarize, and package the app as a DMG (release).  |
 | `task`           | Default: generate + build + lint + test-core + test.            |
 
 For a fast TDD loop on Core, prefer `task test-core` (plain `swift test`, no Xcode build).
@@ -106,6 +107,30 @@ post-build PlistBuddy mutation (which would invalidate the code signature):
 `BuildInfo.xcconfig` is gitignored (regenerated per build). Do not "fix" this by
 shelling out PlistBuddy after `xcodebuild` — that breaks the signature on release
 builds.
+
+## Release packaging
+
+`task dmg` produces a Developer-ID-signed, notarized, stapled, DMG-packaged release at
+`dist/TrafficWand-<version>.dmg` in a single non-interactive invocation. The pipeline
+lives in `scripts/build-dmg.sh` (archive → exportArchive → notarize .app → staple →
+`create-dmg` → sign .dmg → notarize .dmg → staple) and expects four environment variables:
+`DEVELOPER_ID_APPLICATION` (full identity name, e.g.
+`"Developer ID Application: Name (TEAMID)"`), `APPLE_ID`, `APPLE_TEAM_ID`, and
+`APPLE_APP_SPECIFIC_PASSWORD`. These can be exported in the shell or, more
+conveniently, placed in a gitignored `.dmg.env` at the repo root (copy
+`.dmg.env.example`) — `build-dmg.sh` sources it automatically at startup, before
+preflight. Run `scripts/build-dmg.sh --preflight` to validate env
+vars, tool availability (`create-dmg`, `xcodebuild`, `xcrun notarytool`), and signing
+identity presence without invoking the expensive archive/notarize steps — use this to
+verify a fresh setup before the first real `task dmg` run.
+
+`APPLE_APP_SPECIFIC_PASSWORD` is passed to `xcrun notarytool` as a CLI argument, which
+makes it visible via `ps` on multi-user hosts. This is intentional: env-var-based auth
+lets the same script work locally and in GitHub Actions Secrets without a separate
+`xcrun notarytool store-credentials` bootstrap step. Safe on single-user macOS and
+single-tenant GitHub Actions runners (macOS defaults to hiding command-line args from
+other users). Do NOT run `task dmg` on a shared/multi-user host without first migrating
+the script to `xcrun notarytool store-credentials` + `--keychain-profile`.
 
 ## Working conventions
 

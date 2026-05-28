@@ -15,4 +15,11 @@ Package.resolved
 # Generated build info (regenerated per-build by `task build-info`)
 BuildInfo.xcconfig
 
+# Release packaging artifacts (task dmg)
+build/
+dist/
+
+# Local signing/notarization credentials for `task dmg` (never commit secrets)
+.dmg.env
+
 .claude/

@@ -47,6 +47,18 @@ for the full investigation behind this choice.
 
 - [Task](https://taskfile.dev) (`task`) as the command runner.
 
+For building a **release DMG** (`task dmg`) you additionally need:
+
+- Enrollment in the [Apple Developer Program](https://developer.apple.com/programs/) (for
+  a Developer ID Application certificate + notarization access).
+- [`create-dmg`](https://github.com/create-dmg/create-dmg), installed via Homebrew:
+
+  ```sh
+  brew install create-dmg
+  ```
+
+See §Distribution below for the full release setup.
+
 The `.xcodeproj` is **generated** by XcodeGen from `project.yml` and is not committed —
 run `task generate` after a fresh clone.
 
@@ -65,6 +77,7 @@ All workflows go through the `Taskfile`:
 | `task test`       | Run the app test target (`xcodebuild test`); includes Core via SPM.                                           |
 | `task test-core`  | Run the pure Core package tests (`swift test`) + the no-AppKit guard.                                         |
 | `task lint`       | Run SwiftLint across the repo.                                                                                |
+| `task dmg`        | Build, sign, notarize, and package the app as a DMG (release — see §Distribution for setup).                  |
 | `task`            | Default: generate + build + lint + all tests.                                                                 |
 
 Typical first run:
@@ -195,13 +208,46 @@ notes.
 
 ## Distribution
 
-TrafficWand is designed for **non-sandboxed Developer ID distribution** (so it can read
-browser profile configs and launch profiles without sandbox exceptions). A release build
-is signed with a Developer ID Application certificate, runs with **Hardened Runtime**, is
-**notarized** (and stapled) by Apple, and packaged as a **DMG**.
+TrafficWand is distributed as a **non-sandboxed Developer ID** app (so it can read
+browser profile configs and launch profiles without sandbox exceptions): signed with a
+Developer ID Application certificate, **Hardened Runtime** enabled, **notarized** and
+stapled by Apple, packaged as a **DMG**.
 
-Full signing/notarization/DMG packaging is out of scope for v1 — see the
-**Post-Completion** section of the implementation plan for the distribution checklist.
+Building a release DMG requires enrollment in the Apple Developer Program. One-time
+setup:
+
+```sh
+brew install create-dmg
+```
+
+Then provide the four notary credentials. The easiest way is a gitignored
+`.dmg.env` file at the repo root — copy the template and fill it in once:
+
+```sh
+cp .dmg.env.example .dmg.env
+$EDITOR .dmg.env
+```
+
+`.dmg.env.example` documents where each value comes from (Team ID, the Developer ID
+Application certificate, and the app-specific password). `scripts/build-dmg.sh` sources
+`.dmg.env` automatically. Alternatively, export the four vars
+(`DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_SPECIFIC_PASSWORD`)
+in your shell — in CI they come from environment secrets, so no file is needed there.
+
+Validate the setup without running the full pipeline:
+
+```sh
+scripts/build-dmg.sh --preflight
+```
+
+Then produce a release:
+
+```sh
+task dmg
+```
+
+Output lands at `dist/TrafficWand-<version>.dmg`, ready to upload as a GitHub release
+asset.
 
 ---
 
