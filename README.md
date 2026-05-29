@@ -249,6 +249,22 @@ task dmg
 Output lands at `dist/TrafficWand-<version>.dmg`, ready to upload as a GitHub release
 asset.
 
+### Automated releases
+
+Pushing a `v*.*.*` tag does this automatically. The
+[`release.yml`](.github/workflows/release.yml) workflow runs the same `task dmg`
+pipeline in CI and creates (or updates) the matching GitHub Release with auto-generated
+notes and the signed, notarized DMG attached. Bump `MARKETING_VERSION` in `project.yml`
+to match the tag before pushing — a mismatch fails the job before the build. Grab the
+signed DMG from the [Releases](../../releases) page.
+
+This requires six repository secrets (Settings → Secrets and variables → Actions): the
+four notary credentials above (`DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_TEAM_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD`) plus, so CI can import the signing identity into a
+throwaway keychain, `MACOS_CERTIFICATE_P12_BASE64` (base64 of the exported `.p12`
+containing the certificate **and** its private key) and `MACOS_CERTIFICATE_PASSWORD`
+(the `.p12` password).
+
 ---
 
 ## License

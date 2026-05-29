@@ -132,6 +132,30 @@ single-tenant GitHub Actions runners (macOS defaults to hiding command-line args
 other users). Do NOT run `task dmg` on a shared/multi-user host without first migrating
 the script to `xcrun notarytool store-credentials` + `--keychain-profile`.
 
+### Tag-triggered CI release
+
+Pushing a `v*.*.*` tag triggers `.github/workflows/release.yml`, which creates (or
+updates) the matching GitHub Release with GitHub's auto-generated notes and the
+signed/notarized DMG attached. The workflow is thin glue: it imports the Developer ID
+certificate into a throwaway keychain, verifies the tag, then runs `task dmg` /
+`scripts/build-dmg.sh` **verbatim** — all signing and notarizing logic stays in the
+already-reviewed script. Re-running an existing tag re-uploads the asset
+(`gh release upload --clobber`) instead of erroring.
+
+The git tag must match `MARKETING_VERSION` in `project.yml`: a verify step
+(`scripts/verify-release-version.sh`) compares the tag (minus the leading `v`) against
+`MARKETING_VERSION` and fails the job fast on mismatch, before the expensive build.
+**Bump `project.yml` before tagging.**
+
+CI needs six repo secrets (Settings → Secrets and variables → Actions): the four Apple
+vars already used locally — `DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_TEAM_ID`,
+`APPLE_APP_SPECIFIC_PASSWORD` — plus `MACOS_CERTIFICATE_P12_BASE64` (base64 of the
+exported `.p12` containing the cert **and** private key) and `MACOS_CERTIFICATE_PASSWORD`
+(the `.p12` password) for the CI cert import. `.dmg.env` is absent in CI, so
+`build-dmg.sh` reads these from the environment. (The release step also uses
+`GITHUB_TOKEN`, but that is auto-provided by Actions and is not one of the six repo
+secrets — don't be misled by counting `secrets.*` references in the YAML.)
+
 ## Working conventions
 
 - TDD: for Core changes, write the failing test first, then implement; all tests must
