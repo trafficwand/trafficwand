@@ -19,6 +19,9 @@ BuildInfo.xcconfig
 build/
 dist/
 
+# Downloaded Sparkle binary tools (task sparkle:install)
+.sparkle/
+
 # Local signing/notarization credentials for `task dmg` (never commit secrets)
 .dmg.env
 

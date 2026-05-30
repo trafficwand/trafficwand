@@ -71,6 +71,11 @@ jobs:
           DEVELOPER_ID_APPLICATION: ${{ secrets.DEVELOPER_ID_APPLICATION }}
         run: task dmg
 
+      - name: Sign DMG and render appcast.xml
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: scripts/generate-appcast.sh
+
       - name: Create or update GitHub release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -78,10 +83,13 @@ jobs:
         run: |
           TAG="$GITHUB_REF_NAME"
           DMG="dist/TrafficWand-$RELEASE_VERSION.dmg"
+          APPCAST="dist/appcast.xml"
+          # appcast.xml ships alongside the DMG so /latest/download/appcast.xml
+          # serves it automatically (Sparkle follows the 302 at the feed URL).
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$DMG" --clobber
+            gh release upload "$TAG" "$DMG" "$APPCAST" --clobber
           else
-            gh release create "$TAG" "$DMG" --generate-notes --verify-tag --title "$TAG"
+            gh release create "$TAG" "$DMG" "$APPCAST" --generate-notes --verify-tag --title "$TAG"
           fi
 
       - name: Clean up signing keychain and decoded certificate

@@ -56,6 +56,15 @@ final class SettingsViewModelTests: XCTestCase {
         func installedBrowsers() -> [Browser] { browsers }
     }
 
+    /// Mock update seam: round-trips the auto-check property so tests can verify the
+    /// view model's `automaticUpdatesEnabled` reads from and writes through to it.
+    private final class MockUpdater: UpdaterControlling {
+        var automaticallyChecksForUpdates = false
+        var canCheckForUpdates = true
+        private(set) var checkForUpdatesCallCount = 0
+        func checkForUpdates() { checkForUpdatesCallCount += 1 }
+    }
+
     // MARK: - Fixtures
 
     private func browser(
@@ -81,12 +90,14 @@ final class SettingsViewModelTests: XCTestCase {
 
     private func makeViewModel(
         config: AppConfig,
-        browsers: [Browser] = []
+        browsers: [Browser] = [],
+        updater: MockUpdater = MockUpdater()
     ) -> (SettingsViewModel, MockConfigStore) {
         let store = MockConfigStore(loaded: config)
         let vm = SettingsViewModel(
             configStore: store,
-            browserProvider: StubBrowserProvider(browsers: browsers)
+            browserProvider: StubBrowserProvider(browsers: browsers),
+            updater: updater
         )
         return (vm, store)
     }
@@ -295,5 +306,34 @@ final class SettingsViewModelTests: XCTestCase {
 
         XCTAssertEqual(store.lastSaved?.rules, [rule])
         XCTAssertEqual(store.lastSaved?.schemaVersion, AppConfig.currentSchemaVersion)
+    }
+
+    // MARK: - automatic updates toggle (seam in the view model)
+
+    func testAutomaticUpdatesEnabledReflectsTheSeam() {
+        let updater = MockUpdater()
+        updater.automaticallyChecksForUpdates = true
+        let (vm, _) = makeViewModel(config: AppConfig(rules: [], fallback: .picker), updater: updater)
+
+        XCTAssertTrue(vm.automaticUpdatesEnabled, "Reading reflects the updater's current preference.")
+
+        updater.automaticallyChecksForUpdates = false
+        XCTAssertFalse(vm.automaticUpdatesEnabled, "A change in the seam is observed on read.")
+    }
+
+    func testSettingAutomaticUpdatesEnabledWritesThroughToTheSeam() {
+        let updater = MockUpdater()
+        let (vm, store) = makeViewModel(config: AppConfig(rules: [], fallback: .picker), updater: updater)
+        XCTAssertFalse(updater.automaticallyChecksForUpdates)
+
+        vm.automaticUpdatesEnabled = true
+        XCTAssertTrue(updater.automaticallyChecksForUpdates, "Setting the property writes through to the seam.")
+
+        vm.automaticUpdatesEnabled = false
+        XCTAssertFalse(updater.automaticallyChecksForUpdates)
+
+        // The Sparkle auto-check preference lives in the updater seam (UserDefaults),
+        // not in AppConfig — toggling it must never persist to ConfigStore.
+        XCTAssertEqual(store.saveCount, 0, "Toggling auto-updates must not mirror into AppConfig / ConfigStore.")
     }
 }

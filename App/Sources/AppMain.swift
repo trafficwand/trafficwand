@@ -27,6 +27,12 @@ final class AppMain: NSObject, NSApplicationDelegate {
     /// open/close; built lazily in `applicationDidFinishLaunching`.
     private var settingsWindowController: SettingsWindowController?
 
+    /// The Sparkle-backed updater. Retained for the app's lifetime so the
+    /// underlying `SPUStandardUpdaterController` keeps running its background
+    /// checks; built in `applicationDidFinishLaunching`. Typed as the seam so
+    /// the wiring stays decoupled from the concrete framework.
+    private var updater: UpdaterControlling?
+
     static func main() {
         let app = NSApplication.shared
         let delegate = AppMain()
@@ -38,9 +44,19 @@ final class AppMain: NSObject, NSApplicationDelegate {
         // Menu-bar agent: no Dock icon, no main menu activation.
         NSApp.setActivationPolicy(.accessory)
 
-        // Settings window: the view model depends only on Core (FileConfigStore) and
-        // the App provider seam (WorkspaceBrowserProvider); the window controller
-        // hosts the SwiftUI views and activates the app when shown.
+        // Sparkle updater: retained for the app's lifetime so its background
+        // checks keep running. The "Check for Updates…" menu item drives it
+        // through the seam, and the General-tab "Automatically check for updates"
+        // toggle reads/writes it via `SettingsViewModel`. Built FIRST so the *same*
+        // instance is injected into both the settings view model and the status-bar
+        // controller — a single shared updater, never two.
+        let updater = SparkleUpdater()
+        self.updater = updater
+
+        // Settings window: the view model depends only on Core (FileConfigStore),
+        // the App provider seam (WorkspaceBrowserProvider), and the update seam
+        // (the shared `updater` above); the window controller hosts the SwiftUI
+        // views and activates the app when shown.
         //
         // Built BEFORE `makeRoutingService` so the opener closure passed into the
         // routing pipeline can deep-link through `settingsWindowController` at
@@ -48,7 +64,8 @@ final class AppMain: NSObject, NSApplicationDelegate {
         // which reads the live property — see `openSettings(tab:)`).
         let settingsViewModel = SettingsViewModel(
             configStore: FileConfigStore(directory: Self.configDirectory()),
-            browserProvider: WorkspaceBrowserProvider()
+            browserProvider: WorkspaceBrowserProvider(),
+            updater: updater
         )
         settingsWindowController = SettingsWindowController(viewModel: settingsViewModel)
 
@@ -58,7 +75,9 @@ final class AppMain: NSObject, NSApplicationDelegate {
 
         statusBarController = StatusBarController(
             onOpenSettings: { [weak self] in self?.openSettings() },
-            onOpenAbout: { [weak self] in self?.openAbout() }
+            onOpenAbout: { [weak self] in self?.openAbout() },
+            onCheckForUpdates: { [weak self] in self?.updater?.checkForUpdates() },
+            updater: updater
         )
         Self.logger.log("TrafficWand launched.")
     }

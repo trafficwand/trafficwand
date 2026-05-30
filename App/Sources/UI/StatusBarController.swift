@@ -36,9 +36,15 @@ enum StatusMenuState {
 /// `StatusMenuState`. The live menu visuals are covered by Post-Completion
 /// manual verification.
 @MainActor
-final class StatusBarController: NSObject, NSMenuDelegate {
+final class StatusBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
     private let statusItem: NSStatusItem
     private let defaultBrowserManager: DefaultBrowserManager
+
+    /// The update seam used to validate the "Check for Updates…" item: the item is
+    /// enabled only while `canCheckForUpdates` is true (Sparkle is idle / ready).
+    /// Optional so tests that don't exercise update validation can omit it; when
+    /// `nil` the item stays enabled (no seam to consult).
+    private let updater: UpdaterControlling?
 
     /// Invoked when the user picks "Settings…". Defaults to a no-op for
     /// testability; `AppMain` injects the real Settings-open hook.
@@ -48,6 +54,15 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     /// for testability; `AppMain` injects the real About-open hook (which
     /// deep-links the Settings window to the About tab).
     private let onOpenAbout: () -> Void
+
+    /// Invoked when the user picks "Check for Updates…". Defaults to a no-op
+    /// for testability; `AppMain` injects a hook that drives the Sparkle
+    /// updater seam (`UpdaterControlling.checkForUpdates()`).
+    private let onCheckForUpdates: () -> Void
+
+    /// The "Check for Updates…" item, retained so `validateMenuItem(_:)` can
+    /// identify it and reflect the updater's `canCheckForUpdates` readiness.
+    private let checkForUpdatesMenuItem = NSMenuItem()
 
     /// The default-browser item, retained so `menuWillOpen` can refresh its
     /// title/checkmark to reflect the current default-handler status.
@@ -77,15 +92,25 @@ final class StatusBarController: NSObject, NSMenuDelegate {
     ///   - onOpenAbout: Hook invoked for the "About TrafficWand" item. Defaults
     ///     to a no-op for testability; `AppMain` injects a hook that opens the
     ///     Settings window deep-linked to the About tab.
+    ///   - onCheckForUpdates: Hook invoked for the "Check for Updates…" item.
+    ///     Defaults to a no-op for testability; `AppMain` injects a hook that
+    ///     drives the Sparkle updater seam.
+    ///   - updater: The update seam consulted by `validateMenuItem(_:)` to enable
+    ///     the "Check for Updates…" item only when `canCheckForUpdates` is true.
+    ///     Defaults to `nil` (item always enabled) so tests can omit it.
     init(
         defaultBrowserManager: DefaultBrowserManager = DefaultBrowserManager(),
         onOpenSettings: @escaping () -> Void = {},
-        onOpenAbout: @escaping () -> Void = {}
+        onOpenAbout: @escaping () -> Void = {},
+        onCheckForUpdates: @escaping () -> Void = {},
+        updater: UpdaterControlling? = nil
     ) {
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         self.defaultBrowserManager = defaultBrowserManager
         self.onOpenSettings = onOpenSettings
         self.onOpenAbout = onOpenAbout
+        self.onCheckForUpdates = onCheckForUpdates
+        self.updater = updater
         super.init()
         configureButton()
         configureMenu()
@@ -124,6 +149,15 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         )
         menu.addItem(aboutItem)
 
+        checkForUpdatesMenuItem.title = "Check for Updates…"
+        checkForUpdatesMenuItem.action = #selector(checkForUpdates)
+        checkForUpdatesMenuItem.target = self
+        checkForUpdatesMenuItem.image = NSImage(
+            systemSymbolName: "arrow.down.circle",
+            accessibilityDescription: nil
+        )
+        menu.addItem(checkForUpdatesMenuItem)
+
         let settingsItem = NSMenuItem(
             title: "Settings…",
             action: #selector(openSettings),
@@ -161,6 +195,19 @@ final class StatusBarController: NSObject, NSMenuDelegate {
         refreshDefaultBrowserItem()
     }
 
+    // MARK: - NSMenuItemValidation
+
+    /// Enables the "Check for Updates…" item only while the updater reports it can
+    /// start a check (`canCheckForUpdates`); without an injected seam the item stays
+    /// enabled. All other items validate as enabled (their own actions handle no-op
+    /// cases, e.g. re-asserting default browser).
+    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
+        if menuItem === checkForUpdatesMenuItem, let updater {
+            return updater.canCheckForUpdates
+        }
+        return true
+    }
+
     // MARK: - Actions
 
     @objc private func setAsDefault() {
@@ -178,6 +225,10 @@ final class StatusBarController: NSObject, NSMenuDelegate {
 
     @objc private func openAbout() {
         onOpenAbout()
+    }
+
+    @objc private func checkForUpdates() {
+        onCheckForUpdates()
     }
 
     @objc private func quit() {

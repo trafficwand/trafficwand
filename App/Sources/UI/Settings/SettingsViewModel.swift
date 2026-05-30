@@ -35,15 +35,45 @@ final class SettingsViewModel {
 
     private let configStore: ConfigStore
     private let browserProvider: InstalledBrowsersProviding
+    private let updater: UpdaterControlling
+
+    /// Whether Sparkle automatically checks for updates in the background.
+    ///
+    /// Bound to the "Automatically check for updates" toggle in `GeneralSettingsView`;
+    /// get/set forward straight through to the injected `UpdaterControlling` seam, so
+    /// the toggle reflects and controls the real updater preference.
+    ///
+    /// Deliberate design note: this update seam lives in the *view model* rather than
+    /// in the view (the way `DefaultBrowserManager` is held by `GeneralSettingsView`).
+    /// `SettingsViewModelTests` already exists and `UpdaterControlling` is a pure
+    /// `@MainActor` protocol, so threading it through the view model keeps the toggle's
+    /// read/write behavior unit-testable with a `MockUpdater`, which the in-view
+    /// `DefaultBrowserManager` precedent does not afford.
+    ///
+    /// Not reactive: this is a computed pass-through to a non-`@Observable` seam, so
+    /// SwiftUI won't repaint the toggle if Sparkle flips the preference out of band.
+    /// Acceptable here — the toggle is user-driven and the value is read fresh each
+    /// time Settings opens; do not add an observation bridge for a single toggle.
+    var automaticUpdatesEnabled: Bool {
+        get { updater.automaticallyChecksForUpdates }
+        set { updater.automaticallyChecksForUpdates = newValue }
+    }
 
     /// - Parameters:
     ///   - configStore: Source of the persisted `AppConfig`; every mutation saves
     ///     back through it.
     ///   - browserProvider: Supplies the installed browsers (with profiles) shown
     ///     in the editors. Injected so tests pass a stub list.
-    init(configStore: ConfigStore, browserProvider: InstalledBrowsersProviding) {
+    ///   - updater: The in-app update seam backing the "Automatically check for
+    ///     updates" toggle. Injected so tests pass a `MockUpdater`.
+    init(
+        configStore: ConfigStore,
+        browserProvider: InstalledBrowsersProviding,
+        updater: UpdaterControlling
+    ) {
         self.configStore = configStore
         self.browserProvider = browserProvider
+        self.updater = updater
     }
 
     /// Loads the persisted configuration and the installed browser list.

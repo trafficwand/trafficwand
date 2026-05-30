@@ -75,6 +75,10 @@ struct GeneralSettingsView: View {
                     fallbackBrowserPickers
                 }
             }
+
+            Section("Updates") {
+                Toggle("Automatically check for updates", isOn: $viewModel.automaticUpdatesEnabled)
+            }
         }
         .formStyle(.grouped)
         .onAppear { refreshDefaultStatus() }

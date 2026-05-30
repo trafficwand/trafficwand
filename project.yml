@@ -12,6 +12,9 @@ options:
 packages:
   TrafficWandCore:
     path: TrafficWandCore
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle
+    from: "2.9.2"
 
 settings:
   base:
@@ -35,8 +38,14 @@ settings:
     CODE_SIGN_IDENTITY: "-"
     ENABLE_HARDENED_RUNTIME: YES
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    # CFBundleShortVersionString. Bump before tagging a release; the git tag
+    # must match (verify-release-version.sh enforces it).
+    MARKETING_VERSION: "0.2.0"
+    # CURRENT_PROJECT_VERSION (CFBundleVersion) is NOT set here on purpose: it is
+    # injected per-build via BuildInfo.xcconfig (a target configFile, which wins
+    # over this project-level setting) as the commit count, so every commit
+    # yields a strictly-higher, monotonic build number with no manual bump.
+    # See `task build-info` and the "Build-info" section in CLAUDE.md.
 
 targets:
   TrafficWand:
@@ -47,6 +56,7 @@ targets:
       - path: App/Resources/AppIcon.icon
     dependencies:
       - package: TrafficWandCore
+      - package: Sparkle
     configFiles:
       Debug: BuildInfo.xcconfig
       Release: BuildInfo.xcconfig

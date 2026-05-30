@@ -25,9 +25,19 @@ final class StatusBarControllerAboutTests: XCTestCase {
         let controller: StatusBarController
         let aboutCount: () -> Int
         let settingsCount: () -> Int
+        let checkForUpdatesCount: () -> Int
     }
 
     private var liveHarness: Harness?
+
+    /// Mock update seam: lets a test set `canCheckForUpdates` so the controller's
+    /// `validateMenuItem(_:)` enablement of "Check for Updates…" can be asserted.
+    private final class MockUpdater: UpdaterControlling {
+        var automaticallyChecksForUpdates = false
+        var canCheckForUpdates = true
+        private(set) var checkForUpdatesCallCount = 0
+        func checkForUpdates() { checkForUpdatesCallCount += 1 }
+    }
 
     override func tearDown() {
         // Tear down the live status item so we don't leak menu-bar entries
@@ -44,20 +54,24 @@ final class StatusBarControllerAboutTests: XCTestCase {
     /// bundle ID so the suite stays isolated from the host machine's actual
     /// default-browser state (the live `NSWorkspace` query result is irrelevant
     /// here — these tests don't exercise the default-browser item).
-    private func makeHarness() -> Harness {
+    private func makeHarness(updater: UpdaterControlling? = nil) -> Harness {
         // Reference-typed boxes so the closure-captured counters survive
         // mutation across multiple invocations without juggling inout state.
         let aboutBox = IntBox()
         let settingsBox = IntBox()
+        let updatesBox = IntBox()
         let controller = StatusBarController(
             defaultBrowserManager: DefaultBrowserManager(ourBundleID: "test.trafficwand.fixed"),
             onOpenSettings: { settingsBox.value += 1 },
-            onOpenAbout: { aboutBox.value += 1 }
+            onOpenAbout: { aboutBox.value += 1 },
+            onCheckForUpdates: { updatesBox.value += 1 },
+            updater: updater
         )
         let harness = Harness(
             controller: controller,
             aboutCount: { aboutBox.value },
-            settingsCount: { settingsBox.value }
+            settingsCount: { settingsBox.value },
+            checkForUpdatesCount: { updatesBox.value }
         )
         liveHarness = harness
         return harness
@@ -168,5 +182,73 @@ final class StatusBarControllerAboutTests: XCTestCase {
 
         XCTAssertEqual(harness.settingsCount(), 1, "onOpenSettings should have run exactly once")
         XCTAssertEqual(harness.aboutCount(), 0, "onOpenAbout must not run for the Settings item")
+    }
+
+    func testCheckForUpdatesMenuItemExistsBetweenAboutAndSettings() {
+        let harness = makeHarness()
+
+        let titles = menu(of: harness.controller).items.map(\.title)
+        guard let aboutIndex = titles.firstIndex(of: "About TrafficWand"),
+              let updatesIndex = titles.firstIndex(of: "Check for Updates…"),
+              let settingsIndex = titles.firstIndex(of: "Settings…") else {
+            XCTFail("Expected About, Check for Updates, and Settings items (titles: \(titles))")
+            return
+        }
+        XCTAssertLessThan(aboutIndex, updatesIndex,
+                          "Check for Updates… should appear below About TrafficWand")
+        XCTAssertLessThan(updatesIndex, settingsIndex,
+                          "Check for Updates… should appear above Settings…")
+    }
+
+    func testCheckForUpdatesMenuItemTargetsController() {
+        let harness = makeHarness()
+
+        guard let updatesItem = item(in: harness.controller, withTitle: "Check for Updates…") else {
+            XCTFail("Missing Check for Updates… item")
+            return
+        }
+        XCTAssertTrue(updatesItem.target === harness.controller,
+                      "Check for Updates item must target the controller for menu dispatch to reach the action")
+    }
+
+    func testInvokingCheckForUpdatesItemRunsOnCheckForUpdatesOnly() {
+        let harness = makeHarness()
+        guard let updatesItem = item(in: harness.controller, withTitle: "Check for Updates…"),
+              let action = updatesItem.action else {
+            XCTFail("Missing Check for Updates item or its action")
+            return
+        }
+
+        harness.controller.perform(action, with: updatesItem)
+
+        XCTAssertEqual(harness.checkForUpdatesCount(), 1, "onCheckForUpdates should have run exactly once")
+        XCTAssertEqual(harness.aboutCount(), 0, "onOpenAbout must not run for the Check for Updates item")
+        XCTAssertEqual(harness.settingsCount(), 0, "onOpenSettings must not run for the Check for Updates item")
+    }
+
+    func testCheckForUpdatesItemDisabledWhenUpdaterCannotCheck() {
+        let updater = MockUpdater()
+        updater.canCheckForUpdates = false
+        let harness = makeHarness(updater: updater)
+
+        guard let updatesItem = item(in: harness.controller, withTitle: "Check for Updates…") else {
+            XCTFail("Missing Check for Updates… item")
+            return
+        }
+        XCTAssertFalse(harness.controller.validateMenuItem(updatesItem),
+                       "Check for Updates… should be disabled while the updater reports !canCheckForUpdates")
+    }
+
+    func testCheckForUpdatesItemEnabledWhenUpdaterCanCheck() {
+        let updater = MockUpdater()
+        updater.canCheckForUpdates = true
+        let harness = makeHarness(updater: updater)
+
+        guard let updatesItem = item(in: harness.controller, withTitle: "Check for Updates…") else {
+            XCTFail("Missing Check for Updates… item")
+            return
+        }
+        XCTAssertTrue(harness.controller.validateMenuItem(updatesItem),
+                      "Check for Updates… should be enabled while the updater reports canCheckForUpdates")
     }
 }

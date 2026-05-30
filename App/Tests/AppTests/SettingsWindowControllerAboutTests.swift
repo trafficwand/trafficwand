@@ -32,10 +32,18 @@ final class SettingsWindowControllerAboutTests: XCTestCase {
         func installedBrowsers() -> [Browser] { [] }
     }
 
+    /// Stub update seam (irrelevant to the deep-link behavior under test).
+    private final class StubUpdater: UpdaterControlling {
+        var automaticallyChecksForUpdates = false
+        var canCheckForUpdates = true
+        func checkForUpdates() {}
+    }
+
     private func makeController() -> SettingsWindowController {
         let vm = SettingsViewModel(
             configStore: MockConfigStore(),
-            browserProvider: StubBrowserProvider()
+            browserProvider: StubBrowserProvider(),
+            updater: StubUpdater()
         )
         return SettingsWindowController(viewModel: vm)
     }
@@ -119,7 +127,8 @@ final class SettingsWindowControllerAboutTests: XCTestCase {
         // controller-owned selection holding `.about` is the smoke check).
         let vm = SettingsViewModel(
             configStore: MockConfigStore(),
-            browserProvider: StubBrowserProvider()
+            browserProvider: StubBrowserProvider(),
+            updater: StubUpdater()
         )
         _ = SettingsRootView(
             viewModel: vm,

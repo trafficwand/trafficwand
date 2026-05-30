@@ -249,6 +249,14 @@ task dmg
 Output lands at `dist/TrafficWand-<version>.dmg`, ready to upload as a GitHub release
 asset.
 
+### Updates
+
+Installed copies keep themselves current via [Sparkle](https://sparkle-project.org): the
+menu bar exposes a **"Check for Updates…"** item for an on-demand check, and the app also
+checks automatically in the background (toggle in **Settings ▸ General**). Updates are
+EdDSA-signed and downloaded from the GitHub Releases page, so no manual re-download is
+needed once you're on a Sparkle-enabled release.
+
 ### Automated releases
 
 Pushing a `v*.*.*` tag does this automatically. The
@@ -258,12 +266,14 @@ notes and the signed, notarized DMG attached. Bump `MARKETING_VERSION` in `proje
 to match the tag before pushing — a mismatch fails the job before the build. Grab the
 signed DMG from the [Releases](../../releases) page.
 
-This requires six repository secrets (Settings → Secrets and variables → Actions): the
+This requires seven repository secrets (Settings → Secrets and variables → Actions): the
 four notary credentials above (`DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_TEAM_ID`,
 `APPLE_APP_SPECIFIC_PASSWORD`) plus, so CI can import the signing identity into a
 throwaway keychain, `MACOS_CERTIFICATE_P12_BASE64` (base64 of the exported `.p12`
 containing the certificate **and** its private key) and `MACOS_CERTIFICATE_PASSWORD`
-(the `.p12` password).
+(the `.p12` password), plus `SPARKLE_ED_PRIVATE_KEY` (the EdDSA private key used to sign
+the update appcast). CI signs the DMG, renders `appcast.xml`, and uploads it as a release
+asset; the app's feed URL is the stable `releases/latest/download/appcast.xml` redirect.
 
 ---
 

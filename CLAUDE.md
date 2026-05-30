@@ -76,6 +76,8 @@ tests.
 | `task test-core` | Run Core tests (`swift test`) + the no-AppKit import guard.     |
 | `task lint`      | Run SwiftLint.                                                   |
 | `task dmg`       | Build, sign, notarize, and package the app as a DMG (release).  |
+| `task sparkle:install`  | Download the pinned Sparkle binary tools into `.sparkle/`. |
+| `task sparkle:gen-keys` | Generate the Sparkle EdDSA signing keypair (operator, one-time). |
 | `task`           | Default: generate + build + lint + test-core + test.            |
 
 For a fast TDD loop on Core, prefer `task test-core` (plain `swift test`, no Xcode build).
@@ -96,9 +98,13 @@ post-build PlistBuddy mutation (which would invalidate the code signature):
 
 1. `task build-info` (a dependency of `build`, `run`, `test`, and the default task)
    writes `BuildInfo.xcconfig` at the repo root with `GIT_COMMIT = <short hash>`
-   (or `unknown` outside a git work tree).
+   (or `unknown` outside a git work tree) **and** `CURRENT_PROJECT_VERSION =
+   <git rev-list --count HEAD>` (fallback `1` outside a git work tree) — the
+   monotonic build number Sparkle compares as `sparkle:version`.
 2. `project.yml` wires that xcconfig into the `TrafficWand` target via
-   `configFiles`, exposing `GIT_COMMIT` as a build setting.
+   `configFiles`, exposing both `GIT_COMMIT` and `CURRENT_PROJECT_VERSION` as
+   build settings (the literal `CURRENT_PROJECT_VERSION` is intentionally absent
+   from `project.yml` so the xcconfig value wins).
 3. `App/Resources/Info.plist` declares `GitCommitHash = $(GIT_COMMIT)`. Xcode's
    "Process Info.plist file" phase substitutes the value **before** `_CodeSign` runs,
    so the embedded plist is final at signing time.
@@ -147,14 +153,43 @@ The git tag must match `MARKETING_VERSION` in `project.yml`: a verify step
 `MARKETING_VERSION` and fails the job fast on mismatch, before the expensive build.
 **Bump `project.yml` before tagging.**
 
-CI needs six repo secrets (Settings → Secrets and variables → Actions): the four Apple
+CI needs seven repo secrets (Settings → Secrets and variables → Actions): the four Apple
 vars already used locally — `DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_TEAM_ID`,
 `APPLE_APP_SPECIFIC_PASSWORD` — plus `MACOS_CERTIFICATE_P12_BASE64` (base64 of the
 exported `.p12` containing the cert **and** private key) and `MACOS_CERTIFICATE_PASSWORD`
-(the `.p12` password) for the CI cert import. `.dmg.env` is absent in CI, so
-`build-dmg.sh` reads these from the environment. (The release step also uses
-`GITHUB_TOKEN`, but that is auto-provided by Actions and is not one of the six repo
+(the `.p12` password) for the CI cert import, plus `SPARKLE_ED_PRIVATE_KEY` (the exported
+EdDSA private key, fed to `sign_update` via stdin to sign the update DMG). `.dmg.env` is
+absent in CI, so `build-dmg.sh` reads these from the environment. (The release step also
+uses `GITHUB_TOKEN`, but that is auto-provided by Actions and is not one of the seven repo
 secrets — don't be misled by counting `secrets.*` references in the YAML.)
+
+### In-app updates (Sparkle)
+
+The app self-updates via [Sparkle](https://sparkle-project.org) — a "Check for Updates…"
+menu item plus automatic background checks. The release pipeline feeds Sparkle:
+
+- **Appcast feed.** After the DMG is built/signed/notarized, `scripts/generate-appcast.sh`
+  EdDSA-signs the DMG (`sign_update`, key via stdin from `SPARKLE_ED_PRIVATE_KEY`) and
+  renders `appcast.xml` with one `<item>` whose enclosure points at the **versioned**
+  `releases/download/v<version>/TrafficWand-<version>.dmg`. CI uploads `appcast.xml`
+  alongside the DMG as a release asset. There is **no GitHub Pages / `gh-pages` branch** —
+  the app's `SUFeedURL` is the stable
+  `https://github.com/tomakado/trafficwand/releases/latest/download/appcast.xml` redirect,
+  which always resolves to the newest release's `appcast.xml`.
+- **Authoritative, monotonic build number.** `CFBundleVersion` is no longer a literal: it
+  resolves to `$(CURRENT_PROJECT_VERSION)`, which `task build-info` derives from
+  `git rev-list --count HEAD` into `BuildInfo.xcconfig` (same signed-Info.plist injection
+  path as `GIT_COMMIT`; the literal `CURRENT_PROJECT_VERSION` was removed from
+  `project.yml`). `CFBundleShortVersionString` resolves to `$(MARKETING_VERSION)`. Every
+  commit yields a strictly-higher build number with no manual bump, so Sparkle's version
+  comparison is reliable. **`MARKETING_VERSION` must still be bumped per release**, and the
+  **first Sparkle-enabled release must use a `MARKETING_VERSION` strictly greater than
+  `v0.1.0`** (pre-Sparkle `0.1.0` installs have no updater and must be upgraded manually
+  one last time).
+
+See `docs/spikes/sparkle-updates.md` for the full update flow, EdDSA key
+handling/rotation, appcast format, and the nested-XPC/Autoupdate notarization verification
+recipe.
 
 ## Working conventions
 
