@@ -179,10 +179,14 @@ main() {
     local dmg_path="dist/TrafficWand-$version.dmg"
     [ -f "$dmg_path" ] || die "DMG not found: $dmg_path (run 'task dmg' first)"
 
-    # Stage the Sparkle tools in a temp dir wiped on exit.
+    # Stage the Sparkle tools in a temp dir wiped on exit. Interpolate the path
+    # into the trap string NOW (define-time), not as a `$tools_dir` reference: the
+    # EXIT trap fires after main() returns, where the function-local tools_dir is
+    # out of scope and would be an "unbound variable" fatal under `set -u`.
     local tools_dir
     tools_dir="$(mktemp -d)"
-    trap 'rm -rf "$tools_dir"' EXIT
+    # shellcheck disable=SC2064  # intentional: expand tools_dir at define-time
+    trap "rm -rf '$tools_dir'" EXIT
 
     local bin_dir sign_update
     bin_dir="$(ensure_sparkle_tools "$tools_dir")"
