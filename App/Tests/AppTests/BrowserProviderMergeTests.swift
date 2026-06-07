@@ -72,15 +72,23 @@ final class BrowserProviderMergeTests: XCTestCase {
         XCTAssertEqual(browsers.map(\.bundleID), ["com.google.Chrome"])
     }
 
-    // MARK: - Allowlist filtering
+    // MARK: - Picker allowlist filters non-browser http handlers
 
-    func testMergeFiltersNonBrowserHTTPHandlerByAllowlist() {
-        // A random app that claims to handle http but is not a real browser.
+    func testMergeFiltersNonBrowserHTTPHandlers() {
+        // NSWorkspace's http(s)-handler enumeration returns non-browsers too:
+        // terminals (iTerm, kitty), and other apps that register http handling.
+        // The picker allowlist (`BrowserFamily.isKnownBrowser`) must drop them
+        // while keeping curated, real browsers — including the newcomers.
         let candidates = [
+            candidate("com.googlecode.iterm2", "iTerm"),
+            candidate("net.kovidgoyal.kitty", "kitty"),
             candidate("com.example.SomeMailApp", "Mailer"),
             candidate("com.google.Chrome", "Google Chrome"),
             candidate("org.mozilla.firefox", "Firefox"),
-            candidate("com.apple.Safari", "Safari")
+            candidate("com.apple.Safari", "Safari"),
+            candidate("company.thebrowser.Browser", "Arc"),
+            candidate("ai.perplexity.comet", "Comet"),
+            candidate("app.zen-browser.zen", "Zen")
         ]
 
         let browsers = BrowserMerger.merge(
@@ -91,9 +99,82 @@ final class BrowserProviderMergeTests: XCTestCase {
         )
 
         let ids = Set(browsers.map(\.bundleID))
-        XCTAssertFalse(ids.contains("com.example.SomeMailApp"),
-                       "A non-browser http handler must be filtered by the allowlist.")
-        XCTAssertEqual(ids, ["com.google.Chrome", "org.mozilla.firefox", "com.apple.Safari"])
+        XCTAssertFalse(ids.contains("com.googlecode.iterm2"), "iTerm is a terminal, not a browser.")
+        XCTAssertFalse(ids.contains("net.kovidgoyal.kitty"), "kitty is a terminal, not a browser.")
+        XCTAssertFalse(ids.contains("com.example.SomeMailApp"), "A non-browser http handler must be filtered.")
+        XCTAssertEqual(ids, [
+            "com.google.Chrome",
+            "org.mozilla.firefox",
+            "com.apple.Safari",
+            "company.thebrowser.Browser",
+            "ai.perplexity.comet",
+            "app.zen-browser.zen"
+        ])
+    }
+
+    func testMergeExcludesTrafficWandViaAllowlistEvenIfSelfIDMismatches() {
+        // Defense in depth: even if the self-exclusion bundle ID does not match at
+        // runtime, TrafficWand is not on the browser allowlist, so it is dropped.
+        let browsers = BrowserMerger.merge(
+            candidates: [
+                candidate("io.tomakado.TrafficWand", "TrafficWand"),
+                candidate("com.google.Chrome", "Google Chrome")
+            ],
+            selfBundleID: "some.other.id",   // deliberately not TrafficWand's ID
+            profileReaderForFamily: { _ in StubProfileReader() },
+            pathResolver: StubPathResolver(directories: [:])
+        )
+
+        XCTAssertEqual(browsers.map(\.bundleID), ["com.google.Chrome"],
+                       "TrafficWand must never list itself, allowlist drops it.")
+    }
+
+    func testMergeKnownBrowserWithNoResolverPathHasEmptyProfiles() {
+        // Graceful degradation: a known browser with no resolver path is still
+        // listed, just with no discovered profiles (launches its default profile).
+        let browsers = BrowserMerger.merge(
+            candidates: [candidate("company.thebrowser.Browser", "Arc")],
+            selfBundleID: selfBundleID,
+            profileReaderForFamily: { _ in StubProfileReader() },
+            pathResolver: StubPathResolver(directories: [:])
+        )
+
+        XCTAssertEqual(browsers.map(\.bundleID), ["company.thebrowser.Browser"])
+        XCTAssertEqual(browsers.first?.profiles, [],
+                       "No resolver path → empty profiles, but the browser is still listed.")
+    }
+
+    func testMergeKnownChromiumBrowserWithResolverPathDiscoversProfiles() {
+        // The real Arc/Comet/Dia runtime path: a non-Chrome Chromium browser is
+        // classified `.chromium`, gets the Chromium (Chrome-style) reader, and
+        // attaches the discovered profiles.
+        let supportDir = URL(fileURLWithPath: "/tmp/Arc/User Data")
+        let cannedProfiles = [
+            BrowserProfile(id: "Default", name: "Default"),
+            BrowserProfile(id: "Profile 1", name: "Work")
+        ]
+        let reader = StubProfileReader()
+        reader.profilesByDirectory = [supportDir.path: cannedProfiles]
+
+        var requestedFamilies: [BrowserFamily] = []
+        let browsers = BrowserMerger.merge(
+            candidates: [candidate("company.thebrowser.Browser", "Arc")],
+            selfBundleID: selfBundleID,
+            profileReaderForFamily: { family in
+                requestedFamilies.append(family)
+                return reader
+            },
+            pathResolver: StubPathResolver(directories: ["company.thebrowser.Browser": supportDir])
+        )
+
+        XCTAssertEqual(browsers.map(\.bundleID), ["company.thebrowser.Browser"],
+                       "Arc is listed.")
+        XCTAssertEqual(requestedFamilies, [.chromium],
+                       "Arc must be classified as the Chromium default.")
+        XCTAssertEqual(browsers.first?.profiles, cannedProfiles,
+                       "The Chromium reader's discovered profiles must attach to the browser.")
+        XCTAssertEqual(reader.queriedDirectories, [supportDir],
+                       "The reader must be queried with the resolved support directory.")
     }
 
     // MARK: - Non-default browsers still appear
@@ -242,58 +323,4 @@ final class BrowserProviderMergeTests: XCTestCase {
         XCTAssertEqual(browsers.first?.appURL, appURL)
     }
 
-    // MARK: - ProfilePathResolver
-
-    func testProfilePathResolverChromiumFamilyPaths() {
-        let base = URL(fileURLWithPath: "/Users/test/Library/Application Support")
-        let resolver = ProfilePathResolver(applicationSupportDirectory: base)
-
-        XCTAssertEqual(
-            resolver.applicationSupportDirectory(forBundleID: "com.google.Chrome")?.path,
-            base.appendingPathComponent("Google/Chrome").path
-        )
-        XCTAssertEqual(
-            resolver.applicationSupportDirectory(forBundleID: "com.google.Chrome.beta")?.path,
-            base.appendingPathComponent("Google/Chrome Beta").path
-        )
-        XCTAssertEqual(
-            resolver.applicationSupportDirectory(forBundleID: "com.google.Chrome.canary")?.path,
-            base.appendingPathComponent("Google/Chrome Canary").path
-        )
-        XCTAssertEqual(
-            resolver.applicationSupportDirectory(forBundleID: "com.microsoft.edgemac")?.path,
-            base.appendingPathComponent("Microsoft Edge").path
-        )
-        XCTAssertEqual(
-            resolver.applicationSupportDirectory(forBundleID: "com.brave.Browser")?.path,
-            base.appendingPathComponent("BraveSoftware/Brave-Browser").path
-        )
-        XCTAssertEqual(
-            resolver.applicationSupportDirectory(forBundleID: "com.vivaldi.Vivaldi")?.path,
-            base.appendingPathComponent("Vivaldi").path
-        )
-        XCTAssertEqual(
-            resolver.applicationSupportDirectory(forBundleID: "org.chromium.Chromium")?.path,
-            base.appendingPathComponent("Chromium").path
-        )
-    }
-
-    func testProfilePathResolverFirefoxPath() {
-        let base = URL(fileURLWithPath: "/Users/test/Library/Application Support")
-        let resolver = ProfilePathResolver(applicationSupportDirectory: base)
-
-        XCTAssertEqual(
-            resolver.applicationSupportDirectory(forBundleID: "org.mozilla.firefox")?.path,
-            base.appendingPathComponent("Firefox").path
-        )
-    }
-
-    func testProfilePathResolverUnsupportedFamiliesReturnNil() {
-        let base = URL(fileURLWithPath: "/Users/test/Library/Application Support")
-        let resolver = ProfilePathResolver(applicationSupportDirectory: base)
-
-        // Safari and unknown bundle IDs have no profile-config directory.
-        XCTAssertNil(resolver.applicationSupportDirectory(forBundleID: "com.apple.Safari"))
-        XCTAssertNil(resolver.applicationSupportDirectory(forBundleID: "com.example.Unknown"))
-    }
 }

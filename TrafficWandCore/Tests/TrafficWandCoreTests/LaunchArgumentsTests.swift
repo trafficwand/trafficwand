@@ -30,21 +30,67 @@ struct BrowserFamilyTests {
         #expect(BrowserFamily(bundleID: "com.apple.Safari") == .safari)
     }
 
-    @Test("An unknown bundle ID maps to .other")
-    func unknownBundleID() {
-        #expect(BrowserFamily(bundleID: "com.example.SomeBrowser") == .other)
+    @Test("Zen (a Firefox fork) maps to .firefox")
+    func zenBundleID() {
+        #expect(BrowserFamily(bundleID: "app.zen-browser.zen") == .firefox)
     }
 
-    @Test("An empty bundle ID maps to .other")
+    @Test("An unknown bundle ID defaults to .chromium")
+    func unknownBundleID() {
+        #expect(BrowserFamily(bundleID: "com.example.SomeBrowser") == .chromium)
+    }
+
+    @Test("An empty bundle ID defaults to .chromium")
     func emptyBundleID() {
-        #expect(BrowserFamily(bundleID: "") == .other)
+        #expect(BrowserFamily(bundleID: "") == .chromium)
+    }
+
+    @Test(
+        "Curated browsers are recognized by isKnownBrowser",
+        arguments: [
+            "com.google.Chrome",
+            "com.google.Chrome.beta",
+            "com.google.Chrome.canary",
+            "com.microsoft.edgemac",
+            "com.brave.Browser",
+            "com.vivaldi.Vivaldi",
+            "org.chromium.Chromium",
+            "company.thebrowser.Browser",   // Arc
+            "ai.perplexity.comet",          // Comet
+            "company.thebrowser.dia",       // Dia
+            "org.mozilla.firefox",
+            "app.zen-browser.zen",          // Zen
+            "com.apple.Safari"
+        ]
+    )
+    func knownBrowsers(_ bundleID: String) {
+        #expect(BrowserFamily.isKnownBrowser(bundleID: bundleID))
+    }
+
+    @Test(
+        "Non-browser http handlers and TrafficWand itself are not known browsers",
+        arguments: [
+            "com.googlecode.iterm2",    // iTerm
+            "net.kovidgoyal.kitty",     // kitty
+            "io.tomakado.TrafficWand",  // self
+            "com.example.SomeBrowser",  // arbitrary unknown
+            ""
+        ]
+    )
+    func unknownAppsAreNotKnownBrowsers(_ bundleID: String) {
+        #expect(!BrowserFamily.isKnownBrowser(bundleID: bundleID))
+    }
+
+    @Test("isKnownBrowser is case-sensitive on the exact reverse-DNS bundle ID")
+    func isKnownBrowserCaseSensitive() {
+        #expect(!BrowserFamily.isKnownBrowser(bundleID: "COM.GOOGLE.CHROME"))
     }
 
     @Test("Mapping is case-sensitive on the exact reverse-DNS bundle ID")
     func caseSensitiveMapping() {
         // Bundle IDs are matched exactly; a differently-cased string is not a
-        // known browser and falls through to .other.
-        #expect(BrowserFamily(bundleID: "COM.GOOGLE.CHROME") == .other)
+        // known browser and falls through to the .chromium default.
+        #expect(BrowserFamily(bundleID: "COM.GOOGLE.CHROME") == .chromium)
     }
 }
 
@@ -121,6 +167,15 @@ struct LaunchArgumentsTests {
         #expect(LaunchArguments.build(for: target, url: url) == ["https://x/"])
     }
 
+    @Test("Zen (Firefox fork) with a profile → -P <name> then URL last")
+    func zenWithProfile() {
+        let target = BrowserTarget(bundleID: "app.zen-browser.zen", profileID: "default")
+        #expect(
+            LaunchArguments.build(for: target, url: url)
+                == ["-P", "default", "https://x/"]
+        )
+    }
+
     // MARK: Safari / unknown
 
     @Test("Safari ignores any profile and yields just the URL")
@@ -129,9 +184,21 @@ struct LaunchArgumentsTests {
         #expect(LaunchArguments.build(for: target, url: url) == ["https://x/"])
     }
 
-    @Test("An unknown browser ignores any profile and yields just the URL")
+    @Test("An unknown browser with a profile is treated as Chromium (--profile-directory)")
     func unknownWithProfile() {
+        // Unknown bundle IDs now default to the Chromium family, so a profileID,
+        // when present, produces the Chromium profile flag.
         let target = BrowserTarget(bundleID: "com.example.SomeBrowser", profileID: "Anything")
+        #expect(
+            LaunchArguments.build(for: target, url: url)
+                == ["--profile-directory=Anything", "https://x/"]
+        )
+    }
+
+    @Test("An unknown browser without a profile yields just the URL")
+    func unknownNoProfile() {
+        // Unknown browsers carry no profileID in practice, so they still emit [url].
+        let target = BrowserTarget(bundleID: "com.example.SomeBrowser", profileID: nil)
         #expect(LaunchArguments.build(for: target, url: url) == ["https://x/"])
     }
 

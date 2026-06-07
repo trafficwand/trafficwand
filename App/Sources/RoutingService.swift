@@ -7,7 +7,7 @@ import os
 /// A thin App-side seam over `WorkspaceBrowserProvider` so `RoutingService` can be
 /// unit-tested with a stub list instead of a live `NSWorkspace` query.
 protocol InstalledBrowsersProviding {
-    /// Returns the installed, allowlisted browsers with profiles attached.
+    /// Returns the installed http(s)-handling browsers with profiles attached.
     func installedBrowsers() -> [Browser]
 }
 

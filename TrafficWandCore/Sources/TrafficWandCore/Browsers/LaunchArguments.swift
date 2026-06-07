@@ -10,7 +10,9 @@ import Foundation
 /// - Chromium with a profile → `["--profile-directory=<dir>", "<url>"]`.
 /// - Firefox with a profile → `["-P", "<name>", "<url>"]` — **no** `-no-remote`
 ///   (it breaks the already-running-browser case; remoting must stay on).
-/// - Safari, unknown families, or any target without a profile → `["<url>"]`.
+/// - Safari, or any target without a profile → `["<url>"]`. Unknown browsers
+///   default to the Chromium family, so they get the `--profile-directory` flag
+///   when (and only when) a profileID is present.
 ///
 /// An empty or whitespace-only `profileID` is treated as **no profile** (no flag
 /// is emitted) rather than producing an empty flag value.
@@ -39,7 +41,7 @@ public enum LaunchArguments {
             return ["--profile-directory=\(profileID)", urlArg]
         case .firefox:
             return ["-P", profileID, urlArg]
-        case .safari, .other:
+        case .safari:
             // No command-line profile selection; the profile is ignored.
             return [urlArg]
         }

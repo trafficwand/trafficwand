@@ -13,8 +13,8 @@ import TrafficWandCore
 /// and no real `~/Library` reads.
 public protocol ProfilePathResolving: Sendable {
     /// The Application Support directory containing the given browser's profile
-    /// configuration, or `nil` for families with no command-line profile support
-    /// (Safari, unknown).
+    /// configuration, or `nil` for any bundle ID without a known profile-config
+    /// sub-path.
     func applicationSupportDirectory(forBundleID bundleID: String) -> URL?
 }
 
@@ -24,8 +24,9 @@ public struct ProfilePathResolver: ProfilePathResolving {
     /// The base `~/Library/Application Support` directory (injected for testing).
     private let applicationSupportDirectory: URL
 
-    /// Canonical per-bundle-ID sub-path under Application Support (verified macOS
-    /// layout). Families without a profile-config directory are simply absent.
+    /// Canonical per-bundle-ID sub-path under Application Support (canonical macOS
+    /// layout; some newer entries are pending device verification — see inline
+    /// notes). Families without a profile-config directory are simply absent.
     private static let subPathsByBundleID: [String: String] = [
         // Chromium family.
         "com.google.Chrome": "Google/Chrome",
@@ -35,8 +36,18 @@ public struct ProfilePathResolver: ProfilePathResolving {
         "com.brave.Browser": "BraveSoftware/Brave-Browser",
         "com.vivaldi.Vivaldi": "Vivaldi",
         "org.chromium.Chromium": "Chromium",
-        // Firefox family.
-        "org.mozilla.firefox": "Firefox"
+        // Chromium-family newcomers. Arc is verified; Comet and Dia paths are
+        // pending device verification. Unlike the established Chromium entries
+        // above (which point at the containing dir, e.g. "Vivaldi"), these nest
+        // their Chromium profile config one level deeper under a "User Data"
+        // subdirectory — do not "normalize" these paths by dropping that suffix.
+        "company.thebrowser.Browser": "Arc/User Data",
+        "ai.perplexity.comet": "Comet/User Data",
+        "company.thebrowser.dia": "Dia/User Data",
+        // Firefox family. Zen is a Firefox fork; its path is pending device
+        // verification.
+        "org.mozilla.firefox": "Firefox",
+        "app.zen-browser.zen": "zen"
     ]
 
     /// - Parameter applicationSupportDirectory: The base Application Support

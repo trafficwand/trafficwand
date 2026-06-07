@@ -25,8 +25,10 @@ public struct BrowserCandidate: Equatable, Sendable {
 ///
 /// Behavior:
 ///  - Excludes TrafficWand itself (`selfBundleID`).
-///  - Filters to **real browsers** by family (`BrowserFamily(bundleID:) != .other`):
-///    a random app that merely claims to handle http is dropped.
+///  - Filters to the curated browser allowlist (`BrowserFamily.isKnownBrowser`):
+///    `NSWorkspace`'s http(s)-handler enumeration also returns terminals (iTerm,
+///    kitty) and Electron apps, which are not browsers and must not be listed.
+///    Launch stays permissive (unknown ⇒ Chromium); only *listing* is curated.
 ///  - Does **not** filter by default-ness: a real non-default browser still shows.
 ///  - Attaches profiles per family via the injected `ProfileReading` (resolved by
 ///    `profileReaderForFamily`) and the per-family support path from `pathResolver`.
@@ -43,7 +45,7 @@ public enum BrowserMerger {
     ///   - profileReaderForFamily: Supplies the `ProfileReading` for a family
     ///     (injected so tests stub it; the App wires Chrome/Firefox readers).
     ///   - pathResolver: Resolves a bundle ID's Application Support directory.
-    /// - Returns: Allowlisted browsers with profiles attached, sorted by name.
+    /// - Returns: Allowlisted, non-self browsers with profiles attached, sorted by name.
     public static func merge(
         candidates: [BrowserCandidate],
         selfBundleID: String,
@@ -55,11 +57,13 @@ public enum BrowserMerger {
         var seen: Set<String> = []
         let browsers: [Browser] = candidates.compactMap { candidate in
             guard candidate.bundleID != selfBundleID else { return nil }
+            // Picker allowlist: surface only curated, real browsers. NSWorkspace's
+            // http(s)-handler enumeration also returns terminals (iTerm, kitty),
+            // Electron apps, and TrafficWand itself — none of which are browsers.
+            // Launch still treats any unknown bundle ID as Chromium (see
+            // BrowserFamily); this gate is about *listing*, not *launching*.
+            guard BrowserFamily.isKnownBrowser(bundleID: candidate.bundleID) else { return nil }
             let family = BrowserFamily(bundleID: candidate.bundleID)
-            // The allowlist is derived from `BrowserFamily` (single source of
-            // truth): any bundle ID in a known family (Chromium/Firefox/Safari) is
-            // a real browser; `.other` is a non-browser http handler and is dropped.
-            guard family != .other else { return nil }
             guard seen.insert(candidate.bundleID).inserted else { return nil }
 
             let profiles = discoverProfiles(
@@ -124,7 +128,7 @@ public final class WorkspaceBrowserProvider {
         self.pathResolver = pathResolver
     }
 
-    /// Returns the installed, allowlisted browsers with profiles attached.
+    /// Returns the installed http(s)-handling browsers with profiles attached.
     public func installedBrowsers() -> [Browser] {
         let candidates = workspaceCandidates()
         return BrowserMerger.merge(
@@ -148,15 +152,16 @@ public final class WorkspaceBrowserProvider {
         }
     }
 
-    /// Maps a family to its concrete `ProfileReading`. Safari/other have no
-    /// command-line profiles, so a no-op reader is returned.
+    /// Maps a family to its concrete `ProfileReading`. Safari has no command-line
+    /// profiles, so a no-op reader is returned. Unknown browsers map to `.chromium`
+    /// and are served by `ChromeProfileReader`.
     private static func profileReader(for family: BrowserFamily) -> ProfileReading {
         switch family {
         case .chromium:
             return ChromeProfileReader()
         case .firefox:
             return FirefoxProfileReader()
-        case .safari, .other:
+        case .safari:
             return NoProfilesReader()
         }
     }

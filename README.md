@@ -138,7 +138,8 @@ all subdomains.
 
 Each rule can target a specific profile within a browser:
 
-- **Chromium family** (Chrome, Edge, Brave, Vivaldi, Chromium): selected with
+- **Chromium family** (Chrome, Edge, Brave, Vivaldi, Chromium, Arc, Dia, Comet, and any
+  other non-Firefox browser — Chromium is the catch-all default): selected with
   `--profile-directory=<dir>`, where `<dir>` is the profile's *directory name* (e.g.
   `Default`, `Profile 1`). TrafficWand discovers these from the browser's `Local State`
   file. Profile routing into a running Chromium browser is **reliable**.
@@ -161,8 +162,10 @@ single-instance remoting model may open the link in the already-running profile 
 than spinning up the requested one. (`-no-remote` is deliberately *not* used, because it
 breaks the running-instance case entirely.) Chromium has no such limitation.
 
-Safari and any other browser have no command-line profile selection, so rules targeting
-them route the link without a profile.
+Safari has no command-line profile selection, so rules targeting it route the link
+without a profile. Every other non-Firefox browser is treated as Chromium and uses
+`--profile-directory=<dir>` when a profile is set (unknown browsers simply carry no
+profile, so they launch their default).
 
 ---
 

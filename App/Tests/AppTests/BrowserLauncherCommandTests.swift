@@ -146,9 +146,10 @@ final class BrowserLauncherCommandTests: XCTestCase {
         XCTAssertEqual(command.arguments.last, url.absoluteString)
     }
 
-    func testUnknownFamilyWithProfileIDUsesPlainOpenWithoutNewInstance() {
-        // Same guard for `.other` families: a non-empty profileID (e.g. hand-edited
-        // config) must not force a new instance, since no profile flag is emitted.
+    func testUnknownFamilyWithProfileIDUsesChromiumNewInstancePath() {
+        // An unknown browser now classifies as the Chromium default, so a non-empty
+        // profileID DOES emit `--profile-directory=…` and takes the new-instance
+        // (`-n … --args`) path — just like Chrome/Edge/Brave.
         let unknown = browser(
             bundleID: "com.example.MysteryBrowser",
             name: "Mystery",
@@ -159,12 +160,17 @@ final class BrowserLauncherCommandTests: XCTestCase {
         let command = BrowserLaunchCommand.make(target: target, browser: unknown, url: url)
 
         XCTAssertEqual(command.arguments, [
+            "-n",
             "-a",
             "/Applications/Mystery.app",
+            "--args",
+            "--profile-directory=ignored",
             url.absoluteString
         ])
-        XCTAssertFalse(command.arguments.contains("-n"))
-        XCTAssertFalse(command.arguments.contains("--args"))
+        XCTAssertTrue(command.arguments.contains("-n"))
+        XCTAssertTrue(command.arguments.contains("--args"))
+        XCTAssertTrue(command.arguments.contains("--profile-directory=ignored"))
+        XCTAssertEqual(command.arguments.last, url.absoluteString)
     }
 
     func testUnknownFamilyNoProfileUsesPlainOpenWithoutNewInstance() {
