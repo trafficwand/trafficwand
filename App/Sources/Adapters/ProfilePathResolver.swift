@@ -36,6 +36,10 @@ public struct ProfilePathResolver: ProfilePathResolving {
         "com.brave.Browser": "BraveSoftware/Brave-Browser",
         "com.vivaldi.Vivaldi": "Vivaldi",
         "org.chromium.Chromium": "Chromium",
+        // Helium stores its Chromium profile config directly under
+        // net.imput.helium/ (verified from a real install) — like Vivaldi/Chromium
+        // above, the sub-path is the containing dir; do not nest under "User Data".
+        "net.imput.helium": "net.imput.helium",
         // Chromium-family newcomers. Arc is verified; Comet and Dia paths are
         // pending device verification. Unlike the established Chromium entries
         // above (which point at the containing dir, e.g. "Vivaldi"), these nest

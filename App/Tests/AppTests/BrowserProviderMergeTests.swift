@@ -88,7 +88,8 @@ final class BrowserProviderMergeTests: XCTestCase {
             candidate("com.apple.Safari", "Safari"),
             candidate("company.thebrowser.Browser", "Arc"),
             candidate("ai.perplexity.comet", "Comet"),
-            candidate("app.zen-browser.zen", "Zen")
+            candidate("app.zen-browser.zen", "Zen"),
+            candidate("net.imput.helium", "Helium")
         ]
 
         let browsers = BrowserMerger.merge(
@@ -108,7 +109,8 @@ final class BrowserProviderMergeTests: XCTestCase {
             "com.apple.Safari",
             "company.thebrowser.Browser",
             "ai.perplexity.comet",
-            "app.zen-browser.zen"
+            "app.zen-browser.zen",
+            "net.imput.helium"
         ])
     }
 

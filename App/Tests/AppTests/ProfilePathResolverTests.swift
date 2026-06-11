@@ -38,6 +38,12 @@ final class ProfilePathResolverTests: XCTestCase {
             resolver.applicationSupportDirectory(forBundleID: "org.chromium.Chromium")?.path,
             base.appendingPathComponent("Chromium").path
         )
+        // Helium stores its Chromium profile config directly under
+        // net.imput.helium/ (containing-dir style, like Vivaldi/Chromium).
+        XCTAssertEqual(
+            resolver.applicationSupportDirectory(forBundleID: "net.imput.helium")?.path,
+            base.appendingPathComponent("net.imput.helium").path
+        )
     }
 
     func testProfilePathResolverChromiumNewcomerPaths() {

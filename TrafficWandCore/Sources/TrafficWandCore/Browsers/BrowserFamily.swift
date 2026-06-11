@@ -9,8 +9,8 @@ import Foundation
 ///
 /// **Chromium is the default family.** Nearly every modern non-Safari/non-Firefox
 /// browser is Chromium-based, so any bundle ID not on the Firefox or Safari lists
-/// maps to `.chromium`. This means newcomers we never explicitly listed (Arc, Dia,
-/// Comet, …) still launch correctly with Chromium-style profile selection.
+/// maps to `.chromium`. This means any Chromium-based browser we haven't explicitly
+/// named still launches correctly with Chromium-style profile selection.
 ///
 /// The Firefox/Safari bundle-ID allowlists below come from the launch-mechanism
 /// spike (§4) and are the single source of truth for the non-default families —
@@ -55,7 +55,8 @@ public enum BrowserFamily: Equatable, Sendable {
         "org.chromium.Chromium",
         "company.thebrowser.Browser",   // Arc
         "ai.perplexity.comet",          // Comet
-        "company.thebrowser.dia"        // Dia
+        "company.thebrowser.dia",       // Dia
+        "net.imput.helium"              // Helium
     ]
 
     /// Bundle identifiers of the browsers TrafficWand surfaces in the picker.

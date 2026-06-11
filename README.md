@@ -138,8 +138,8 @@ all subdomains.
 
 Each rule can target a specific profile within a browser:
 
-- **Chromium family** (Chrome, Edge, Brave, Vivaldi, Chromium, Arc, Dia, Comet, and any
-  other non-Firefox browser — Chromium is the catch-all default): selected with
+- **Chromium family** (Chrome, Edge, Brave, Vivaldi, Chromium, Arc, Dia, Comet, Helium,
+  and any other non-Firefox browser — Chromium is the catch-all default): selected with
   `--profile-directory=<dir>`, where `<dir>` is the profile's *directory name* (e.g.
   `Default`, `Profile 1`). TrafficWand discovers these from the browser's `Local State`
   file. Profile routing into a running Chromium browser is **reliable**.

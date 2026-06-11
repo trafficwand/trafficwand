@@ -13,7 +13,8 @@ struct BrowserFamilyTests {
             "com.microsoft.edgemac",
             "com.brave.Browser",
             "com.vivaldi.Vivaldi",
-            "org.chromium.Chromium"
+            "org.chromium.Chromium",
+            "net.imput.helium"              // Helium
         ]
     )
     func chromiumBundleIDs(_ bundleID: String) {
@@ -58,6 +59,7 @@ struct BrowserFamilyTests {
             "company.thebrowser.Browser",   // Arc
             "ai.perplexity.comet",          // Comet
             "company.thebrowser.dia",       // Dia
+            "net.imput.helium",             // Helium
             "org.mozilla.firefox",
             "app.zen-browser.zen",          // Zen
             "com.apple.Safari"
