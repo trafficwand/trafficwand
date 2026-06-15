@@ -94,32 +94,32 @@ struct ProfileAliasTests {
     @Test("Hashable: equal values share a hash; different ids differ")
     func hashableIdentity() {
         let id = UUID()
-        let a = ProfileAlias(
+        let first = ProfileAlias(
             id: id,
             name: "Personal",
             target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 2")
         )
-        let b = ProfileAlias(
+        let second = ProfileAlias(
             id: id,
             name: "Personal",
             target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 2")
         )
         var set = Set<ProfileAlias>()
-        set.insert(a)
-        set.insert(b)
+        set.insert(first)
+        set.insert(second)
         #expect(set.count == 1)
     }
 
     @Test("Default memberwise init generates a fresh UUID")
     func defaultInitGeneratesID() {
-        let a = ProfileAlias(
+        let first = ProfileAlias(
             name: "Personal",
             target: BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)
         )
-        let b = ProfileAlias(
+        let second = ProfileAlias(
             name: "Personal",
             target: BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)
         )
-        #expect(a.id != b.id)
+        #expect(first.id != second.id)
     }
 }

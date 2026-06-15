@@ -441,14 +441,24 @@ stays defensive regardless (dangling → picker).
 
 ### Task 12: Verify acceptance criteria
 
-- [ ] verify issue #13 behavior end-to-end: define an alias, point ≥2 rules at it, change
-      the alias's browser, confirm all referencing rules resolve to the new browser (covered
-      by `RouterTests` + `SettingsViewModelTests`)
-- [ ] verify edge cases: dangling reference → picker; legacy `config.json` migrates; block
-      delete of a referenced alias; fallback alias resolves
-- [ ] run full Core suite: `task test-core` (includes the no-AppKit guard)
-- [ ] run full App suite: `task test`
-- [ ] run `task lint` — must be clean
+- [x] verify issue #13 behavior end-to-end: define an alias, point ≥2 rules at it, change
+      the alias's browser, confirm all referencing rules resolve to the new browser — added
+      `RouterTests.repointingAliasPropagatesToAllReferencingRules` (two rules share one
+      `.alias`; mutate the alias target; both rules re-route in lockstep). Per-alias CRUD
+      propagation is also pinned by `SettingsViewModelAliasTests`
+      (`testUpdateAliasPersistsTheChange`).
+- [x] verify edge cases — all covered by existing tests: dangling reference → picker
+      (`RouterTests.ruleMatchDanglingAliasPrompts` / `noMatchDefaultBrowserDanglingAliasPrompts`);
+      legacy `config.json` migrates (`AppConfigMigrationTests.fullV1Migration` +
+      `RuleCodableMigrationTests` + `FallbackPolicyMigrationTests`); block delete of a
+      referenced alias (`SettingsViewModelAliasTests.testDeleteReferencedAliasIsNoOp` /
+      `testDeleteAliasReferencedByFallbackIsNoOp`); fallback alias resolves
+      (`RouterTests.noMatchDefaultBrowserAliasResolves`).
+- [x] run full Core suite: `task test-core` — passed (164 tests, 19 suites; no-AppKit guard passed).
+- [x] run full App suite: `task test` — passed (158 tests, 0 failures).
+- [x] run `task lint` — clean (zero warnings; the 4 pre-existing Task-1 short-identifier
+      warnings in `ProfileAliasTests.swift` were fixed by renaming `a`/`b` to
+      `first`/`second`).
 
 ### Task 13: [Final] Documentation
 

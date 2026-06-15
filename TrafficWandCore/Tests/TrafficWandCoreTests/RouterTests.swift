@@ -220,4 +220,52 @@ struct RouterTests {
         )
         #expect(decision == .prompt(url: url, browsers: browsers))
     }
+
+    /// Issue #13 end-to-end: re-pointing a single alias propagates to *every*
+    /// referencing rule at once. Two distinct rules (matching two distinct URLs)
+    /// share one `.alias` destination; mutating the alias's target re-routes both
+    /// in lockstep through `Router.decide` — the live-reference semantics that
+    /// distinguish an alias from a frozen copy.
+    @Test("Re-pointing an alias re-routes every rule that references it")
+    func repointingAliasPropagatesToAllReferencingRules() {
+        let aliasID = UUID()
+        let oldTarget = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1")
+        let newTarget = BrowserTarget(bundleID: "org.mozilla.firefox", profileID: "Work")
+
+        let githubURL = URL(string: "https://gist.github.com/foo")!
+        let exampleURL = URL(string: "https://docs.example.com/bar")!
+
+        var config = AppConfig(
+            aliases: [ProfileAlias(id: aliasID, name: "Personal", target: oldTarget)],
+            rules: [
+                Rule(pattern: "*.github.com", destination: .alias(aliasID), isEnabled: true),
+                Rule(pattern: "*.example.com", destination: .alias(aliasID), isEnabled: true)
+            ],
+            fallback: .picker
+        )
+
+        // Before re-pointing: both matching URLs resolve to the alias's old target.
+        #expect(
+            Router.decide(url: githubURL, config: config, lastUsed: nil, availableBrowsers: [])
+                == .open(oldTarget)
+        )
+        #expect(
+            Router.decide(url: exampleURL, config: config, lastUsed: nil, availableBrowsers: [])
+                == .open(oldTarget)
+        )
+
+        // Re-point the single alias at a different browser.
+        config.aliases[0].target = newTarget
+
+        // After re-pointing: both referencing rules now resolve to the new target,
+        // with no per-rule edits.
+        #expect(
+            Router.decide(url: githubURL, config: config, lastUsed: nil, availableBrowsers: [])
+                == .open(newTarget)
+        )
+        #expect(
+            Router.decide(url: exampleURL, config: config, lastUsed: nil, availableBrowsers: [])
+                == .open(newTarget)
+        )
+    }
 }
