@@ -363,15 +363,15 @@ each can go green on its own.
 **Files:**
 - Modify: `App/Sources/UI/Settings/AliasesListView.swift`
 
-- [ ] add a concise, always-visible description at the top of the Aliases tab (or as the
+- [x] add a concise, always-visible description at the top of the Aliases tab (or as the
       detail placeholder) explaining what an alias is and the re-point-once-re-route-all
       benefit. **Reconcile/dedupe the copy** — the same "re-point once to re-route" idea
       currently appears in the empty-state (`AliasesListView` ~lines 74-75) and the
       `AliasEditorView` name caption (~lines 50-51); avoid a third near-duplicate. Decide
       one canonical home (the tab/detail description) and trim the others to short,
       non-redundant hints
-- [ ] update the `#Preview`(s) to show the description
-- [ ] run `task test` and `task lint` — must pass before next task
+- [x] update the `#Preview`(s) to show the description
+- [x] run `task test` and `task lint` — must pass before next task
 
 ### Task 7: Verify acceptance criteria
 

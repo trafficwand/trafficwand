@@ -47,8 +47,7 @@ struct AliasEditorView: View {
                         // `.onSubmit` only fires on Return; flush on focus-out too.
                         if !focused { commitName() }
                     }
-                Text("A reusable name (e.g. \"Personal\", \"Work\") that rules and the "
-                    + "fallback can point at. Re-pointing it here updates every rule that uses it.")
+                Text("The name rules and the fallback refer to this alias by.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

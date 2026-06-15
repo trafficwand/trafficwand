@@ -45,6 +45,14 @@ struct AliasesListView: View {
 
     private var sidebar: some View {
         List(selection: $selectedAliasID) {
+            Section {
+                Text("An alias is a named, reusable destination (e.g. \"Personal\" or "
+                    + "\"Work\") that rules and the fallback point at by name. Re-point it "
+                    + "once to re-route everything that uses it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .listRowSeparator(.hidden)
+            }
             ForEach(viewModel.aliases) { alias in
                 AliasRow(
                     name: alias.name,
@@ -95,8 +103,9 @@ struct AliasesListView: View {
                 .foregroundStyle(.secondary)
             Text(viewModel.aliases.isEmpty ? "No aliases yet" : "Select an alias")
                 .font(.headline)
-            Text("Create a reusable alias (e.g. \"Personal\" or \"Work\") and point rules "
-                + "at it. Change the alias once to re-route every rule that uses it.")
+            Text(viewModel.aliases.isEmpty
+                ? "Add one with the + button to get started."
+                : "Choose an alias on the left to edit it.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -166,14 +175,17 @@ private struct AliasRow: View {
 }
 
 #if DEBUG
-// Master-detail list (opens to the empty-selection placeholder; clicking a sidebar
-// row drives the inline detail editor — previewed standalone in `AliasEditorView`).
+// Master-detail list: the sidebar opens with the always-visible "what is an alias"
+// description above the alias rows, and the detail shows the empty-selection
+// placeholder until a sidebar row is clicked (the inline detail editor is previewed
+// standalone in `AliasEditorView`).
 #Preview("Aliases — list") {
     AliasesListView(viewModel: PreviewFixtures.makePreviewSettingsViewModel())
         .frame(width: 640, height: 380)
 }
 
-// The detail placeholder shown when no alias is selected, against an empty config.
+// Empty config: the sidebar description still shows above the empty list, and the
+// detail shows the "No aliases yet" placeholder.
 #Preview("Aliases — empty") {
     AliasesListView(
         viewModel: PreviewFixtures.makePreviewSettingsViewModel(config: PreviewFixtures.emptyConfig)
