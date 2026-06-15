@@ -11,9 +11,10 @@
 #                     Must match the configuration used in the preceding build.
 #
 # Env-var seams (for testing — mirrors verify-release-version.sh's PROJECT_FILE pattern):
-#   APP_PATH    Override the source bundle path; skips xcodebuild resolution.
-#   INSTALL_DIR Override the destination directory (default: /Applications).
-#   QUIT_CMD    Override the quit command (default: pkill -x TrafficWand).
+#   APP_PATH     Override the source bundle path; skips xcodebuild resolution.
+#   INSTALL_DIR  Override the destination directory (default: /Applications).
+#   QUIT_CMD     Override the quit command (default: pkill -x TrafficWand).
+#   CODESIGN_CMD Override the re-sign command (default: ad-hoc deep re-sign).
 #
 # The script is intentionally not responsible for building the app; callers
 # (i.e. the Taskfile) ensure the build runs first.
@@ -100,7 +101,28 @@ Usage: install-app.sh <configuration>
     rm -rf "$install_dir/$bundle_name"
     ditto "$app_path" "$install_dir/$bundle_name"
 
-    printf 'Installed: %s\n' "$install_dir/$bundle_name"
+    local installed_bundle="$install_dir/$bundle_name"
+
+    # --- Re-sign for local launch -------------------------------------------
+    # Local builds are ad-hoc signed (CODE_SIGN_IDENTITY "-") with Hardened
+    # Runtime still flagged on. Hardened Runtime enables Library Validation,
+    # which refuses to load the embedded Sparkle.framework: an independently
+    # ad-hoc-signed framework has no Team ID matching the (also team-less) host
+    # app, so dyld aborts at launch with "Library not loaded ... different Team
+    # IDs". Re-signing the whole bundle ad-hoc WITHOUT the runtime flag drops
+    # Library Validation, so the framework loads. Release builds (`task dmg`)
+    # sign everything with one Developer ID identity and are unaffected — this
+    # re-sign is local-install-only.
+    #
+    # eval mirrors the QUIT_CMD seam: the default is multi-word and must be
+    # split into command + args by the shell. CODESIGN_CMD is injectable so
+    # tests can assert the step ran without invoking the real codesign (which
+    # would reject the fake fixture bundles). The bundle path is appended as a
+    # separately-quoted eval argument so paths with spaces survive.
+    local entitlements="App/Resources/TrafficWand.entitlements"
+    eval "${CODESIGN_CMD:-codesign --force --deep --sign - --entitlements \"\$entitlements\"}" "\"\$installed_bundle\""
+
+    printf 'Installed: %s\n' "$installed_bundle"
 }
 
 main "$@"
