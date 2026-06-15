@@ -44,19 +44,10 @@ struct AliasesListView: View {
     // MARK: - Sidebar
 
     private var sidebar: some View {
-        // Keep the List as the sidebar's direct content so it fills the column and
-        // renders rows; the description is the first row (with `.fixedSize` so the
-        // multi-line Text claims its full height instead of truncating to one line).
+        // The list is just the scannable alias rows; the "what is an alias" blurb
+        // lives in the detail placeholder (a List row truncates multi-line text and
+        // the wide detail pane wraps it cleanly — see `placeholder`).
         List(selection: $selectedAliasID) {
-            Section {
-                Text("An alias is a named, reusable destination (e.g. \"Personal\" or "
-                    + "\"Work\") that rules and the fallback point at by name. Re-point it "
-                    + "once to re-route everything that uses it.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .listRowSeparator(.hidden)
-            }
             ForEach(viewModel.aliases) { alias in
                 AliasRow(
                     name: alias.name,
@@ -129,9 +120,21 @@ struct AliasesListView: View {
             Text(viewModel.aliases.isEmpty
                 ? "Add one with the + button to get started."
                 : "Choose an alias on the left to edit it.")
-                .font(.caption)
+                .font(.callout)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+
+            // The "what is an alias" explanation lives here in the wide detail pane,
+            // where it wraps cleanly and is shown exactly when nothing is selected —
+            // the moment a user wonders what aliases are for.
+            Text("An alias is a named, reusable destination (e.g. \"Personal\" or "
+                + "\"Work\") that rules and the fallback point at by name. Re-point it "
+                + "once to re-route everything that uses it.")
+                .font(.caption)
+                .foregroundStyle(.tertiary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 360)
+                .padding(.top, 12)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
@@ -198,17 +201,17 @@ private struct AliasRow: View {
 }
 
 #if DEBUG
-// Master-detail list: the sidebar opens with the always-visible "what is an alias"
-// description above the alias rows, and the detail shows the empty-selection
-// placeholder until a sidebar row is clicked (the inline detail editor is previewed
-// standalone in `AliasEditorView`).
+// Master-detail list: the sidebar lists the alias rows; the detail shows the
+// empty-selection placeholder (with the "what is an alias" explanation) until a
+// sidebar row is clicked (the inline detail editor is previewed standalone in
+// `AliasEditorView`).
 #Preview("Aliases — list") {
     AliasesListView(viewModel: PreviewFixtures.makePreviewSettingsViewModel())
         .frame(width: 640, height: 380)
 }
 
-// Empty config: the sidebar description still shows above the empty list, and the
-// detail shows the "No aliases yet" placeholder.
+// Empty config: the detail shows the "No aliases yet" placeholder (with the alias
+// explanation); the sidebar is an empty list with the Add (+) bar at the bottom.
 #Preview("Aliases — empty") {
     AliasesListView(
         viewModel: PreviewFixtures.makePreviewSettingsViewModel(config: PreviewFixtures.emptyConfig)
