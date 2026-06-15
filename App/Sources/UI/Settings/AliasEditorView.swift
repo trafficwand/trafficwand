@@ -56,9 +56,6 @@ struct AliasEditorView: View {
                         // focus-out that races a selection change can't misroute.
                         if !focused { commitName(to: aliasID) }
                     }
-                Text("The name rules and the fallback refer to this alias by.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
 
             Section {

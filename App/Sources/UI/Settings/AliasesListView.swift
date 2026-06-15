@@ -127,9 +127,9 @@ struct AliasesListView: View {
             // The "what is an alias" explanation lives here in the wide detail pane,
             // where it wraps cleanly and is shown exactly when nothing is selected —
             // the moment a user wonders what aliases are for.
-            Text("An alias is a named, reusable destination (e.g. \"Personal\" or "
-                + "\"Work\") that rules and the fallback point at by name. Re-point it "
-                + "once to re-route everything that uses it.")
+            Text("Save a browser under a name like “Work” or “Personal”, then use "
+                + "that name in your rules. Change browser under alias once, and every "
+                + "rule using it updates automatically.")
                 .font(.caption)
                 .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
@@ -180,7 +180,7 @@ struct AliasesListView: View {
         }
         let used = parts.joined(separator: " and ")
         return "\"\(alias.name)\" is still used by \(used). "
-            + "Re-point those to another destination before deleting it."
+            + "Make sure the alias isn't used before deleting it."
     }
 }
 
