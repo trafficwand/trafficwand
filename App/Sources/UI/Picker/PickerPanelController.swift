@@ -7,10 +7,11 @@ import os
 /// and carries out the user's choice.
 ///
 /// Conforms to `PickerPresenting`, so `RoutingService` hands every `.prompt`
-/// decision here. `presentPicker(url:browsers:)` builds a `PickerViewModel`, hosts
-/// `BrowserPickerView` in a borderless nonactivating `NSPanel` (so the menu-bar
-/// agent can show it without becoming a regular foreground app), and wires the
-/// view model's outcomes:
+/// decision here. `presentPicker(url:browsers:aliases:)` builds a `PickerViewModel`
+/// (forwarding the `aliases` so the view model renders them as the top "Aliases"
+/// section), hosts `BrowserPickerView` in a borderless nonactivating `NSPanel` (so
+/// the menu-bar agent can show it without becoming a regular foreground app), and
+/// wires the view model's outcomes:
 ///
 ///  - **selection** → launch the chosen `BrowserTarget` via the injected
 ///    `BrowserLaunching`, record it via the injected `LastUsedRecording`, and (when

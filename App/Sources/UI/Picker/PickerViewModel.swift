@@ -215,12 +215,20 @@ final class PickerViewModel {
 
     /// Selects `browser` (and optionally `profile`) as the routing destination.
     ///
-    /// Builds a browser/profile `SelectableItem` and delegates to `select(item:)`,
-    /// so both the launch target and the (concrete) remember destination are
-    /// derived from the same place. `nil` profile → launch the default profile.
+    /// Looks the matching row up in `selectableItems` (rather than re-deriving its id
+    /// scheme, which would risk drifting from `init`) and delegates to `select(item:)`.
+    /// `nil` profile → the browser's default row. Falls back to a freshly-built item if
+    /// no matching row exists (e.g. a browser not among the offered list). A test-only
+    /// convenience; production selection flows through `select(item:)`.
     func select(browser: Browser, profile: BrowserProfile?) {
-        let id = profile.map { "\(browser.bundleID)#profile:\($0.id)" } ?? "\(browser.bundleID)#self"
-        select(item: SelectableItem(id: id, kind: .browser(browser, profile)))
+        let item = selectableItems.first { item in
+            guard case .browser(let rowBrowser, let rowProfile) = item.kind else { return false }
+            return rowBrowser.bundleID == browser.bundleID && rowProfile?.id == profile?.id
+        } ?? SelectableItem(
+            id: profile.map { "\(browser.bundleID)#profile:\($0.id)" } ?? "\(browser.bundleID)#self",
+            kind: .browser(browser, profile)
+        )
+        select(item: item)
     }
 
     /// Moves the keyboard highlight by `delta`, clamping to the bounds of
@@ -235,6 +243,24 @@ final class PickerViewModel {
     func activateSelection() {
         guard selectableItems.indices.contains(selectedIndex) else { return }
         select(item: selectableItems[selectedIndex])
+    }
+
+    /// The resolved "Browser — Profile" (or just "Browser") label for a concrete
+    /// `target`, using the offered `browsers` to resolve names. Returns `nil` when the
+    /// target's browser is not among the offered browsers (e.g. an alias whose target
+    /// is uninstalled), so the row can hide the secondary line.
+    ///
+    /// Pure decision logic kept on the view model (per CLAUDE.md) so the picker rows
+    /// stay declarative and this labeling is unit-testable.
+    func browserLabel(for target: BrowserTarget) -> String? {
+        guard let browser = browsers.first(where: { $0.bundleID == target.bundleID }) else {
+            return nil
+        }
+        if let profileID = target.profileID,
+           let profile = browser.profiles.first(where: { $0.id == profileID }) {
+            return "\(browser.name) — \(profile.name)"
+        }
+        return browser.name
     }
 
     /// Copies the URL string via the injected `onCopy` closure.

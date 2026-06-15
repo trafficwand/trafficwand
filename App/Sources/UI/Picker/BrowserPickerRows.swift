@@ -84,11 +84,14 @@ extension BrowserPickerView {
     }
 
     /// An alias row: the alias name (primary) with the resolved browser/profile as a
-    /// secondary line, fronted by the resolved browser's icon.
+    /// secondary line, fronted by the resolved browser's icon. The target browser is
+    /// resolved once here and reused for both the icon and the secondary label (which
+    /// comes from the view model's unit-tested `browserLabel(for:)`).
     @ViewBuilder
     private func aliasRowLabel(for alias: ProfileAlias) -> some View {
+        let browser = viewModel.browsers.first(where: { $0.bundleID == alias.target.bundleID })
         HStack(spacing: 8) {
-            if let browser = viewModel.browsers.first(where: { $0.bundleID == alias.target.bundleID }) {
+            if let browser {
                 Image(nsImage: iconProvider.icon(for: browser))
                     .resizable()
                     .interpolation(.high)
@@ -103,7 +106,7 @@ extension BrowserPickerView {
             VStack(alignment: .leading, spacing: 1) {
                 Text(alias.name)
                     .font(.callout)
-                if let secondary = aliasSecondaryLabel(for: alias) {
+                if let secondary = viewModel.browserLabel(for: alias.target) {
                     Text(secondary)
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -111,19 +114,6 @@ extension BrowserPickerView {
             }
             Spacer(minLength: 0)
         }
-    }
-
-    /// The resolved "Browser — Profile" (or just "Browser") secondary label for an
-    /// alias, or nil if the target browser isn't among the offered browsers.
-    private func aliasSecondaryLabel(for alias: ProfileAlias) -> String? {
-        guard let browser = viewModel.browsers.first(where: { $0.bundleID == alias.target.bundleID }) else {
-            return nil
-        }
-        if let profileID = alias.target.profileID,
-           let profile = browser.profiles.first(where: { $0.id == profileID }) {
-            return "\(browser.name) — \(profile.name)"
-        }
-        return browser.name
     }
 
     @ViewBuilder

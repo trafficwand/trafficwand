@@ -52,16 +52,4 @@ public enum RememberRule {
         // exact host so the rule matches only it.
         return Rule(pattern: normalizedHost, destination: destination, isEnabled: true)
     }
-
-    /// Returns the `Rule` to persist for remembering `target` for `url`, or
-    /// `nil` when `url` has no host to scope a rule to. This convenience delegates
-    /// to ``rule(forURL:destination:)`` with a `.browser(target)` destination, so
-    /// a remembered concrete-browser choice behaves exactly as before.
-    ///
-    /// - Parameters:
-    ///   - url: The link whose destination should be remembered.
-    ///   - target: The browser/profile to route matching links to.
-    public static func rule(forURL url: URL, target: BrowserTarget) -> Rule? {
-        rule(forURL: url, destination: .browser(target))
-    }
 }

@@ -197,7 +197,18 @@ final class RoutingServiceTests: XCTestCase {
         // unresolvable target must NOT be recorded as last-used (it would mislead
         // the .lastUsed fallback toward a browser that no longer exists).
         let target = BrowserTarget(bundleID: "com.unknown.Browser", profileID: nil)
-        let config = AppConfig(rules: [], fallback: .defaultBrowser(.browser(target)))
+        // Seed an alias so we can assert config.aliases is threaded through the
+        // private `open(...)` recovery path into the fallback picker (not just the
+        // direct `.prompt` path), so a remembered alias still works on recovery.
+        let alias = ProfileAlias(
+            name: "Work",
+            target: BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)
+        )
+        let config = AppConfig(
+            aliases: [alias],
+            rules: [],
+            fallback: .defaultBrowser(.browser(target))
+        )
         let browsers = [browser("com.google.Chrome", "Google Chrome")]
 
         let launcher = MockLauncher()
@@ -214,6 +225,7 @@ final class RoutingServiceTests: XCTestCase {
         XCTAssertEqual(picker.calls.count, 1)
         XCTAssertEqual(picker.calls.first?.url, url)
         XCTAssertEqual(picker.calls.first?.browserBundleIDs, ["com.google.Chrome"])
+        XCTAssertEqual(picker.calls.first?.aliases, [alias])
         XCTAssertTrue(lastUsed.recorded.isEmpty)
     }
 }

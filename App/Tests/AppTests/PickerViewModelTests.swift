@@ -363,4 +363,24 @@ final class PickerViewModelTests: XCTestCase {
         XCTAssertEqual(outcomes.openedSettingsTabs, [.general])
         XCTAssertEqual(outcomes.cancelCount, 0)
     }
+
+    // MARK: - browserLabel(for:) (alias-row secondary label)
+
+    func testBrowserLabelForBrowserDefaultIsBrowserName() {
+        let (vm, _) = makeViewModel(browsers: [chrome])
+        let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)
+        XCTAssertEqual(vm.browserLabel(for: target), "Google Chrome")
+    }
+
+    func testBrowserLabelForBrowserAndProfileIsBrowserDashProfile() {
+        let (vm, _) = makeViewModel(browsers: [chrome])
+        let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1")
+        XCTAssertEqual(vm.browserLabel(for: target), "Google Chrome — Work")
+    }
+
+    func testBrowserLabelForUninstalledBrowserIsNil() {
+        let (vm, _) = makeViewModel(browsers: [chrome])
+        let target = BrowserTarget(bundleID: "com.unknown.Browser", profileID: nil)
+        XCTAssertNil(vm.browserLabel(for: target))
+    }
 }

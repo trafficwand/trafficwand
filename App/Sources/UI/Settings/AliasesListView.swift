@@ -90,7 +90,11 @@ struct AliasesListView: View {
     @ViewBuilder
     private var detail: some View {
         if let id = selectedAliasID, viewModel.alias(withID: id) != nil {
+            // Pin identity to the selected alias so switching selection RE-INITS the
+            // editor (fresh name buffer / focus state) rather than reusing the instance
+            // and risking a stale buffered name being committed to the wrong alias.
             AliasEditorView(viewModel: viewModel, aliasID: id)
+                .id(id)
         } else {
             placeholder
         }

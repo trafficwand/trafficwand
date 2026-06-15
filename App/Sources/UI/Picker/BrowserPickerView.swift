@@ -1,18 +1,20 @@
 import SwiftUI
 import TrafficWandCore
 
-/// The floating picker UI: shows the link being routed and the list of browsers
-/// (with their profiles), lets the user pick a destination by click or keyboard,
-/// copy the URL, or cancel (Esc).
+/// The floating picker UI: shows the link being routed and the list of
+/// destinations — an optional leading "Aliases" group followed by the installed
+/// browsers (with their profiles) — and lets the user pick one by click or
+/// keyboard, copy the URL, or cancel (Esc).
 ///
 /// All behavior flows through `PickerViewModel`:
-///  - tapping a browser-default row → `select(browser:profile:nil)`;
-///  - tapping a profile sub-row → `select(browser:profile:)`;
+///  - tapping any row (alias, browser-default, or profile) → `select(item:)`;
 ///  - the Copy URL button → `copyURL()`;
 ///  - the Cancel button / Esc → `cancel()`.
 ///
-/// Rows are driven by `viewModel.selectableItems` (a flattened browser-default →
-/// profiles sequence). Each row is a hoverable, pointer-cursor button with press
+/// Rows are driven by `viewModel.selectableItems`: when `aliases` are supplied it
+/// leads with alias rows under an "Aliases" header, then a flattened
+/// browser-default → profiles sequence per browser. Each row is a hoverable,
+/// pointer-cursor button with press
 /// feedback. The panel takes keyboard focus on appear, so the `selectedIndex` row
 /// — the row Return will activate — is highlighted from the start (row 0 by
 /// default); hover takes visual precedence while the mouse is over a row, and

@@ -145,6 +145,26 @@ final class PickerPanelControllerSelectionTests: XCTestCase {
         XCTAssertEqual(harness.persister.calls.first?.destination, .alias(alias.id))
     }
 
+    func testSelectingAliasRowWithoutRememberPersistsNothing() throws {
+        let alias = ProfileAlias(
+            name: "Work",
+            target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1")
+        )
+        let harness = makeController()
+        let vm = harness.controller.makeViewModel(url: url, browsers: [chrome], aliases: [alias])
+        // rememberChoice stays false.
+
+        let aliasRow = try XCTUnwrap(vm.selectableItems.first { item in
+            if case .alias = item.kind { return true }
+            return false
+        })
+        vm.select(item: aliasRow)
+
+        // The alias still launches its resolved target, but nothing is persisted.
+        XCTAssertEqual(harness.launcher.calls.count, 1)
+        XCTAssertTrue(harness.persister.calls.isEmpty)
+    }
+
     // MARK: - no-installed-browser recovery
 
     func testSelectingStaleTargetRecoversWithoutLaunchingOrRemembering() throws {

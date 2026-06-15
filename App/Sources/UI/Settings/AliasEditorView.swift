@@ -13,6 +13,13 @@ import TrafficWandCore
 ///   editable `TextField` only fires `.onSubmit` on Return, so a `@FocusState` +
 ///   `.onChange(of:)` pair flushes the typed name when focus leaves. Committing on
 ///   commit boundaries (not every keystroke) avoids persisting a half-typed name.
+///   The commit is **alias-identity-safe**: it is given the alias id to write to
+///   explicitly, so a focus-out that races a selection change can never write the
+///   buffered text onto the newly-selected alias. The detail pane in `AliasesListView`
+///   additionally pins this view's identity with `.id(aliasID)` so switching
+///   selection re-inits the editor (fresh `nameText`); the editor itself still
+///   flushes the **outgoing** alias on `.onChange(of: aliasID)` (and on `.onDisappear`)
+///   so a typed-but-unsubmitted name is neither lost nor misrouted.
 /// - The **browser/profile** change commits immediately when `BrowserProfilePicker`
 ///   writes through its binding. The profile picker is driven by the profiles of the
 ///   currently-chosen browser, and switching browsers resets a profile the new
@@ -42,10 +49,12 @@ struct AliasEditorView: View {
                 TextField("Name", text: $nameText, prompt: Text("Personal"))
                     .textFieldStyle(.roundedBorder)
                     .focused($nameFieldFocused)
-                    .onSubmit { commitName() }
+                    .onSubmit { commitName(to: aliasID) }
                     .onChange(of: nameFieldFocused) { _, focused in
                         // `.onSubmit` only fires on Return; flush on focus-out too.
-                        if !focused { commitName() }
+                        // Commit explicitly to the alias currently being edited so a
+                        // focus-out that races a selection change can't misroute.
+                        if !focused { commitName(to: aliasID) }
                     }
                 Text("The name rules and the fallback refer to this alias by.")
                     .font(.caption)
@@ -57,10 +66,21 @@ struct AliasEditorView: View {
             }
         }
         .formStyle(.grouped)
-        // Re-seed the name buffer (and reset focus state) when the selection changes
-        // to a different alias, so the field shows the newly-selected alias's name.
-        .onChange(of: aliasID) { _, newID in
+        // When the selection changes to a different alias, flush the OUTGOING alias's
+        // buffered name first (using `oldID`, before re-seeding) so a typed-but-
+        // unsubmitted name is committed to the right alias, then re-seed the buffer
+        // for the newly-selected alias. (With `.id(aliasID)` on the detail view this
+        // path is normally not hit — SwiftUI re-inits the editor — but it is kept as a
+        // belt-and-braces safeguard against a reused instance.)
+        .onChange(of: aliasID) { oldID, newID in
+            commitName(to: oldID)
             nameText = viewModel.alias(withID: newID)?.name ?? ""
+        }
+        // Flush a typed-but-unsubmitted name when the editor is torn down (selection
+        // cleared / switched to the placeholder), since `.onChange(of: focus)` does not
+        // reliably fire on removal.
+        .onDisappear {
+            commitName(to: aliasID)
         }
     }
 
@@ -77,9 +97,13 @@ struct AliasEditorView: View {
         )
     }
 
-    /// Commits the buffered name to the alias and persists, unless it is unchanged.
-    private func commitName() {
-        guard var alias = viewModel.alias(withID: aliasID), alias.name != nameText else { return }
+    /// Commits the buffered name to the alias identified by `id` and persists, unless
+    /// it is unchanged. Taking the id explicitly (rather than reading the view's
+    /// current `aliasID`) makes the commit alias-identity-safe: a focus-out that
+    /// races a selection change writes to the alias that was being edited, never the
+    /// newly-selected one.
+    private func commitName(to id: UUID) {
+        guard var alias = viewModel.alias(withID: id), alias.name != nameText else { return }
         alias.name = nameText
         viewModel.updateAlias(alias)
     }
