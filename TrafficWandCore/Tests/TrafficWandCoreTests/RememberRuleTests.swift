@@ -105,3 +105,77 @@ struct RememberRuleTests {
         #expect(RememberRule.rule(forURL: url, target: target) == nil)
     }
 }
+
+@Suite("RememberRule.rule(forURL:destination:)")
+struct RememberRuleDestinationTests {
+    private let target = BrowserTarget(bundleID: "com.example.Browser", profileID: "Profile 1")
+    private let aliasID = UUID()
+
+    @Test("A browser destination yields a leading-star registrable-domain rule carrying that destination")
+    func browserDestinationHostYieldsRule() throws {
+        let url = URL(string: "https://www.x.com/some/path?q=1")!
+        let destination = RoutingDestination.browser(target)
+        let rule = try #require(RememberRule.rule(forURL: url, destination: destination))
+        #expect(rule.pattern == "*x.com")
+        #expect(rule.isEnabled)
+        #expect(rule.destination == destination)
+    }
+
+    @Test("An alias destination yields a leading-star registrable-domain rule carrying the alias destination")
+    func aliasDestinationHostYieldsRule() throws {
+        let url = URL(string: "https://www.x.com/some/path?q=1")!
+        let destination = RoutingDestination.alias(aliasID)
+        let rule = try #require(RememberRule.rule(forURL: url, destination: destination))
+        #expect(rule.pattern == "*x.com")
+        #expect(rule.isEnabled)
+        #expect(rule.destination == destination)
+    }
+
+    @Test("An alias destination on a subdomain collapses to the registrable domain pattern")
+    func aliasDestinationSubdomainCollapses() throws {
+        let url = URL(string: "https://news.x.com/article")!
+        let destination = RoutingDestination.alias(aliasID)
+        let rule = try #require(RememberRule.rule(forURL: url, destination: destination))
+        #expect(rule.pattern == "*x.com")
+        #expect(rule.destination == destination)
+    }
+
+    @Test("An alias destination on an IPv4-literal host yields an exact-host pattern")
+    func aliasDestinationIPv4ExactHost() throws {
+        let url = URL(string: "http://192.168.0.1:8080/admin")!
+        let destination = RoutingDestination.alias(aliasID)
+        let rule = try #require(RememberRule.rule(forURL: url, destination: destination))
+        #expect(rule.pattern == "192.168.0.1")
+        #expect(rule.destination == destination)
+    }
+
+    @Test("An alias destination on a single-label host yields an exact-host pattern")
+    func aliasDestinationSingleLabelExactHost() throws {
+        let url = URL(string: "http://localhost:3000/")!
+        let destination = RoutingDestination.alias(aliasID)
+        let rule = try #require(RememberRule.rule(forURL: url, destination: destination))
+        #expect(rule.pattern == "localhost")
+        #expect(rule.destination == destination)
+    }
+
+    @Test("A mailto: URL has no host and yields nil for an alias destination")
+    func aliasDestinationMailtoYieldsNil() {
+        let url = URL(string: "mailto:someone@example.com")!
+        #expect(RememberRule.rule(forURL: url, destination: .alias(aliasID)) == nil)
+    }
+
+    @Test("A file: URL has no host and yields nil for an alias destination")
+    func aliasDestinationFileYieldsNil() {
+        let url = URL(string: "file:///tmp/x")!
+        #expect(RememberRule.rule(forURL: url, destination: .alias(aliasID)) == nil)
+    }
+
+    @Test("The target-based builder still delegates to a .browser destination (no behavior change)")
+    func targetBasedDelegatesToBrowserDestination() throws {
+        let url = URL(string: "https://www.x.com/")!
+        let rule = try #require(RememberRule.rule(forURL: url, target: target))
+        #expect(rule.pattern == "*x.com")
+        #expect(rule.isEnabled)
+        #expect(rule.destination == .browser(target))
+    }
+}

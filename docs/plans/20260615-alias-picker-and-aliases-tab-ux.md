@@ -230,16 +230,16 @@ each can go green on its own.
 - Modify: `TrafficWandCore/Sources/TrafficWandCore/Matching/RememberRule.swift`
 - Modify: `TrafficWandCore/Tests/TrafficWandCoreTests/RememberRuleTests.swift`
 
-- [ ] write failing tests: `rule(forURL:destination:)` returns a `Rule` carrying the
+- [x] write failing tests: `rule(forURL:destination:)` returns a `Rule` carrying the
       given `RoutingDestination` for both `.alias(id)` and `.browser(target)`, with the
       same pattern scoping as today (registrable-domain `*x.com` and exact-host cases),
       and `nil` for a hostless URL
-- [ ] write a test that the existing `rule(forURL:target:)` still returns
+- [x] write a test that the existing `rule(forURL:target:)` still returns
       `.browser(target)` (delegation, no behavior change)
-- [ ] add `rule(forURL:destination: RoutingDestination)`; refactor the existing
+- [x] add `rule(forURL:destination: RoutingDestination)`; refactor the existing
       `rule(forURL:target:)` to delegate to it with `.browser(target)`; update the doc
       comment (a remembered alias selection now yields an `.alias` rule)
-- [ ] run `task test-core` — must pass before next task
+- [x] run `task test-core` — must pass before next task
 
 ### Task 2: `PickerViewModel` — aliases, alias rows, destination-carrying selection (App)
 

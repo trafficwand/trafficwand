@@ -27,24 +27,41 @@ import Foundation
 /// defect of this builder. The exact-host case (IP / single-label) has no such
 /// breadth.
 public enum RememberRule {
+    /// Returns the `Rule` to persist for remembering `destination` for `url`, or
+    /// `nil` when `url` has no host to scope a rule to.
+    ///
+    /// The built rule carries whatever `RoutingDestination` it is given: picking a
+    /// concrete browser in the picker yields a `.browser(target)` rule, while an
+    /// explicit alias selection yields an `.alias(id)` rule — the reusable,
+    /// late-binding binding, so re-pointing the alias later also re-routes this
+    /// remembered site.
+    ///
+    /// - Parameters:
+    ///   - url: The link whose destination should be remembered.
+    ///   - destination: The routing destination (browser or alias) to route
+    ///     matching links to.
+    public static func rule(forURL url: URL, destination: RoutingDestination) -> Rule? {
+        guard let host = url.host, !host.isEmpty else { return nil }
+        let normalizedHost = host.lowercased()
+
+        if let registrable = RegistrableDomain.of(host: normalizedHost) {
+            return Rule(pattern: "*\(registrable)", destination: destination, isEnabled: true)
+        }
+
+        // No registrable domain (IP literal or single-label host): scope to the
+        // exact host so the rule matches only it.
+        return Rule(pattern: normalizedHost, destination: destination, isEnabled: true)
+    }
+
     /// Returns the `Rule` to persist for remembering `target` for `url`, or
-    /// `nil` when `url` has no host to scope a rule to. "Remember this site" is a
-    /// one-off concrete choice, so the built rule always carries a
-    /// `.browser(target)` destination — it never invents an alias.
+    /// `nil` when `url` has no host to scope a rule to. This convenience delegates
+    /// to ``rule(forURL:destination:)`` with a `.browser(target)` destination, so
+    /// a remembered concrete-browser choice behaves exactly as before.
     ///
     /// - Parameters:
     ///   - url: The link whose destination should be remembered.
     ///   - target: The browser/profile to route matching links to.
     public static func rule(forURL url: URL, target: BrowserTarget) -> Rule? {
-        guard let host = url.host, !host.isEmpty else { return nil }
-        let normalizedHost = host.lowercased()
-
-        if let registrable = RegistrableDomain.of(host: normalizedHost) {
-            return Rule(pattern: "*\(registrable)", destination: .browser(target), isEnabled: true)
-        }
-
-        // No registrable domain (IP literal or single-label host): scope to the
-        // exact host so the rule matches only it.
-        return Rule(pattern: normalizedHost, destination: .browser(target), isEnabled: true)
+        rule(forURL: url, destination: .browser(target))
     }
 }
