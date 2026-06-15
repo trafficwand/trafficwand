@@ -48,7 +48,7 @@ settings:
     SWIFT_VERSION: "6.0"
     # CFBundleShortVersionString. Bump before tagging a release; the git tag
     # must match (verify-release-version.sh enforces it).
-    MARKETING_VERSION: "0.3.0"
+    MARKETING_VERSION: "0.4.0"
     # CURRENT_PROJECT_VERSION (CFBundleVersion) is NOT set here on purpose: it is
     # injected per-build via BuildInfo.xcconfig (a target configFile, which wins
     # over this project-level setting) as the commit count, so every commit
