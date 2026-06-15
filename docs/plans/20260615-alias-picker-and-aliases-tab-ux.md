@@ -375,17 +375,35 @@ each can go green on its own.
 
 ### Task 7: Verify acceptance criteria
 
-- [ ] verify picker: an alias appears as a selectable row; selecting it routes the link
+- [x] verify picker: an alias appears as a selectable row; selecting it routes the link
       to the alias's resolved target; ticking "Remember" persists an `.alias(id)` rule
       (covered by `PickerViewModel` + `ConfigRuleStore` tests); a concrete pick still
       persists `.browser(...)`
-- [ ] verify edge cases: alias targeting an uninstalled browser is hidden from the picker;
+      — alias row + select→resolved target + `.alias(id)` remember:
+      `PickerViewModelAliasTests` (`testAliasesAreListedFirstInOrderWithAliasIDs`,
+      `testSelectingAliasRowYieldsAliasTargetAndAliasDestination`) and
+      `PickerPanelControllerSelectionTests.testSelectingAliasRowLaunchesResolvedTargetAndRemembersAliasDestination`;
+      alias-rule persistence: `ConfigRuleStoreTests.testRememberAliasSavesAnAliasRule`;
+      concrete pick → `.browser(...)`: `ConfigRuleStoreTests.testRememberSavesARuleScopedToTheRegistrableDomain`
+      + `PickerPanelControllerSelectionTests.testSelectingBrowserRowLaunchesTargetAndRemembersBrowserDestination`
+- [x] verify edge cases: alias targeting an uninstalled browser is hidden from the picker;
       a hostless URL still persists nothing; blocked-delete still works in the new layout
-- [ ] verify master-detail: selecting an alias edits it inline; edits persist live; Add
+      — uninstalled-target alias hidden: `PickerViewModelAliasTests.testAliasWithUninstalledTargetIsExcluded`;
+      hostless URL persists nothing: `ConfigRuleStoreTests.testRememberHostlessURLSavesNothing`
+      + Core `RememberRuleTests` (`mailtoYieldsNil`/`fileYieldsNil`/`aliasDestinationMailtoYieldsNil`/`aliasDestinationFileYieldsNil`);
+      blocked-delete (VM logic the master-detail layout reuses unchanged):
+      `SettingsViewModelAliasTests.testDeleteReferencedAliasIsNoOp` +
+      `testDeleteAliasReferencedByFallbackIsNoOp`
+- [x] verify master-detail: selecting an alias edits it inline; edits persist live; Add
       selects the new alias; the description is visible
-- [ ] run full Core suite: `task test-core` (includes the no-AppKit guard)
-- [ ] run full App suite: `task test`
-- [ ] run `task lint` — must be clean
+      — lookup-by-id + live-persist VM seam: `SettingsViewModelAliasLookupTests`
+      (`testAliasWithIDReturnsMatchingAlias`, `testAliasWithIDReflectsLivePersistedEdit`);
+      add/update/delete live-persist: `SettingsViewModelAliasTests` (`testAddAliasPersistsAndAppends`,
+      `testUpdateAliasPersistsTheChange`); the layout itself + description text are view-only
+      and validated by the Post-Completion manual smoke test (per the Testing Strategy)
+- [x] run full Core suite: `task test-core` (includes the no-AppKit guard) — 174 tests, all pass
+- [x] run full App suite: `task test` — 182 tests, all pass
+- [x] run `task lint` — clean
 
 ### Task 8: [Final] Documentation
 
