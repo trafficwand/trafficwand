@@ -9,7 +9,7 @@ import TrafficWandCore
 /// outcomes, each delivered through an injected closure so the view model itself
 /// performs **no** AppKit / launching / pasteboard work:
 ///
-///  - `select(item:)` (or `select(browser:profile:)`) → resolves the concrete
+///  - `select(item:)` → resolves the concrete
 ///    `BrowserTarget` to launch **and** the `RoutingDestination` to remember, and
 ///    hands both to `onSelect` along with the current `rememberChoice` flag. For an
 ///    alias row the launch target is the alias's resolved `BrowserTarget` while the
@@ -217,17 +217,15 @@ final class PickerViewModel {
     ///
     /// Looks the matching row up in `selectableItems` (rather than re-deriving its id
     /// scheme, which would risk drifting from `init`) and delegates to `select(item:)`.
-    /// `nil` profile → the browser's default row. Falls back to a freshly-built item if
-    /// no matching row exists (e.g. a browser not among the offered list). A test-only
-    /// convenience; production selection flows through `select(item:)`.
+    /// `nil` profile → the browser's default row. No-op when no matching row exists
+    /// (e.g. a browser not among the offered list). A test-only convenience; production
+    /// selection flows through `select(item:)`.
     func select(browser: Browser, profile: BrowserProfile?) {
         let item = selectableItems.first { item in
             guard case .browser(let rowBrowser, let rowProfile) = item.kind else { return false }
             return rowBrowser.bundleID == browser.bundleID && rowProfile?.id == profile?.id
-        } ?? SelectableItem(
-            id: profile.map { "\(browser.bundleID)#profile:\($0.id)" } ?? "\(browser.bundleID)#self",
-            kind: .browser(browser, profile)
-        )
+        }
+        guard let item else { return }
         select(item: item)
     }
 

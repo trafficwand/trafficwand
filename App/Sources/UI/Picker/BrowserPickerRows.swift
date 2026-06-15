@@ -51,8 +51,7 @@ extension BrowserPickerView {
             }
         }
         // Extra top spacing before each new browser group, except the very first
-        // row — and also before the first browser row when alias rows precede it,
-        // so the Aliases group is visually separated from the browsers.
+        // row.
         .padding(.top, topSpacing(for: item, at: index, isFirst: isFirst))
     }
 
