@@ -151,140 +151,25 @@ struct GeneralSettingsView: View {
 
     // MARK: - Fallback destination editor (browser-or-alias)
 
-    /// The destination kind the fallback routes to, surfaced as a segmented control.
-    private enum DestinationMode: String, CaseIterable, Identifiable {
-        case browser
-        case alias
-        var id: String { rawValue }
-
-        var title: String {
-            switch self {
-            case .browser: return "Browser"
-            case .alias: return "Alias"
-            }
-        }
-    }
-
-    private var currentDestinationMode: DestinationMode {
-        if case .alias = currentDefaultDestination { return .alias }
-        return .browser
-    }
-
-    private var destinationModeBinding: Binding<DestinationMode> {
-        Binding(
-            get: { currentDestinationMode },
-            set: { mode in
-                switch mode {
-                case .browser:
-                    guard let bundleID = viewModel.browsers.first?.bundleID else { return }
-                    viewModel.setFallback(.defaultBrowser(
-                        .browser(BrowserTarget(bundleID: bundleID, profileID: nil))
-                    ))
-                case .alias:
-                    guard let alias = viewModel.aliases.first else { return }
-                    viewModel.setFallback(.defaultBrowser(.alias(alias.id)))
-                }
-            }
-        )
-    }
-
+    /// Browser-or-alias editor for the `.defaultBrowser` destination, persisting any
+    /// change straight through `setFallback`. Reuses the same `DestinationEditor`
+    /// control as the rule editor so the segmented control, profile-reset, and
+    /// alias-empty disabling live in one place.
     @ViewBuilder
     private var fallbackDestinationEditor: some View {
-        Picker("Destination", selection: destinationModeBinding) {
-            ForEach(DestinationMode.allCases) { mode in
-                Text(mode.title)
-                    .tag(mode)
-                    .disabled(
-                        (mode == .browser && viewModel.browsers.isEmpty)
-                            || (mode == .alias && viewModel.aliases.isEmpty)
-                    )
-            }
-        }
-        .pickerStyle(.segmented)
-
-        switch currentDestinationMode {
-        case .browser:
-            fallbackBrowserPickers
-        case .alias:
-            fallbackAliasPicker
-        }
-    }
-
-    /// The concrete target carried by the current default destination when it is a
-    /// `.browser` (else an empty target for the picker bindings to fall back on).
-    private var currentDefaultTarget: BrowserTarget {
-        if case .browser(let target) = currentDefaultDestination {
-            return target
-        }
-        return BrowserTarget(bundleID: viewModel.browsers.first?.bundleID ?? "", profileID: nil)
-    }
-
-    @ViewBuilder
-    private var fallbackBrowserPickers: some View {
-        Picker("Browser", selection: fallbackBundleBinding) {
-            ForEach(viewModel.browsers) { browser in
-                Text(browser.name).tag(browser.bundleID)
-            }
-        }
-
-        if let browser = selectedFallbackBrowser, !browser.profiles.isEmpty {
-            Picker("Profile", selection: fallbackProfileBinding) {
-                Text("Default").tag(String?.none)
-                ForEach(browser.profiles) { profile in
-                    Text(profile.name).tag(String?.some(profile.id))
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var fallbackAliasPicker: some View {
-        Picker("Alias", selection: fallbackAliasBinding) {
-            ForEach(viewModel.aliases) { alias in
-                Text(alias.name).tag(UUID?.some(alias.id))
-            }
-        }
-    }
-
-    private var selectedFallbackBrowser: Browser? {
-        viewModel.browsers.first { $0.bundleID == currentDefaultTarget.bundleID }
-    }
-
-    private var fallbackBundleBinding: Binding<String> {
-        Binding(
-            get: { currentDefaultTarget.bundleID },
-            set: { bundleID in
-                // Switching browser resets the profile unless the new browser has it.
-                let newBrowser = viewModel.browsers.first { $0.bundleID == bundleID }
-                let keepProfile = newBrowser?.profiles.contains { $0.id == currentDefaultTarget.profileID } ?? false
-                viewModel.setFallback(.defaultBrowser(.browser(
-                    BrowserTarget(bundleID: bundleID, profileID: keepProfile ? currentDefaultTarget.profileID : nil)
-                )))
-            }
+        DestinationEditor(
+            browsers: viewModel.browsers,
+            aliases: viewModel.aliases,
+            destination: fallbackDestinationBinding
         )
     }
 
-    private var fallbackProfileBinding: Binding<String?> {
+    /// Binding over the `.defaultBrowser` destination: reads the current one and
+    /// persists edits immediately via `setFallback`.
+    private var fallbackDestinationBinding: Binding<RoutingDestination> {
         Binding(
-            get: { currentDefaultTarget.profileID },
-            set: { profileID in
-                viewModel.setFallback(.defaultBrowser(.browser(
-                    BrowserTarget(bundleID: currentDefaultTarget.bundleID, profileID: profileID)
-                )))
-            }
-        )
-    }
-
-    private var fallbackAliasBinding: Binding<UUID?> {
-        Binding(
-            get: {
-                if case .alias(let id) = currentDefaultDestination { return id }
-                return viewModel.aliases.first?.id
-            },
-            set: { id in
-                guard let id else { return }
-                viewModel.setFallback(.defaultBrowser(.alias(id)))
-            }
+            get: { currentDefaultDestination },
+            set: { viewModel.setFallback(.defaultBrowser($0)) }
         )
     }
 

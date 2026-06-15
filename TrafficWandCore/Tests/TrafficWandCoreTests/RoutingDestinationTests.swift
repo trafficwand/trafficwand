@@ -91,6 +91,22 @@ struct RoutingDestinationTests {
         }
     }
 
+    @Test("An unknown `type` discriminator value fails to decode")
+    func unknownTypeFailsToDecode() {
+        // Mirrors FallbackPolicy's unknownDiscriminatorThrows: an unrecognized
+        // discriminator must throw, not silently produce a value. This pins the
+        // contract FallbackPolicy's `try?`-first migration decode relies on.
+        let jsonString = """
+        { "type": "bogus", "id": "00000000-0000-0000-0000-0000000000B3" }
+        """
+        #expect(throws: DecodingError.self) {
+            try JSONDecoder().decode(
+                RoutingDestination.self,
+                from: Data(jsonString.utf8)
+            )
+        }
+    }
+
     @Test("resolved(in:) returns the target for .browser")
     func resolvesBrowser() {
         let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 2")

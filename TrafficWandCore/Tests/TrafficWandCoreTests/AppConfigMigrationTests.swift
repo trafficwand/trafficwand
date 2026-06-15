@@ -169,4 +169,52 @@ struct AppConfigMigrationTests {
         let config = try decode(json)
         #expect(config.aliases == [])
     }
+
+    @Test("Re-encoding a decoded v1 config emits the v2 shapes (`aliases`, `destination`)")
+    func reEncodingV1EmitsV2Shapes() throws {
+        // Decoding a legacy v1 document then re-encoding it must emit the v2 on-disk
+        // shapes: an `aliases` array and per-rule/per-fallback `destination`-style
+        // `RoutingDestination` payloads (a tagged object with a `type` discriminator),
+        // never the bare legacy `target`. This pins the load-then-save migration's
+        // written form. (The monotonic schemaVersion bump to currentSchemaVersion
+        // happens at the App `SettingsViewModel.persist` layer, which is exercised by
+        // SettingsViewModelTests; `AppConfig` itself round-trips the decoded version.)
+        let json = """
+        {
+          "schemaVersion": 1,
+          "rules": [
+            {
+              "id": "77777777-7777-7777-7777-777777777777",
+              "pattern": "*.github.com",
+              "target": { "bundleID": "com.google.Chrome", "profileID": "Default" },
+              "isEnabled": true
+            }
+          ],
+          "fallback": {
+            "type": "defaultBrowser",
+            "target": { "bundleID": "org.mozilla.firefox", "profileID": "Personal" }
+          }
+        }
+        """
+        let config = try decode(json)
+        let data = try JSONEncoder().encode(config)
+        let string = try #require(String(bytes: data, encoding: .utf8))
+
+        #expect(string.contains("\"aliases\""))
+        #expect(string.contains("\"destination\""))
+
+        // Inspect the decoded JSON tree (not fragile substrings): each rule must carry
+        // a v2 `destination` and *not* the legacy top-level `target` key.
+        let root = try #require(
+            try JSONSerialization.jsonObject(with: data) as? [String: Any]
+        )
+        let rules = try #require(root["rules"] as? [[String: Any]])
+        let rule = try #require(rules.first)
+        #expect(rule["destination"] != nil)
+        #expect(rule["target"] == nil, "The legacy top-level rule `target` key must not be re-emitted.")
+
+        // Re-decoding the migrated form reproduces the same in-memory config.
+        let reDecoded = try decode(string)
+        #expect(reDecoded == config)
+    }
 }

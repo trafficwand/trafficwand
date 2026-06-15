@@ -316,6 +316,44 @@ final class SettingsViewModelTests: XCTestCase {
         XCTAssertEqual(store.lastSaved?.schemaVersion, AppConfig.currentSchemaVersion)
     }
 
+    /// Loading a legacy (schemaVersion 1) config and mutating it must migrate the
+    /// document forward: the persisted config is stamped with the current schema
+    /// version, matching the "new writes always use schema v2" contract on
+    /// `AppConfig`. (A default config already carries `currentSchemaVersion`, so the
+    /// existing `testFallbackChangeKeepsRules` can't distinguish bump from preserve.)
+    func testPersistMigratesLegacySchemaVersionForward() {
+        let rule = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
+        let legacy = AppConfig(schemaVersion: 1, rules: [rule], fallback: .picker)
+        let (vm, store) = makeViewModel(config: legacy)
+        vm.load()
+
+        vm.setFallback(.lastUsed)
+
+        XCTAssertEqual(
+            store.lastSaved?.schemaVersion,
+            AppConfig.currentSchemaVersion,
+            "A load-then-save migrates a legacy v1 document forward to the current schema."
+        )
+    }
+
+    /// A document written by a *newer* build (a higher schemaVersion than this one
+    /// understands) must never be downgraded on save.
+    func testPersistNeverDowngradesNewerSchemaVersion() {
+        let future = AppConfig.currentSchemaVersion + 1
+        let rule = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
+        let newer = AppConfig(schemaVersion: future, rules: [rule], fallback: .picker)
+        let (vm, store) = makeViewModel(config: newer)
+        vm.load()
+
+        vm.setFallback(.lastUsed)
+
+        XCTAssertEqual(
+            store.lastSaved?.schemaVersion,
+            future,
+            "A save must not downgrade a document written by a newer build."
+        )
+    }
+
     // MARK: - automatic updates toggle (seam in the view model)
 
     func testAutomaticUpdatesEnabledReflectsTheSeam() {

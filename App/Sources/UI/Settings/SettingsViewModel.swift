@@ -33,9 +33,12 @@ final class SettingsViewModel {
     /// rule/fallback destinations.
     private(set) var aliases: [ProfileAlias] = []
 
-    /// The current schema version carried through every save (preserved from the
-    /// loaded config so a save never silently downgrades the document).
-    private var schemaVersion: Int = AppConfig.currentSchemaVersion
+    /// The schema version of the most recently loaded config. `persist()` stamps
+    /// `max(this, AppConfig.currentSchemaVersion)` so a load-then-save always
+    /// migrates a legacy document forward to the current schema (matching the
+    /// "new writes always use schema v2" contract documented on `AppConfig`),
+    /// while never downgrading a document written by a newer build.
+    private var loadedSchemaVersion: Int = AppConfig.currentSchemaVersion
 
     private let configStore: ConfigStore
     private let browserProvider: InstalledBrowsersProviding
@@ -86,7 +89,7 @@ final class SettingsViewModel {
     /// window always opens to a usable state rather than failing.
     func load() {
         let config = (try? configStore.load()) ?? .default
-        schemaVersion = config.schemaVersion
+        loadedSchemaVersion = config.schemaVersion
         rules = config.rules
         fallback = config.fallback
         aliases = config.aliases
@@ -238,7 +241,9 @@ final class SettingsViewModel {
     /// leaves any previously-saved file intact on failure.
     private func persist() {
         let config = AppConfig(
-            schemaVersion: schemaVersion,
+            // Migrate a legacy document forward on save, but never downgrade one
+            // written by a newer build than this one.
+            schemaVersion: max(loadedSchemaVersion, AppConfig.currentSchemaVersion),
             aliases: aliases,
             rules: rules,
             fallback: fallback

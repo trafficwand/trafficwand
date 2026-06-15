@@ -16,14 +16,6 @@ struct AliasEditorView: View {
     /// Working copy of the alias being edited.
     @State private var draft: ProfileAlias
 
-    /// The chosen browser's bundle ID, tracked separately so the profile picker can
-    /// react to browser changes (and reset the profile when it is unsupported).
-    @State private var selectedBundleID: String
-
-    /// The chosen profile id (`nil` = default profile), tracked separately from the
-    /// target so the picker can bind to an optional cleanly.
-    @State private var selectedProfileID: String?
-
     /// Commit handler: receives the finished alias. Called on Save only.
     let onSave: (ProfileAlias) -> Void
     /// Dismiss handler: called on Cancel or after Save.
@@ -37,15 +29,13 @@ struct AliasEditorView: View {
     ) {
         self.browsers = browsers
         self._draft = State(initialValue: alias)
-        self._selectedBundleID = State(initialValue: alias.target.bundleID)
-        self._selectedProfileID = State(initialValue: alias.target.profileID)
         self.onSave = onSave
         self.onCancel = onCancel
     }
 
     /// The browser currently selected (if it is among the available browsers).
     private var selectedBrowser: Browser? {
-        browsers.first { $0.bundleID == selectedBundleID }
+        browsers.first { $0.bundleID == draft.target.bundleID }
     }
 
     var body: some View {
@@ -64,20 +54,7 @@ struct AliasEditorView: View {
                 }
 
                 Section {
-                    Picker("Browser", selection: $selectedBundleID) {
-                        ForEach(browsers) { browser in
-                            Text(browser.name).tag(browser.bundleID)
-                        }
-                    }
-
-                    if let selectedBrowser, !selectedBrowser.profiles.isEmpty {
-                        Picker("Profile", selection: $selectedProfileID) {
-                            Text("Default").tag(String?.none)
-                            ForEach(selectedBrowser.profiles) { profile in
-                                Text(profile.name).tag(String?.some(profile.id))
-                            }
-                        }
-                    }
+                    BrowserProfilePicker(browsers: browsers, target: $draft.target)
                 }
             }
             .formStyle(.grouped)
@@ -86,34 +63,18 @@ struct AliasEditorView: View {
                 Spacer()
                 Button("Cancel", role: .cancel, action: onCancel)
                     .keyboardShortcut(.cancelAction)
-                Button("Save") { commit() }
+                Button("Save") { onSave(draft) }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canSave)
             }
         }
         .padding(20)
         .frame(width: 460)
-        .onChange(of: selectedBundleID) { _, _ in
-            // Switching to a browser that lacks the previously-chosen profile clears
-            // the profile so we never persist a profile the new browser can't honor.
-            if let selectedBrowser, !selectedBrowser.profiles.contains(where: { $0.id == selectedProfileID }) {
-                selectedProfileID = nil
-            }
-        }
     }
 
     /// Whether the alias can be saved: a non-empty name and a resolvable browser.
     private var canSave: Bool {
         !draft.name.trimmingCharacters(in: .whitespaces).isEmpty && selectedBrowser != nil
-    }
-
-    private func commit() {
-        var finished = draft
-        finished.target = BrowserTarget(
-            bundleID: selectedBundleID,
-            profileID: selectedProfileID
-        )
-        onSave(finished)
     }
 }
 
