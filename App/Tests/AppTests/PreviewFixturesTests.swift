@@ -22,28 +22,57 @@ final class PreviewFixturesTests: XCTestCase {
         XCTAssertFalse(PreviewFixtures.sampleBrowsers.isEmpty)
     }
 
-    func testEverySampleRuleTargetsASampleBrowser() {
+    /// Asserts a concrete target names a sample browser and (if it names a profile)
+    /// an existing profile on that browser — otherwise an editor preview renders a
+    /// broken profile picker.
+    private func assertTargetIsValid(_ target: BrowserTarget, context: String) {
         let browsersByBundleID = Dictionary(
             uniqueKeysWithValues: PreviewFixtures.sampleBrowsers.map { ($0.bundleID, $0) }
         )
+        guard let browser = browsersByBundleID[target.bundleID] else {
+            XCTFail("\(context) targets \(target.bundleID), which is not a sample browser.")
+            return
+        }
+        if let profileID = target.profileID {
+            XCTAssertTrue(
+                browser.profiles.contains { $0.id == profileID },
+                "\(context) targets profile \(profileID), which is not a profile of \(browser.bundleID)."
+            )
+        }
+    }
+
+    func testEverySampleRuleTargetsASampleBrowser() {
+        let aliasIDs = Set(PreviewFixtures.sampleAliases.map(\.id))
         XCTAssertFalse(PreviewFixtures.sampleRules.isEmpty)
         for rule in PreviewFixtures.sampleRules {
-            guard let browser = browsersByBundleID[rule.target.bundleID] else {
-                XCTFail(
-                    "Sample rule \(rule.pattern) targets \(rule.target.bundleID), which is not a sample browser."
-                )
-                continue
-            }
-            // A rule that names a profile must reference a profile that actually
-            // exists on its target browser; otherwise the editor preview renders a
-            // broken profile picker.
-            if let profileID = rule.target.profileID {
+            switch rule.destination {
+            case .browser(let target):
+                assertTargetIsValid(target, context: "Sample rule \(rule.pattern)")
+            case .alias(let id):
                 XCTAssertTrue(
-                    browser.profiles.contains { $0.id == profileID },
-                    "Sample rule \(rule.pattern) targets profile \(profileID), "
-                        + "which is not a profile of \(browser.bundleID)."
+                    aliasIDs.contains(id),
+                    "Sample rule \(rule.pattern) references alias \(id), which is not a sample alias."
                 )
             }
+        }
+    }
+
+    func testSampleRulesIncludeBrowserAndAliasDestinations() {
+        let destinations = PreviewFixtures.sampleRules.map(\.destination)
+        XCTAssertTrue(
+            destinations.contains { if case .browser = $0 { return true }; return false },
+            "Sample rules must include at least one concrete .browser destination."
+        )
+        XCTAssertTrue(
+            destinations.contains { if case .alias = $0 { return true }; return false },
+            "Sample rules must include at least one .alias destination."
+        )
+    }
+
+    func testEverySampleAliasTargetsASampleBrowser() {
+        XCTAssertFalse(PreviewFixtures.sampleAliases.isEmpty)
+        for alias in PreviewFixtures.sampleAliases {
+            assertTargetIsValid(alias.target, context: "Sample alias \(alias.name)")
         }
     }
 
@@ -62,6 +91,11 @@ final class PreviewFixturesTests: XCTestCase {
             viewModel.browsers.map(\.bundleID),
             PreviewFixtures.sampleBrowsers.map(\.bundleID),
             "The factory loads the sample browsers from the provider."
+        )
+        XCTAssertEqual(
+            viewModel.aliases,
+            PreviewFixtures.sampleAliases,
+            "The populated factory loads the sample aliases verbatim."
         )
     }
 

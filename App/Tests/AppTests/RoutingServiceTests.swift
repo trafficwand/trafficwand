@@ -108,7 +108,7 @@ final class RoutingServiceTests: XCTestCase {
         // called with that target (resolving the Browser whose bundleID matches)
         // and last-used must be recorded; the picker must NOT be shown.
         let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Work")
-        let rule = Rule(pattern: "*github.com", target: target, isEnabled: true)
+        let rule = Rule(pattern: "*github.com", destination: .browser(target), isEnabled: true)
         let config = AppConfig(rules: [rule], fallback: .picker)
         let browsers = [
             browser("com.google.Chrome", "Google Chrome"),
@@ -175,7 +175,7 @@ final class RoutingServiceTests: XCTestCase {
         // unresolvable target must NOT be recorded as last-used (it would mislead
         // the .lastUsed fallback toward a browser that no longer exists).
         let target = BrowserTarget(bundleID: "com.unknown.Browser", profileID: nil)
-        let config = AppConfig(rules: [], fallback: .defaultBrowser(target))
+        let config = AppConfig(rules: [], fallback: .defaultBrowser(.browser(target)))
         let browsers = [browser("com.google.Chrome", "Google Chrome")]
 
         let launcher = MockLauncher()

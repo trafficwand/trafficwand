@@ -68,7 +68,7 @@ final class ConfigRuleStoreTests: XCTestCase {
         let rules = store.lastSaved?.rules ?? []
         XCTAssertEqual(rules.count, 1)
         XCTAssertEqual(rules.first?.pattern, "*x.com")
-        XCTAssertEqual(rules.first?.target, target)
+        XCTAssertEqual(rules.first?.destination, .browser(target))
         XCTAssertEqual(rules.first?.isEnabled, true)
     }
 
@@ -86,13 +86,13 @@ final class ConfigRuleStoreTests: XCTestCase {
         let rules = store.lastSaved?.rules ?? []
         let matching = rules.filter { $0.pattern == "*x.com" }
         XCTAssertEqual(matching.count, 1)
-        XCTAssertEqual(matching.first?.target, latest)
+        XCTAssertEqual(matching.first?.destination, .browser(latest))
     }
 
     func testRememberPreservesExistingUnrelatedRule() {
         let unrelated = Rule(
             pattern: "*github.com",
-            target: firefoxTarget("Personal"),
+            destination: .browser(firefoxTarget("Personal")),
             isEnabled: true
         )
         let store = MockConfigStore(loaded: AppConfig(rules: [unrelated], fallback: .picker))
@@ -107,7 +107,7 @@ final class ConfigRuleStoreTests: XCTestCase {
         XCTAssertEqual(rules.count, 2)
         XCTAssertEqual(rules.first, unrelated)
         XCTAssertEqual(rules.last?.pattern, "*x.com")
-        XCTAssertEqual(rules.last?.target, target)
+        XCTAssertEqual(rules.last?.destination, .browser(target))
     }
 
     func testRememberHostlessURLSavesNothing() {

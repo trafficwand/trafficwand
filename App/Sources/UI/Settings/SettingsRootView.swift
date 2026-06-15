@@ -35,6 +35,12 @@ struct SettingsRootView: View {
                 }
                 .tag(SettingsTab.rules)
 
+            AliasesListView(viewModel: viewModel)
+                .tabItem {
+                    Label("Aliases", systemImage: "link")
+                }
+                .tag(SettingsTab.aliases)
+
             AboutSettingsView()
                 .tabItem {
                     Label("About", systemImage: "info.circle")

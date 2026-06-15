@@ -29,6 +29,10 @@ final class SettingsViewModel {
     /// The fallback policy applied to links matching no enabled rule.
     private(set) var fallback: FallbackPolicy = .picker
 
+    /// The reusable profile aliases shown in the Aliases tab and offered as
+    /// rule/fallback destinations.
+    private(set) var aliases: [ProfileAlias] = []
+
     /// The current schema version carried through every save (preserved from the
     /// loaded config so a save never silently downgrades the document).
     private var schemaVersion: Int = AppConfig.currentSchemaVersion
@@ -85,6 +89,7 @@ final class SettingsViewModel {
         schemaVersion = config.schemaVersion
         rules = config.rules
         fallback = config.fallback
+        aliases = config.aliases
         browsers = browserProvider.installedBrowsers()
     }
 
@@ -134,6 +139,96 @@ final class SettingsViewModel {
         persist()
     }
 
+    // MARK: - Alias mutations
+
+    /// Appends a new alias to the list and persists.
+    func addAlias(_ alias: ProfileAlias) {
+        aliases.append(alias)
+        persist()
+    }
+
+    /// Replaces the alias with the same `id` with `alias` and persists.
+    ///
+    /// No-op (and no save) if no alias with that id exists. Because rules/fallback
+    /// reference aliases by `id`, editing an alias's `name`/`target` re-points every
+    /// referencing rule at once — the whole point of aliases.
+    func updateAlias(_ alias: ProfileAlias) {
+        guard let index = aliases.firstIndex(where: { $0.id == alias.id }) else { return }
+        aliases[index] = alias
+        persist()
+    }
+
+    /// Deletes the alias with `id` and persists — **unless** it is still referenced
+    /// by a rule or the fallback policy, in which case this is a no-op (no state
+    /// change, no save).
+    ///
+    /// Referential integrity is enforced in the UI: the Aliases view calls
+    /// `referencingRules(aliasID:)` / `isFallbackReferencing(aliasID:)` to block the
+    /// delete and explain why. Core stays defensive regardless (a dangling reference
+    /// resolves to the picker), but blocking here prevents accidental orphaning.
+    func deleteAlias(id: UUID) {
+        guard !isReferenced(id) else { return }
+        guard let index = aliases.firstIndex(where: { $0.id == id }) else { return }
+        aliases.remove(at: index)
+        persist()
+    }
+
+    // MARK: - Referential integrity
+
+    /// The rules whose destination references the alias with `aliasID`.
+    func referencingRules(aliasID: UUID) -> [Rule] {
+        rules.filter { $0.destination == .alias(aliasID) }
+    }
+
+    /// Whether the fallback policy's default destination references `aliasID`.
+    func isFallbackReferencing(aliasID: UUID) -> Bool {
+        if case .defaultBrowser(.alias(let id)) = fallback {
+            return id == aliasID
+        }
+        return false
+    }
+
+    /// Whether any rule or the fallback policy references the alias with `aliasID`.
+    func isReferenced(_ aliasID: UUID) -> Bool {
+        !referencingRules(aliasID: aliasID).isEmpty || isFallbackReferencing(aliasID: aliasID)
+    }
+
+    // MARK: - Destination display
+
+    /// A user-facing label for a routing destination, resolved against the current
+    /// aliases.
+    ///
+    /// - `.alias` → the alias's `name`, or "(deleted alias)" if the reference is
+    ///   dangling (the alias was removed by a hand-edit; the router routes such a
+    ///   link to the picker).
+    /// - `.browser` → the browser's display name, with " — <profile>" appended when
+    ///   the target names a profile; falls back to the raw bundle ID if the browser
+    ///   is not installed.
+    ///
+    /// Kept on the view model (not the view) so it has a unit-test seam, consistent
+    /// with how the fallback-mode logic is tested. `RulesListView` consumes this.
+    func destinationLabel(for destination: RoutingDestination) -> String {
+        switch destination {
+        case .alias(let id):
+            return aliases.first { $0.id == id }?.name ?? "(deleted alias)"
+        case .browser(let target):
+            return browserLabel(for: target)
+        }
+    }
+
+    /// Display label for a concrete browser target: browser name + optional profile.
+    func browserLabel(for target: BrowserTarget) -> String {
+        let name = browsers.first { $0.bundleID == target.bundleID }?.name ?? target.bundleID
+        if let profileID = target.profileID {
+            let profileName = browsers
+                .first { $0.bundleID == target.bundleID }?
+                .profiles.first { $0.id == profileID }?
+                .name ?? profileID
+            return "\(name) — \(profileName)"
+        }
+        return name
+    }
+
     // MARK: - Persistence
 
     /// Persists the current in-memory state as an `AppConfig` via `ConfigStore`.
@@ -144,6 +239,7 @@ final class SettingsViewModel {
     private func persist() {
         let config = AppConfig(
             schemaVersion: schemaVersion,
+            aliases: aliases,
             rules: rules,
             fallback: fallback
         )

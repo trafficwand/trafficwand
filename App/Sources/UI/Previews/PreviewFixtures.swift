@@ -45,29 +45,53 @@ enum PreviewFixtures {
         )
     ]
 
-    /// Sample routing rules covering the interesting states: enabled/disabled, with
-    /// and without a profile. Every `target.bundleID` references a browser in
+    /// A sample alias ("Personal" → Chrome / Personal profile) referenced by one of
+    /// the sample rules, so previews exercise the alias-backed destination path.
+    static let personalAlias = ProfileAlias(
+        name: "Personal",
+        target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Default")
+    )
+
+    /// Sample reusable aliases. Each `target.bundleID` references a browser in
     /// `sampleBrowsers` (`PreviewFixturesTests` asserts this).
+    static let sampleAliases: [ProfileAlias] = [
+        personalAlias,
+        ProfileAlias(
+            name: "Work",
+            target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1")
+        )
+    ]
+
+    /// Sample routing rules covering the interesting states: enabled/disabled, a
+    /// concrete `.browser` destination (with and without a profile), and an `.alias`
+    /// destination. Every concrete `target.bundleID` references a browser in
+    /// `sampleBrowsers`, and the `.alias` references `personalAlias`
+    /// (`PreviewFixturesTests` asserts both).
     static let sampleRules: [Rule] = [
         Rule(
             pattern: "github.com",
-            target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1"),
+            destination: .browser(BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1")),
             isEnabled: true
         ),
         Rule(
             pattern: "*.example.com",
-            target: BrowserTarget(bundleID: "org.mozilla.firefox", profileID: nil),
+            destination: .browser(BrowserTarget(bundleID: "org.mozilla.firefox", profileID: nil)),
+            isEnabled: true
+        ),
+        Rule(
+            pattern: "personal.example",
+            destination: .alias(personalAlias.id),
             isEnabled: true
         ),
         Rule(
             pattern: "old-intranet.local",
-            target: BrowserTarget(bundleID: "com.apple.Safari", profileID: nil),
+            destination: .browser(BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)),
             isEnabled: false
         )
     ]
 
     /// A populated config used by the default factory path.
-    static let populatedConfig = AppConfig(rules: sampleRules, fallback: .picker)
+    static let populatedConfig = AppConfig(aliases: sampleAliases, rules: sampleRules, fallback: .picker)
 
     /// An empty config used to exercise the empty-state preview.
     static let emptyConfig = AppConfig(rules: [], fallback: .picker)

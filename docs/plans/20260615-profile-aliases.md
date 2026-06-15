@@ -344,23 +344,23 @@ stays defensive regardless (dangling → picker).
 - Modify: `App/Sources/UI/Settings/SettingsViewModel.swift`
 - Modify: `App/Tests/AppTests/SettingsViewModelTests.swift`
 
-- [ ] write failing tests: `load()` reads `aliases`; `addAlias` / `updateAlias` /
+- [x] write failing tests: `load()` reads `aliases`; `addAlias` / `updateAlias` /
       `deleteAlias(id:)` mutate state **and** persist via `ConfigStore.save`;
       `rulesReferencing(aliasID:)` (and fallback reference) returns referencing rules;
       `deleteAlias` is a **no-op when referenced**; `persist()` writes `aliases` into the
       saved `AppConfig`
-- [ ] add `private(set) var aliases: [ProfileAlias]`; load it in `load()`; include it in
+- [x] add `private(set) var aliases: [ProfileAlias]`; load it in `load()`; include it in
       `persist()`'s `AppConfig`
-- [ ] add CRUD methods + an `isReferenced(_:)` / `referencingRules(_:)` helper that scans
+- [x] add CRUD methods + an `isReferenced(_:)` / `referencingRules(_:)` helper that scans
       `rules` (`.alias` destinations) and `fallback` (`.defaultBrowser(.alias)`)
-- [ ] add a testable `destinationLabel(for: RoutingDestination) -> String` helper on the
+- [x] add a testable `destinationLabel(for: RoutingDestination) -> String` helper on the
       view model (resolve `.alias` → alias name, "(deleted alias)" if dangling; `.browser` →
       browser name + optional profile). Keeping this in the view model (not the view) gives
       it a unit-test seam, consistent with how fallback-mode logic is tested. Task 9's
       `RulesListView` consumes this helper.
-- [ ] make `deleteAlias` refuse (and not persist) when referenced; expose enough for the
+- [x] make `deleteAlias` refuse (and not persist) when referenced; expose enough for the
       view to show which rules block deletion
-- [ ] run `task test` — must pass before next task
+- [x] run `task test` — must pass before next task
 
 ### Task 8: Aliases Settings tab — list + editor view
 
@@ -371,21 +371,21 @@ stays defensive regardless (dangling → picker).
 - Create: `App/Sources/UI/Settings/AliasEditorView.swift`
 - Modify: `App/Tests/AppTests/SettingsTabTests.swift`
 
-- [ ] write failing tests: `SettingsTab` includes the new `.aliases` case. Note
+- [x] write failing tests: `SettingsTab` includes the new `.aliases` case. Note
       `SettingsTab` is a plain `String` enum (titles live in `SettingsRootView`'s `Label`s,
       not the enum) — check whether `SettingsTabTests` asserts case count / `CaseIterable`
       ordering and update those expectations; decide tab order (likely `general → rules →
       aliases → about`)
-- [ ] add `.aliases` to `SettingsTab`; wire a `TabView` tab in `SettingsRootView` hosting
+- [x] add `.aliases` to `SettingsTab`; wire a `TabView` tab in `SettingsRootView` hosting
       `AliasesListView(viewModel:)` with its `Label`/title there
-- [ ] implement `AliasesListView`: list of aliases (name + resolved browser/profile), Add
+- [x] implement `AliasesListView`: list of aliases (name + resolved browser/profile), Add
       button, row tap → editor sheet, delete with a **block + explanation** when referenced
       (uses the view model's reference check)
-- [ ] implement `AliasEditorView`: edit `name`, browser (`Picker` over
+- [x] implement `AliasEditorView`: edit `name`, browser (`Picker` over
       `viewModel.browsers`), profile (`Picker`, reset on browser change — mirror
       `RuleEditorView`), Save/Cancel committing a `ProfileAlias`; `#if DEBUG #Preview`s using
       `PreviewFixtures`
-- [ ] run `task test` — must pass before next task
+- [x] run `task test` — must pass before next task
 
 ### Task 9: `RuleEditorView` + `RulesListView` — choose & display browser-or-alias
 
@@ -395,20 +395,20 @@ stays defensive regardless (dangling → picker).
 - Modify: `App/Tests/AppTests/` (add `RuleEditorView`/`RulesListView` logic tests if a
   testable seam exists; otherwise assert via `SettingsViewModel` round-trip)
 
-- [ ] write failing tests: a rule edited to an alias persists `destination == .alias(id)`;
+- [x] write failing tests: a rule edited to an alias persists `destination == .alias(id)`;
       a rule edited to a concrete browser persists `.browser(...)`; the rule-list
       destination label shows the alias **name** for `.alias` and the browser (+profile) for
       `.browser`
-- [ ] `RuleEditorView`: add a destination-mode control (e.g. segmented "Browser" /
+- [x] `RuleEditorView`: add a destination-mode control (e.g. segmented "Browser" /
       "Alias"); in Browser mode keep the existing bundle/profile pickers; in Alias mode show
       a `Picker` over `viewModel.aliases`; `commit()` builds the matching
       `RoutingDestination`; init seeds mode from `rule.destination`; `canSave` requires a
       resolvable selection in the active mode
-- [ ] `RulesListView`: replace `rule.target.*` reads with the view model's
+- [x] `RulesListView`: replace `rule.target.*` reads with the view model's
       `destinationLabel(for:)` helper (added in Task 7 — resolves `.alias` name / "(deleted
       alias)" / `.browser` name+profile); update `defaultNewRule` to a `.browser(...)`
       destination; pass aliases into the editor
-- [ ] run `task test` — must pass before next task
+- [x] run `task test` — must pass before next task
 
 ### Task 10: `GeneralSettingsView` fallback — allow alias as default destination
 
@@ -417,14 +417,14 @@ stays defensive regardless (dangling → picker).
 - Modify: `App/Tests/AppTests/` (extend the existing fallback-mode tests, or
   `SettingsViewModelTests` for the persisted shape)
 
-- [ ] write failing tests: choosing an alias as the default-browser fallback persists
+- [x] write failing tests: choosing an alias as the default-browser fallback persists
       `.defaultBrowser(.alias(id))`; choosing a concrete browser persists
       `.defaultBrowser(.browser(...))`; entering `.defaultBrowser` mode is still refused when
       there are no browsers **and** no aliases
-- [ ] update the `.defaultBrowser` branch: its target editor now produces a
+- [x] update the `.defaultBrowser` branch: its target editor now produces a
       `RoutingDestination` (browser-or-alias, same control idiom as the rule editor); update
       `currentDefaultTarget`/binding logic to read/write the destination
-- [ ] run `task test` — must pass before next task
+- [x] run `task test` — must pass before next task
 
 ### Task 11: Preview fixtures
 
@@ -432,12 +432,12 @@ stays defensive regardless (dangling → picker).
 - Modify: `App/Sources/UI/Previews/PreviewFixtures.swift`
 - Modify: `App/Tests/AppTests/PreviewFixturesTests.swift`
 
-- [ ] write/adjust failing tests: fixtures expose `sampleAliases`; `sampleRules` include at
+- [x] write/adjust failing tests: fixtures expose `sampleAliases`; `sampleRules` include at
       least one `.alias` and one `.browser` destination; `makePreviewSettingsViewModel` is
       seeded with aliases
-- [ ] update `sampleRules` to the `destination` shape; add `sampleAliases`; seed the preview
+- [x] update `sampleRules` to the `destination` shape; add `sampleAliases`; seed the preview
       view model; fix any `.target` references in `#Preview` blocks across the Settings views
-- [ ] run `task test` — must pass before next task
+- [x] run `task test` — must pass before next task
 
 ### Task 12: Verify acceptance criteria
 
