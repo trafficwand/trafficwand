@@ -237,19 +237,20 @@ stays defensive regardless (dangling → picker).
 - Create: `TrafficWandCore/Sources/TrafficWandCore/Models/RoutingDestination.swift`
 - Create: `TrafficWandCore/Tests/TrafficWandCoreTests/RoutingDestinationTests.swift`
 
-- [ ] write failing tests: tagged-object encode shape for `.browser` and `.alias`; decode
+- [x] write failing tests: tagged-object encode shape for `.browser` and `.alias`; decode
       round-trip both cases; `resolved(in:)` returns the target for `.browser`, the
       looked-up target for a known `.alias`, and `nil` for a dangling `.alias`
-- [ ] write a **negative-decode test**: a legacy bare `BrowserTarget` JSON
+- [x] write a **negative-decode test**: a legacy bare `BrowserTarget` JSON
       (`{bundleID, profileID}`, no `type` key) **fails** to decode as `RoutingDestination`
       (throws `keyNotFound(.type)`). This guarantees the try-first/fallback decode in Task 4
       is pinned by a test, not by luck — a future leniency change here would break this test
       instead of silently mis-routing fallbacks.
-- [ ] implement `RoutingDestination` enum with hand-rolled tagged Codable (`Kind`
+- [x] implement `RoutingDestination` enum with hand-rolled tagged Codable (`Kind`
       discriminator `browser`/`alias`), mirroring `FallbackPolicy`'s pattern; ensure
       `init(from:)` **throws** when the `type` key is absent (no default/leniency)
-- [ ] implement `resolved(in aliases: [ProfileAlias]) -> BrowserTarget?`
-- [ ] run `task test-core` — must pass before next task
+- [x] implement `resolved(in aliases: [ProfileAlias]) -> BrowserTarget?`
+- [x] run `task test-core` — passed (148 tests, 16 suites green); `task lint` clean for new
+      files (the only warnings are pre-existing short identifiers in `ProfileAliasTests.swift`)
 
 ### Task 3: Migrate `Rule` to `destination` with backward-compatible decode
 
