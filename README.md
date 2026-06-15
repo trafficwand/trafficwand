@@ -12,7 +12,7 @@ Set it as your default browser once, write a few rules like `*.github.com → Ch
 - Lives quietly in the **menu bar** (no Dock icon).
 - **First-match-wins** ordered rules with wildcard globs.
 - Targets a **browser + optional profile** per rule (Chrome "Work", Firefox
-  "Personal", …).
+  "Personal", …) — directly, or via a reusable **alias** you can re-point in one place.
 - Configurable **fallback** for links that match no rule: show a **picker**, send to a
   single **default browser**, or reuse the **last-used** browser.
 - Profile routing that works **even when the target browser is already running**.
@@ -168,6 +168,30 @@ Safari has no command-line profile selection, so rules targeting it route the li
 without a profile. Every other non-Firefox browser is treated as Chromium and uses
 `--profile-directory=<dir>` when a profile is set (unknown browsers simply carry no
 profile, so they launch their default).
+
+---
+
+## Aliases
+
+Instead of repeating the same browser/profile across many rules, define a reusable
+**alias** — a named binding to a concrete browser + profile (e.g. **"Work"** → Chrome
+"Work Profile"). Rules and the default-browser fallback can then target *either* a
+concrete browser/profile *or* an alias.
+
+The point is late binding: rules store a *reference* to the alias, not a copy. Re-point
+**"Work"** at a different browser in the **Aliases** tab and every rule (and the fallback)
+that targets **"Work"** follows the change at once — no rule-by-rule editing.
+
+- Manage aliases in **Settings ▸ Aliases**: add, rename, and re-target them.
+- In the rule editor and the default-browser fallback, switch the destination between a
+  concrete **Browser** and an **Alias**.
+- An alias that is still referenced by a rule or the fallback **cannot be deleted** until
+  the references are removed — the UI tells you which rules block it.
+- If an alias reference is ever dangling (e.g. a hand-edited config), the link safely
+  falls through to the **picker** rather than being dropped or misrouted.
+
+The "Remember choice for `<domain>`" picker option always writes a *concrete*
+browser/profile rule, never an alias — it records the exact choice you just made.
 
 ---
 

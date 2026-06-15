@@ -466,11 +466,12 @@ stays defensive regardless (dangling → picker).
 - Modify: `CLAUDE.md`
 - Modify: `README.md` (if it documents rules/config behavior)
 
-- [ ] update `CLAUDE.md` architecture/model list: add `ProfileAlias`, `RoutingDestination`,
+- [x] update `CLAUDE.md` architecture/model list: add `ProfileAlias`, `RoutingDestination`,
       `AppConfig.aliases`, schema v2 + migration note, and the Router resolution rule
       (dangling → picker)
-- [ ] update `README.md` if it describes routing rules / config schema
-- [ ] move this plan to `docs/plans/completed/` (`mkdir -p` first)
+- [x] update `README.md` if it describes routing rules / config schema (added an "Aliases"
+      section + intro bullet; README covers Rule syntax/Profiles/Fallback, so it applied)
+- [x] move this plan to `docs/plans/completed/` (`mkdir -p` first)
 
 ## Post-Completion
 *Items requiring manual intervention or external systems — informational only*
