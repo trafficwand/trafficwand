@@ -43,7 +43,7 @@
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Ildar Karymov. All rights reserved.</string>
 	<key>SUFeedURL</key>
-	<string>https://github.com/tomakado/trafficwand/releases/latest/download/appcast.xml</string>
+	<string>https://github.com/trafficwand/trafficwand/releases/latest/download/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>D2AVAQiXtSuI/pthhT6PXiuaK0PjXgQVSXICpq2IHvc=</string>
 </dict>
