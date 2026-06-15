@@ -4,9 +4,11 @@
 # No Xcode, network, or real process interaction required.
 #
 # Seams used:
-#   APP_PATH    — path to a fake .app fixture dir (skips xcodebuild resolution)
-#   INSTALL_DIR — temp dir used as /Applications substitute
-#   QUIT_CMD    — injected fake quit command so no real process is killed
+#   APP_PATH     — path to a fake .app fixture dir (skips xcodebuild resolution)
+#   INSTALL_DIR  — temp dir used as /Applications substitute
+#   QUIT_CMD     — injected fake quit command so no real process is killed
+#   CODESIGN_CMD — injected fake re-sign command so real codesign never runs
+#                  against the fake (non-Mach-O) fixture bundles
 
 set -euo pipefail
 
@@ -35,6 +37,7 @@ assert_install_pass() {
     TESTS=$((TESTS + 1))
     local out status
     if out="$(APP_PATH="$app_path" INSTALL_DIR="$install_dir" QUIT_CMD="$FAKE_QUIT_CMD" \
+            CODESIGN_CMD="$FAKE_CODESIGN_CMD" \
             bash "$SUT" Debug 2>/dev/null)"; then
         status=0
     else
@@ -126,6 +129,12 @@ printf 'fake plist\n'  >"$FAKE_APP/Contents/Info.plist"
 QUIT_MARKER="$TMPDIR_FIXTURE/quit.marker"
 FAKE_QUIT_CMD="touch $QUIT_MARKER"
 
+# Fake re-sign command: appends the bundle path (passed as the final arg by the
+# SUT) to a marker file, so we can assert the re-sign step ran and received the
+# installed bundle path — without invoking real codesign on the fake bundles.
+SIGN_MARKER="$TMPDIR_FIXTURE/sign.marker"
+FAKE_CODESIGN_CMD="printf '%s\n' >>$SIGN_MARKER"
+
 # --- Tests ------------------------------------------------------------------
 
 # 1. Fresh install: bundle copied into empty INSTALL_DIR; contents intact
@@ -143,6 +152,7 @@ printf 'stale\n' >"$STALE_DIR/TrafficWand.app/Contents/STALE_MARKER"
 TESTS=$((TESTS + 1))
 _status=0
 APP_PATH="$FAKE_APP" INSTALL_DIR="$STALE_DIR" QUIT_CMD="$FAKE_QUIT_CMD" \
+    CODESIGN_CMD="$FAKE_CODESIGN_CMD" \
     bash "$SUT" Debug >/dev/null 2>&1 || _status=$?
 if [ "$_status" -ne 0 ]; then
     fail "overwrite stale bundle: script exited non-zero ($_status)"
@@ -167,6 +177,7 @@ mkdir -p "$QUIT_DIR"
 TESTS=$((TESTS + 1))
 _status=0
 APP_PATH="$FAKE_APP" INSTALL_DIR="$QUIT_DIR" QUIT_CMD="$FAKE_QUIT_CMD" \
+    CODESIGN_CMD="$FAKE_CODESIGN_CMD" \
     bash "$SUT" Debug >/dev/null 2>&1 || _status=$?
 if [ "$_status" -eq 0 ] && [ -f "$QUIT_MARKER" ]; then
     pass "quit step fires: marker file created by injected QUIT_CMD"
@@ -216,6 +227,23 @@ if [ "$_guard_status" -ne 0 ] && printf '%s' "$_guard_err" | grep -q "INSTALL_DI
     pass "INSTALL_DIR empty guard: non-zero exit + correct error message"
 else
     fail "INSTALL_DIR empty guard: expected non-zero exit with 'INSTALL_DIR resolved to empty', got exit=$_guard_status err='$_guard_err'"
+fi
+
+# 8. Re-sign step fires: injected CODESIGN_CMD records the installed bundle path,
+#    proving the bundle is re-signed after install (the Library Validation fix).
+rm -f "$SIGN_MARKER"
+SIGN_DIR="$TMPDIR_FIXTURE/sign_test"
+mkdir -p "$SIGN_DIR"
+TESTS=$((TESTS + 1))
+_status=0
+APP_PATH="$FAKE_APP" INSTALL_DIR="$SIGN_DIR" QUIT_CMD="$FAKE_QUIT_CMD" \
+    CODESIGN_CMD="$FAKE_CODESIGN_CMD" \
+    bash "$SUT" Debug >/dev/null 2>&1 || _status=$?
+if [ "$_status" -eq 0 ] && [ -f "$SIGN_MARKER" ] && \
+        grep -q "$SIGN_DIR/TrafficWand.app" "$SIGN_MARKER"; then
+    pass "re-sign step fires: CODESIGN_CMD invoked with the installed bundle path"
+else
+    fail "re-sign step fires: marker absent/wrong or script failed (exit $_status)"
 fi
 
 # --- Summary ----------------------------------------------------------------

@@ -23,11 +23,19 @@ settings:
     # or Development identity; release builds use a Developer ID Application cert.
     #
     # Task 1 reality-check findings:
-    #   - With CODE_SIGN_IDENTITY "-" (ad-hoc), Xcode emits:
-    #     "Disabling hardened runtime with ad-hoc codesigning." Hardened Runtime
-    #     only takes effect with a real Developer ID / Development identity, so
-    #     ENABLE_HARDENED_RUNTIME below is a no-op for ad-hoc local builds and
-    #     becomes meaningful at release signing (Post-Completion: notarization).
+    #   - With CODE_SIGN_IDENTITY "-" (ad-hoc), Xcode still signs the app with
+    #     `-o runtime` (Hardened Runtime). NOTE: an earlier version of this
+    #     comment claimed ad-hoc signing disabled Hardened Runtime — that was
+    #     measured BEFORE Sparkle was a dependency and is wrong. Hardened Runtime
+    #     enables Library Validation, which refuses to load the embedded
+    #     Sparkle.framework (team-less ad-hoc framework vs. team-less ad-hoc app
+    #     = "different Team IDs"), so a freshly-built local bundle CRASHES at
+    #     launch via dyld. `scripts/install-app.sh` therefore deep-resigns the
+    #     installed bundle ad-hoc WITHOUT the runtime flag to drop Library
+    #     Validation. Release builds (`task dmg`) sign everything with one
+    #     Developer ID identity, so Team IDs match and Hardened Runtime stays on
+    #     (required for notarization) — ENABLE_HARDENED_RUNTIME is meaningful
+    #     there.
     #   - After building + `lsregister -f`, the app registers cleanly and shows
     #     "claimed schemes: http:, https:", so it appears in
     #     System Settings ▸ Default web browser. The Info.plist CFBundleURLTypes
