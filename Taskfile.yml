@@ -54,7 +54,7 @@ tasks:
       - xcodebuild build -project TrafficWand.xcodeproj -scheme {{.SCHEME}} -configuration "{{.CONFIG}}" -destination 'platform=macOS'
 
   install:
-    desc: Build Release and install TrafficWand.app to ~/Applications (quits any running instance, no relaunch)
+    desc: Build Release and install TrafficWand.app to /Applications (quits any running instance, no relaunch)
     vars:
       CONFIG: Release
     deps: [{ task: build, vars: { CONFIG: '{{.CONFIG}}' } }]
@@ -62,7 +62,7 @@ tasks:
       - ./scripts/install-app.sh "{{.CONFIG}}"
 
   install-dev:
-    desc: Build Debug and install TrafficWand.app to ~/Applications (quits any running instance, no relaunch)
+    desc: Build Debug and install TrafficWand.app to /Applications (quits any running instance, no relaunch)
     vars:
       CONFIG: Debug
     deps: [{ task: build, vars: { CONFIG: '{{.CONFIG}}' } }]

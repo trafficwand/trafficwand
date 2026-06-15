@@ -78,8 +78,8 @@ All workflows go through the `Taskfile`:
 | `task test-core`  | Run the pure Core package tests (`swift test`) + the no-AppKit guard.                                                             |
 | `task lint`       | Run SwiftLint across the repo.                                                                                                    |
 | `task dmg`        | Build, sign, notarize, and package the app as a DMG (release — see §Distribution for setup).                                     |
-| `task install`    | Release build installed to `~/Applications`. Quits any running instance; does not relaunch. (unsigned — Gatekeeper may prompt on first launch) |
-| `task install-dev` | Debug build installed to `~/Applications`. Quits any running instance; does not relaunch.                                       |
+| `task install`    | Release build installed to `/Applications`. Quits any running instance; does not relaunch. (unsigned — Gatekeeper may prompt on first launch) |
+| `task install-dev` | Debug build installed to `/Applications`. Quits any running instance; does not relaunch.                                       |
 | `task`            | Default: generate + build + lint + all tests.                                                                                     |
 
 Typical first run:

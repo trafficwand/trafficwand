@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # install-app.sh — Quit any running TrafficWand instance and install the
-# freshly-built app bundle into ~/Applications (or INSTALL_DIR).
+# freshly-built app bundle into /Applications (or INSTALL_DIR).
 #
 # Usage:
 #   scripts/install-app.sh <configuration>
@@ -12,7 +12,7 @@
 #
 # Env-var seams (for testing — mirrors verify-release-version.sh's PROJECT_FILE pattern):
 #   APP_PATH    Override the source bundle path; skips xcodebuild resolution.
-#   INSTALL_DIR Override the destination directory (default: $HOME/Applications).
+#   INSTALL_DIR Override the destination directory (default: /Applications).
 #   QUIT_CMD    Override the quit command (default: pkill -x TrafficWand).
 #
 # The script is intentionally not responsible for building the app; callers
@@ -80,7 +80,7 @@ Usage: install-app.sh <configuration>
     bundle_name="$(basename "$app_path")"
 
     # --- Prepare destination ------------------------------------------------
-    local install_dir="${INSTALL_DIR:-$HOME/Applications}"
+    local install_dir="${INSTALL_DIR:-/Applications}"
     [ -n "$install_dir" ] || die "INSTALL_DIR resolved to empty string"
     mkdir -p "$install_dir"
 

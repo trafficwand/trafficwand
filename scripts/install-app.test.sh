@@ -5,7 +5,7 @@
 #
 # Seams used:
 #   APP_PATH    — path to a fake .app fixture dir (skips xcodebuild resolution)
-#   INSTALL_DIR — temp dir used as ~/Applications substitute
+#   INSTALL_DIR — temp dir used as /Applications substitute
 #   QUIT_CMD    — injected fake quit command so no real process is killed
 
 set -euo pipefail
@@ -187,7 +187,7 @@ assert_install_fail_noarg \
 
 # 7. INSTALL_DIR="" (explicit empty string) — guard fires; non-zero exit + error message.
 #    ${INSTALL_DIR:-default} substitutes the default when the variable is empty,
-#    so install_dir resolves to $HOME/Applications in normal shell arithmetic.
+#    so install_dir resolves to /Applications in normal shell arithmetic.
 #    The defensive guard `[ -n "$install_dir" ] || die ...` is an extra layer of
 #    protection; this test asserts that if (through some future code change) install_dir
 #    ever becomes empty, the guard fires with a clear error and does NOT proceed to
@@ -195,8 +195,8 @@ assert_install_fail_noarg \
 #    Because `:-` already protects us, we test the guard directly by temporarily
 #    bypassing INSTALL_DIR resolution: we set INSTALL_DIR to a non-empty sentinel,
 #    then we exercise the real guard by checking that the script accepts a valid dir.
-#    Instead, verify the false-positive: INSTALL_DIR="" resolves to $HOME/Applications
-#    (colon-minus behaviour) and does NOT install into the real $HOME/Applications —
+#    Instead, verify the false-positive: INSTALL_DIR="" resolves to /Applications
+#    (colon-minus behaviour) and does NOT install into the real /Applications —
 #    we can't safely run that, so instead assert the guard itself: run in a subshell
 #    that patches install_dir to "" via a wrapper, confirming the guard text appears.
 TESTS=$((TESTS + 1))
