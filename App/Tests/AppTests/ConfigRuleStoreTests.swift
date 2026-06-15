@@ -62,7 +62,7 @@ final class ConfigRuleStoreTests: XCTestCase {
         let sut = ConfigRuleStore(configStore: store)
 
         let target = chromeTarget("Work")
-        sut.remember(url: URL(string: "https://www.x.com/some/path")!, target: target)
+        sut.remember(url: URL(string: "https://www.x.com/some/path")!, destination: .browser(target))
 
         XCTAssertEqual(store.saveCount, 1)
         let rules = store.lastSaved?.rules ?? []
@@ -72,13 +72,30 @@ final class ConfigRuleStoreTests: XCTestCase {
         XCTAssertEqual(rules.first?.isEnabled, true)
     }
 
+    func testRememberAliasSavesAnAliasRule() {
+        let store = MockConfigStore(loaded: AppConfig(rules: [], fallback: .picker))
+        let sut = ConfigRuleStore(configStore: store)
+
+        let aliasID = UUID()
+        sut.remember(url: URL(string: "https://www.x.com/some/path")!, destination: .alias(aliasID))
+
+        XCTAssertEqual(store.saveCount, 1)
+        let rules = store.lastSaved?.rules ?? []
+        XCTAssertEqual(rules.count, 1)
+        XCTAssertEqual(rules.first?.pattern, "*x.com")
+        // An explicit alias pick persists the reusable `.alias(id)` rule, not a
+        // frozen concrete target.
+        XCTAssertEqual(rules.first?.destination, .alias(aliasID))
+        XCTAssertEqual(rules.first?.isEnabled, true)
+    }
+
     func testRememberSameDomainTwiceUpdatesRatherThanDuplicates() {
         let store = MockConfigStore(loaded: AppConfig(rules: [], fallback: .picker))
         let sut = ConfigRuleStore(configStore: store)
 
-        sut.remember(url: URL(string: "https://www.x.com/a")!, target: chromeTarget("Work"))
+        sut.remember(url: URL(string: "https://www.x.com/a")!, destination: .browser(chromeTarget("Work")))
         let latest = firefoxTarget("Personal")
-        sut.remember(url: URL(string: "https://news.x.com/b")!, target: latest)
+        sut.remember(url: URL(string: "https://news.x.com/b")!, destination: .browser(latest))
 
         // Two saves, but the final config has a single rule for the domain with the
         // latest target (upsert, not append).
@@ -99,7 +116,7 @@ final class ConfigRuleStoreTests: XCTestCase {
         let sut = ConfigRuleStore(configStore: store)
 
         let target = chromeTarget("Work")
-        sut.remember(url: URL(string: "https://www.x.com/some/path")!, target: target)
+        sut.remember(url: URL(string: "https://www.x.com/some/path")!, destination: .browser(target))
 
         XCTAssertEqual(store.saveCount, 1)
         let rules = store.lastSaved?.rules ?? []
@@ -114,7 +131,7 @@ final class ConfigRuleStoreTests: XCTestCase {
         let store = MockConfigStore(loaded: AppConfig(rules: [], fallback: .picker))
         let sut = ConfigRuleStore(configStore: store)
 
-        sut.remember(url: URL(string: "mailto:foo@x.com")!, target: chromeTarget())
+        sut.remember(url: URL(string: "mailto:foo@x.com")!, destination: .browser(chromeTarget()))
 
         XCTAssertEqual(store.saveCount, 0)
     }
@@ -125,7 +142,7 @@ final class ConfigRuleStoreTests: XCTestCase {
         let sut = ConfigRuleStore(configStore: store)
 
         // Must not throw even though save fails.
-        sut.remember(url: URL(string: "https://www.x.com/a")!, target: chromeTarget())
+        sut.remember(url: URL(string: "https://www.x.com/a")!, destination: .browser(chromeTarget()))
 
         XCTAssertEqual(store.saveCount, 1, "A save was attempted.")
         // The save threw before mirroring, so the persisted/loaded config is unchanged.
@@ -138,7 +155,7 @@ final class ConfigRuleStoreTests: XCTestCase {
         let sut = ConfigRuleStore(configStore: store)
 
         // Load failure must not throw and must not attempt a save.
-        sut.remember(url: URL(string: "https://www.x.com/a")!, target: chromeTarget())
+        sut.remember(url: URL(string: "https://www.x.com/a")!, destination: .browser(chromeTarget()))
 
         XCTAssertEqual(store.saveCount, 0)
     }

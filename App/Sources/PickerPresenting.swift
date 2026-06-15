@@ -16,5 +16,7 @@ protocol PickerPresenting {
     /// - Parameters:
     ///   - url: The link awaiting a destination.
     ///   - browsers: The browsers (with profiles) to offer.
-    func presentPicker(url: URL, browsers: [Browser])
+    ///   - aliases: The reusable aliases to offer at the top of the picker. The
+    ///     picker filters out aliases whose target browser isn't installed.
+    func presentPicker(url: URL, browsers: [Browser], aliases: [ProfileAlias])
 }

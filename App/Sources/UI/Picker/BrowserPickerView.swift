@@ -30,8 +30,10 @@ struct BrowserPickerView: View {
     /// compiling and `#Preview` can pass a stub that doesn't depend on installed apps.
     let iconProvider: BrowserIconProviding
 
-    /// The row id the mouse is currently hovering, if any (drives the hover highlight).
-    @State private var hoveredItemID: PickerViewModel.SelectableItem.ID?
+    /// The row id the mouse is currently hovering, if any (drives the hover
+    /// highlight). Internal (not `private`) so the row-rendering extension in
+    /// `BrowserPickerRows.swift` can read/update it.
+    @State var hoveredItemID: PickerViewModel.SelectableItem.ID?
 
     /// Owns keyboard focus so arrow keys / Return are delivered to the list.
     @FocusState private var listFocused: Bool
@@ -148,85 +150,35 @@ struct BrowserPickerView: View {
 
     private var browserList: some View {
         ScrollView {
-            VStack(spacing: 2) {
+            VStack(alignment: .leading, spacing: 2) {
+                // Aliases section header, shown only when the list leads with alias rows.
+                if hasAliasRows {
+                    Text("Aliases")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 8)
+                        .padding(.bottom, 2)
+                }
+
                 ForEach(Array(viewModel.selectableItems.enumerated()), id: \.element.id) { index, item in
+                    // Separate the Aliases group from the browsers with a divider +
+                    // "Browsers" header at the first browser row.
+                    if hasAliasRows, isFirstBrowserRow(at: index) {
+                        Divider()
+                            .padding(.vertical, 4)
+                        Text("Browsers")
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.bottom, 2)
+                    }
                     row(for: item, at: index)
                 }
             }
         }
         .frame(maxHeight: 320)
-    }
-
-    @ViewBuilder
-    private func row(for item: PickerViewModel.SelectableItem, at index: Int) -> some View {
-        let isFirst = index == 0
-        let isBrowserRow = item.profile == nil
-
-        Button {
-            viewModel.select(browser: item.browser, profile: item.profile)
-        } label: {
-            rowLabel(for: item)
-        }
-        .buttonStyle(PickerRowButtonStyle())
-        .pointerStyle(.link)
-        .background(highlightBackground(for: item, at: index))
-        .onHover { hovering in
-            if hovering {
-                hoveredItemID = item.id
-                // Keep keyboard and mouse in agreement: hovering a row makes it the
-                // selection target, so a subsequent Return activates the hovered row
-                // and, once the mouse leaves, the highlight stays on that row.
-                viewModel.selectedIndex = index
-            } else if hoveredItemID == item.id {
-                hoveredItemID = nil
-            }
-        }
-        // Extra top spacing before each browser group, except the very first row.
-        .padding(.top, isBrowserRow && !isFirst ? 6 : 0)
-    }
-
-    @ViewBuilder
-    private func rowLabel(for item: PickerViewModel.SelectableItem) -> some View {
-        if let profile = item.profile {
-            HStack(spacing: 8) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 16))
-                    .foregroundStyle(.secondary)
-                Text(profile.name)
-                    .font(.callout)
-                Spacer(minLength: 0)
-            }
-            .padding(.leading, 28)
-        } else {
-            HStack(spacing: 8) {
-                Image(nsImage: iconProvider.icon(for: item.browser))
-                    .resizable()
-                    .interpolation(.high)
-                    .frame(width: 22, height: 22)
-                    .clipShape(RoundedRectangle(cornerRadius: 4))
-                Text(item.browser.name)
-                Spacer(minLength: 0)
-            }
-        }
-    }
-
-    /// Background fill for a row: hover wins, otherwise the keyboard-selected row.
-    /// The selected row is highlighted from the start (the panel takes focus on
-    /// appear), so the visibly highlighted row always matches the Return target.
-    @ViewBuilder
-    private func highlightBackground(for item: PickerViewModel.SelectableItem, at index: Int) -> some View {
-        let isHovered = hoveredItemID == item.id
-        let isSelected = index == viewModel.selectedIndex
-        let fill: Color? = {
-            if isHovered { return Color.accentColor.opacity(0.18) }
-            if isSelected { return Color.accentColor.opacity(0.12) }
-            return nil
-        }()
-
-        if let fill {
-            RoundedRectangle(cornerRadius: 8)
-                .fill(fill)
-        }
     }
 
     private var emptyState: some View {
@@ -255,28 +207,17 @@ struct BrowserPickerView: View {
     }
 }
 
-/// Row button style: no default chrome (plain), full-row hit target, and a subtle
-/// press effect (slightly dimmed + scaled) so taps feel responsive.
-private struct PickerRowButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .padding(.vertical, 6)
-            .padding(.horizontal, 8)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .opacity(configuration.isPressed ? 0.6 : 1)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(.easeOut(duration: 0.1), value: configuration.isPressed)
-    }
-}
-
 #if DEBUG
 @MainActor
-private func previewViewModel(browsers: [Browser]) -> PickerViewModel {
+private func previewViewModel(
+    browsers: [Browser],
+    aliases: [ProfileAlias] = []
+) -> PickerViewModel {
     PickerViewModel(
         url: URL(string: "https://www.rockpapershotgun.com/some/very/long/article/path")!,
         browsers: browsers,
-        onSelect: { _, _ in },
+        aliases: aliases,
+        onSelect: { _, _, _ in },
         onCancel: {},
         onCopy: { _ in },
         onOpenSettings: { _ in }
@@ -285,29 +226,17 @@ private func previewViewModel(browsers: [Browser]) -> PickerViewModel {
 
 #Preview("Picker") {
     BrowserPickerView(
-        viewModel: previewViewModel(browsers: [
-            Browser(
-                bundleID: "com.google.Chrome",
-                name: "Google Chrome",
-                appURL: URL(fileURLWithPath: "/Applications/Google Chrome.app"),
-                profiles: [
-                    BrowserProfile(id: "Default", name: "Personal"),
-                    BrowserProfile(id: "Profile 1", name: "Work")
-                ]
-            ),
-            Browser(
-                bundleID: "org.mozilla.firefox",
-                name: "Firefox",
-                appURL: URL(fileURLWithPath: "/Applications/Firefox.app"),
-                profiles: []
-            ),
-            Browser(
-                bundleID: "com.apple.Safari",
-                name: "Safari",
-                appURL: URL(fileURLWithPath: "/Applications/Safari.app"),
-                profiles: []
-            )
-        ]),
+        viewModel: previewViewModel(browsers: PreviewFixtures.sampleBrowsers),
+        iconProvider: PreviewIconProvider()
+    )
+}
+
+#Preview("Picker — with aliases") {
+    BrowserPickerView(
+        viewModel: previewViewModel(
+            browsers: PreviewFixtures.sampleBrowsers,
+            aliases: PreviewFixtures.sampleAliases
+        ),
         iconProvider: PreviewIconProvider()
     )
 }

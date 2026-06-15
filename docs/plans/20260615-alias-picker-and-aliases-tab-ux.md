@@ -252,24 +252,24 @@ each can go green on its own.
 > Picker compile-unit: App will not build until Task 4. Write/adjust tests now; the green
 > checkpoint is end of Task 4.
 
-- [ ] migrate the existing test harness to the three-arg `onSelect` and tagged
+- [x] migrate the existing test harness to the three-arg `onSelect` and tagged
       `SelectableItem.Kind`; update existing assertions (e.g.
       `testActivateSelectionSelectsBrowserDefault`) to the new shape
-- [ ] write failing tests: with aliases present, `selectableItems` lists the installed
+- [x] write failing tests: with aliases present, `selectableItems` lists the installed
       aliases first (in order, ids `"alias:<uuid>"`), then the browser/profile rows; an
       alias whose `target.bundleID` is **not** among `browsers` is excluded; selecting an
       alias row yields `launchTarget == alias.target` and
       `rememberDestination == .alias(alias.id)`; selecting a browser/profile row yields
       `.browser(target)`; `activateSelection()` over an alias row delivers the same;
       arrow-key nav reaches alias rows
-- [ ] add `aliases: [ProfileAlias]` to `init`; convert `SelectableItem` to the tagged
+- [x] add `aliases: [ProfileAlias]` to `init`; convert `SelectableItem` to the tagged
       `Kind` form (retain the existing browser/profile id scheme; add `"alias:<uuid>"`)
       with computed `launchTarget` / `rememberDestination`; build alias rows (filtered to
       installed targets) ahead of the browser rows
-- [ ] change `onSelect` to
+- [x] change `onSelect` to
       `(_ launchTarget: BrowserTarget, _ rememberDestination: RoutingDestination, _ remember: Bool)`;
       update `select(...)`/`activateSelection()` accordingly; update doc comments
-- [ ] (do not run `task test` yet — App is mid-migration; the green checkpoint is Task 4)
+- [x] (do not run `task test` yet — App is mid-migration; the green checkpoint is Task 4)
 
 ### Task 3: `BrowserPickerView` — Aliases section + alias rows (App)
 
@@ -280,19 +280,19 @@ each can go green on its own.
 
 > Still within the picker compile-unit (green at end of Task 4).
 
-- [ ] replace the current `item.profile == nil` branching (in `row(for:)` and
+- [x] replace the current `item.profile == nil` branching (in `row(for:)` and
       `rowLabel(for:)`) with a switch over `SelectableItem.Kind`; **preserve** the
       browser-group top-spacing (`isBrowserRow && !isFirst`) and the profile-row
       indentation (`.padding(.leading, 28)`); `hoveredItemID` stays `SelectableItem.ID`
       (== `String`)
-- [ ] render an "Aliases" section header + alias rows (alias name primary, resolved
+- [x] render an "Aliases" section header + alias rows (alias name primary, resolved
       browser/profile secondary label) above the existing browser groups, with a divider/
       spacing between the Aliases group and the first browser group; keep the empty-state
       and keyboard-highlight behavior; alias rows are tappable like browser rows
-- [ ] update the `#Preview` / `previewViewModel` helper to pass sample aliases (reuse
+- [x] update the `#Preview` / `previewViewModel` helper to pass sample aliases (reuse
       `PreviewFixtures.sampleAliases`) **and** fix its `onSelect: { _, _ in }` (~line 282)
       to the new three-arg signature `{ _, _, _ in }`; add a preview showing alias rows
-- [ ] (no separate test target for the view; row logic is covered by Task 2's view-model
+- [x] (no separate test target for the view; row logic is covered by Task 2's view-model
       tests — noted)
 
 ### Task 4: Wire picker aliases end-to-end + remember-as-alias (App) — green checkpoint
@@ -309,7 +309,7 @@ each can go green on its own.
   `PickerPresenting` mock `presentPicker(url:browsers:)` at ~line 70 needs `aliases:`),
   `ConfigRuleStoreTests`
 
-- [ ] write failing tests: `ConfigRuleStore.remember(url:destination:)` upserts a rule
+- [x] write failing tests: `ConfigRuleStore.remember(url:destination:)` upserts a rule
       whose `destination` equals the passed destination (an `.alias(id)` persists an alias
       rule; a `.browser` persists a browser rule); `PickerPanelController.handleSelection`
       launches the concrete `launchTarget` and, on remember, calls
@@ -319,19 +319,19 @@ each can go green on its own.
       at the VM layer (Task 2), exercise this via a `launchTarget` whose `bundleID` isn't
       in `browsers` (a stale/edge target), not via an alias row; `RoutingService` passes
       `config.aliases` into `presentPicker`
-- [ ] change `RulePersisting.remember(url:target:)` → `remember(url:destination:)`;
+- [x] change `RulePersisting.remember(url:target:)` → `remember(url:destination:)`;
       update `ConfigRuleStore` to build via `RememberRule.rule(forURL:destination:)`
-- [ ] add `aliases:` to `PickerPresenting.presentPicker` and the
+- [x] add `aliases:` to `PickerPresenting.presentPicker` and the
       `PickerPanelController` conformance (`presentPicker` → `makeViewModel(...,
       aliases:)`); update `handleSelection` to the new `onSelect` signature (launch
       `launchTarget`; remember `rememberDestination`)
-- [ ] update `RoutingService`: pass `config.aliases` at the `.prompt` call site in
+- [x] update `RoutingService`: pass `config.aliases` at the `.prompt` call site in
       `route(url:)`; give the private `open(target:url:browsers:)` a new
       `aliases: [ProfileAlias]` parameter and pass `config.aliases` from its `route(url:)`
       caller (do not reference `config` inside `open(...)` — it's out of scope there)
-- [ ] update all affected mocks/tests for the new signatures (including the two test
+- [x] update all affected mocks/tests for the new signatures (including the two test
       files named above and the `BrowserPickerView` preview from Task 3)
-- [ ] run `task generate` then `task test` — App green checkpoint — and `task lint`
+- [x] run `task generate` then `task test` — App green checkpoint — and `task lint`
 
 ### Task 5: Master-detail Aliases tab (App)
 

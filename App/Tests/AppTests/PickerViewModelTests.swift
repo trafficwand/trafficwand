@@ -39,14 +39,16 @@ final class PickerViewModelTests: XCTestCase {
 
     /// Records the picker's outcomes as the injected closures fire.
     ///
-    /// `selectedTarget` is the chosen `BrowserTarget` (nil until a selection is
-    /// made); `rememberFlag` is the remember-choice flag passed alongside the
+    /// `selectedTarget` is the chosen concrete `BrowserTarget` to launch (nil until
+    /// a selection is made); `rememberDestination` is the `RoutingDestination` to
+    /// persist; `rememberFlag` is the remember-choice flag passed alongside the
     /// selection; `copiedString` is the copied URL string (nil until "copy URL");
     /// `cancelCount` increments each time `onCancel` fires; `openedSettingsTabs`
     /// accumulates each tab the view model asked to open (empty until
     /// `openSettings(tab:)` is called).
     private final class Outcomes: @unchecked Sendable {
         var selectedTarget: BrowserTarget?
+        var rememberDestination: RoutingDestination?
         var rememberFlag: Bool?
         var copiedString: String?
         var cancelCount: Int = 0
@@ -56,14 +58,17 @@ final class PickerViewModelTests: XCTestCase {
     /// Builds a view model wired to a fresh `Outcomes` recorder, returning both.
     private func makeViewModel(
         browsers: [Browser],
+        aliases: [ProfileAlias] = [],
         url: URL? = nil
     ) -> (PickerViewModel, Outcomes) {
         let outcomes = Outcomes()
         let vm = PickerViewModel(
             url: url ?? self.url,
             browsers: browsers,
-            onSelect: { target, remember in
-                outcomes.selectedTarget = target
+            aliases: aliases,
+            onSelect: { launchTarget, rememberDestination, remember in
+                outcomes.selectedTarget = launchTarget
+                outcomes.rememberDestination = rememberDestination
                 outcomes.rememberFlag = remember
             },
             onCancel: { outcomes.cancelCount += 1 },
@@ -80,7 +85,10 @@ final class PickerViewModelTests: XCTestCase {
 
         vm.select(browser: safari, profile: nil)
 
-        XCTAssertEqual(outcomes.selectedTarget, BrowserTarget(bundleID: "com.apple.Safari", profileID: nil))
+        let target = BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)
+        XCTAssertEqual(outcomes.selectedTarget, target)
+        // A concrete browser/profile pick remembers a concrete `.browser` rule.
+        XCTAssertEqual(outcomes.rememberDestination, .browser(target))
     }
 
     // MARK: - select browser + specific profile
@@ -91,10 +99,9 @@ final class PickerViewModelTests: XCTestCase {
         let work = chrome.profiles[1] // id "Profile 1"
         vm.select(browser: chrome, profile: work)
 
-        XCTAssertEqual(
-            outcomes.selectedTarget,
-            BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1")
-        )
+        let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1")
+        XCTAssertEqual(outcomes.selectedTarget, target)
+        XCTAssertEqual(outcomes.rememberDestination, .browser(target))
     }
 
     // MARK: - copy URL
@@ -194,6 +201,20 @@ final class PickerViewModelTests: XCTestCase {
         XCTAssertEqual(vm.rememberHost, "localhost")
     }
 
+    // MARK: - Kind helpers
+
+    /// The browser of a browser-kind item, or nil for an alias row.
+    private func browser(of item: PickerViewModel.SelectableItem) -> Browser? {
+        if case .browser(let browser, _) = item.kind { return browser }
+        return nil
+    }
+
+    /// The profile of a browser-kind item (nil for the default row or an alias row).
+    private func profile(of item: PickerViewModel.SelectableItem) -> BrowserProfile? {
+        if case .browser(_, let profile) = item.kind { return profile }
+        return nil
+    }
+
     // MARK: - selectable items flattening
 
     func testSelectableItemsFlattensBrowsersThenProfiles() {
@@ -204,17 +225,17 @@ final class PickerViewModelTests: XCTestCase {
         let items = vm.selectableItems
         XCTAssertEqual(items.count, 4)
 
-        XCTAssertEqual(items[0].browser.bundleID, "com.google.Chrome")
-        XCTAssertNil(items[0].profile)
+        XCTAssertEqual(browser(of: items[0])?.bundleID, "com.google.Chrome")
+        XCTAssertNil(profile(of: items[0]))
 
-        XCTAssertEqual(items[1].browser.bundleID, "com.google.Chrome")
-        XCTAssertEqual(items[1].profile?.id, "Default")
+        XCTAssertEqual(browser(of: items[1])?.bundleID, "com.google.Chrome")
+        XCTAssertEqual(profile(of: items[1])?.id, "Default")
 
-        XCTAssertEqual(items[2].browser.bundleID, "com.google.Chrome")
-        XCTAssertEqual(items[2].profile?.id, "Profile 1")
+        XCTAssertEqual(browser(of: items[2])?.bundleID, "com.google.Chrome")
+        XCTAssertEqual(profile(of: items[2])?.id, "Profile 1")
 
-        XCTAssertEqual(items[3].browser.bundleID, "com.apple.Safari")
-        XCTAssertNil(items[3].profile)
+        XCTAssertEqual(browser(of: items[3])?.bundleID, "com.apple.Safari")
+        XCTAssertNil(profile(of: items[3]))
 
         // IDs are stable and unique.
         XCTAssertEqual(Set(items.map(\.id)).count, items.count)
@@ -243,9 +264,9 @@ final class PickerViewModelTests: XCTestCase {
 
         // The browser-default item (profile == nil) and the "default"-named profile
         // item are distinct entries with distinct ids.
-        let defaultRow = try XCTUnwrap(items.first(where: { $0.profile == nil }))
+        let defaultRow = try XCTUnwrap(items.first(where: { profile(of: $0) == nil }))
         let defaultNamedProfileRow = try XCTUnwrap(
-            items.first(where: { $0.profile?.id == "default" })
+            items.first(where: { profile(of: $0)?.id == "default" })
         )
         XCTAssertNotEqual(defaultRow.id, defaultNamedProfileRow.id)
     }
