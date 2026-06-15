@@ -22,7 +22,7 @@ struct AboutSettingsView: View {
     /// construct successfully (a typo would otherwise crash on first render).
     enum Links {
         static let sponsor = URL(string: "https://github.com/sponsors/tomakado")!
-        static let license = URL(string: "https://github.com/tomakado/trafficwand/blob/main/LICENSE")!
+        static let license = URL(string: "https://github.com/trafficwand/trafficwand/blob/main/LICENSE")!
         static let copyright = "© 2026 Ildar Karymov"
     }
 

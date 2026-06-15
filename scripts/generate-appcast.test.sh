@@ -46,7 +46,7 @@ STUB_VERSION="52"
 STUB_SHORT="0.2.0"
 STUB_SIG="StUbSiGnAtUrE1234567890abcdefABCDEF=="
 STUB_LENGTH="123456"
-STUB_URL="https://github.com/tomakado/trafficwand/releases/download/v0.2.0/TrafficWand-0.2.0.dmg"
+STUB_URL="https://github.com/trafficwand/trafficwand/releases/download/v0.2.0/TrafficWand-0.2.0.dmg"
 STUB_MIN="26.0"
 
 OUT="$(render_appcast "$STUB_VERSION" "$STUB_SHORT" "$STUB_SIG" "$STUB_LENGTH" "$STUB_URL" "$STUB_MIN")"

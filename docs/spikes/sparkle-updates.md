@@ -140,14 +140,14 @@ Sparkle reads an **`appcast.xml`** feed to discover updates. We host it as a
 
 - **Feed URL (stable, baked into the app).** `Info.plist` `SUFeedURL` is the
   redirect URL
-  `https://github.com/tomakado/trafficwand/releases/latest/download/appcast.xml`.
+  `https://github.com/trafficwand/trafficwand/releases/latest/download/appcast.xml`.
   At runtime Sparkle follows GitHub's **302** from `/latest/download/` to the
   newest release's `appcast.xml` asset (verified against Sparkle issues #1450 /
   #1461 — the redirect is followed correctly for the *feed* fetch).
 
 - **Enclosure URL (permanent, version-specific).** Each appcast `<item>`'s
   `<enclosure url>` points at the **versioned** Release asset
-  `https://github.com/tomakado/trafficwand/releases/download/v<version>/TrafficWand-<version>.dmg`
+  `https://github.com/trafficwand/trafficwand/releases/download/v<version>/TrafficWand-<version>.dmg`
   (not the `/latest/` redirect). The appcast only needs the single latest `<item>`
   for update detection.
 
@@ -204,7 +204,7 @@ irreplaceable credential and external system settings:
   key as a GitHub Actions secret (Settings → Secrets and variables → Actions).
   This is an external GitHub settings action.
 - **Post-first-release check:** confirm
-  `https://github.com/tomakado/trafficwand/releases/latest/download/appcast.xml`
+  `https://github.com/trafficwand/trafficwand/releases/latest/download/appcast.xml`
   resolves (302 → newest release's asset).
 
 ---

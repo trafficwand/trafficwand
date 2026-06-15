@@ -179,7 +179,7 @@ menu item plus automatic background checks. The release pipeline feeds Sparkle:
   `releases/download/v<version>/TrafficWand-<version>.dmg`. CI uploads `appcast.xml`
   alongside the DMG as a release asset. There is **no GitHub Pages / `gh-pages` branch** —
   the app's `SUFeedURL` is the stable
-  `https://github.com/tomakado/trafficwand/releases/latest/download/appcast.xml` redirect,
+  `https://github.com/trafficwand/trafficwand/releases/latest/download/appcast.xml` redirect,
   which always resolves to the newest release's `appcast.xml`.
 - **Authoritative, monotonic build number.** `CFBundleVersion` is no longer a literal: it
   resolves to `$(CURRENT_PROJECT_VERSION)`, which `task build-info` derives from

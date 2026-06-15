@@ -43,7 +43,7 @@ set -euo pipefail
 
 # Base URL of the versioned Release DMG asset. The version-specific path segment
 # (v<version>/TrafficWand-<version>.dmg) is appended in main().
-RELEASE_DOWNLOAD_BASE="https://github.com/tomakado/trafficwand/releases/download"
+RELEASE_DOWNLOAD_BASE="https://github.com/trafficwand/trafficwand/releases/download"
 
 # ---------------------------------------------------------------------------
 # Helpers

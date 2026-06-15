@@ -19,7 +19,7 @@ final class AboutSettingsViewTests: XCTestCase {
     func testLicenseURLConstructs() {
         XCTAssertEqual(
             AboutSettingsView.Links.license.absoluteString,
-            "https://github.com/tomakado/trafficwand/blob/main/LICENSE"
+            "https://github.com/trafficwand/trafficwand/blob/main/LICENSE"
         )
     }
 }
