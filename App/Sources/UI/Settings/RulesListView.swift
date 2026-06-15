@@ -69,11 +69,18 @@ struct RulesListView: View {
     private var ruleList: some View {
         List {
             ForEach(viewModel.rules) { rule in
-                RuleRow(
-                    rule: rule,
-                    browserName: browserName(for: rule.target.bundleID),
-                    onToggle: { enabled in viewModel.setRule(rule, enabled: enabled) }
-                )
+                // The `ZStack` wrapper is load-bearing: a custom row View placed
+                // *directly* inside a `List`'s `ForEach` crashes the macOS Xcode
+                // preview (Apple-confirmed; the running app is unaffected). Wrapping
+                // the row in any container sidesteps it.
+                // See developer.apple.com/forums/thread/803429.
+                ZStack {
+                    RuleRow(
+                        rule: rule,
+                        browserName: browserName(for: rule.target.bundleID),
+                        onToggle: { enabled in viewModel.setRule(rule, enabled: enabled) }
+                    )
+                }
                 .contentShape(Rectangle())
                 .onTapGesture {
                     editing = EditingRule(rule: rule, isNew: false)
@@ -154,3 +161,14 @@ private struct RuleRow: View {
         return browserName
     }
 }
+#if DEBUG
+#Preview("Rules") {
+    RulesListView(viewModel: PreviewFixtures.makePreviewSettingsViewModel())
+}
+
+#Preview("Rules — empty") {
+    RulesListView(
+        viewModel: PreviewFixtures.makePreviewSettingsViewModel(config: PreviewFixtures.emptyConfig)
+    )
+}
+#endif

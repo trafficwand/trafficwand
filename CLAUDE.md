@@ -65,6 +65,11 @@ menu item) and `SettingsRootView`'s `TabView` selection. The holder is owned by
 writes survive across `rootView` updates and stay externally observable in
 tests.
 
+SwiftUI `#Preview` blocks compile into the app target (never the test target), so shared
+preview mocks and sample data live in `App/Sources/UI/Previews/PreviewFixtures.swift` under
+`#if DEBUG`, declared `internal` (not `private`) so the DEBUG test target can
+`@testable import` them.
+
 ## Commands
 
 | Command          | What it does                                                      |

@@ -37,6 +37,11 @@ enum StatusMenuState {
 /// manual verification.
 @MainActor
 final class StatusBarController: NSObject, NSMenuDelegate, NSMenuItemValidation {
+    /// SF Symbol name for the menu-bar status icon. Single source of truth shared
+    /// by `configureButton()` and the `#if DEBUG` SwiftUI preview at the bottom of
+    /// this file, so the previewed glyph can never drift from the live one.
+    static let statusIconSymbolName = "arrow.trianglehead.branch"
+
     private let statusItem: NSStatusItem
     private let defaultBrowserManager: DefaultBrowserManager
 
@@ -119,7 +124,7 @@ final class StatusBarController: NSObject, NSMenuDelegate, NSMenuItemValidation 
     private func configureButton() {
         if let button = statusItem.button {
             button.image = NSImage(
-                systemSymbolName: "arrow.trianglehead.branch",
+                systemSymbolName: Self.statusIconSymbolName,
                 accessibilityDescription: "TrafficWand"
             )
             button.image?.isTemplate = true
@@ -235,3 +240,40 @@ final class StatusBarController: NSObject, NSMenuDelegate, NSMenuItemValidation 
         NSApp.terminate(nil)
     }
 }
+
+#if DEBUG
+import SwiftUI
+
+/// Preview-only rendering of the menu-bar status glyph.
+///
+/// The live icon is an `NSImage(systemSymbolName:)` template drawn by AppKit, which
+/// has no SwiftUI canvas. This view mirrors it with `Image(systemName:)` using the
+/// same shared `StatusBarController.statusIconSymbolName`, rendered as a template
+/// over both a light and a dark swatch so the template (monochrome) appearance can be
+/// eyeballed in the Xcode canvas.
+private struct MenuBarIconPreview: View {
+    private func glyph(over background: Color) -> some View {
+        Image(systemName: StatusBarController.statusIconSymbolName)
+            .renderingMode(.template)
+            .resizable()
+            .scaledToFit()
+            .foregroundStyle(.primary)
+            .frame(width: 18, height: 18)
+            .padding(8)
+            .background(background)
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            glyph(over: .white)
+                .environment(\.colorScheme, .light)
+            glyph(over: .black)
+                .environment(\.colorScheme, .dark)
+        }
+    }
+}
+
+#Preview("Menu-bar icon") {
+    MenuBarIconPreview()
+}
+#endif

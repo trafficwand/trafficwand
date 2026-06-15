@@ -271,13 +271,6 @@ private struct PickerRowButtonStyle: ButtonStyle {
 }
 
 #if DEBUG
-/// Stub icon provider so previews never depend on which browsers are installed.
-private struct PreviewIconProvider: BrowserIconProviding {
-    func icon(for browser: Browser) -> NSImage {
-        NSImage(systemSymbolName: "globe", accessibilityDescription: nil)!
-    }
-}
-
 @MainActor
 private func previewViewModel(browsers: [Browser]) -> PickerViewModel {
     PickerViewModel(

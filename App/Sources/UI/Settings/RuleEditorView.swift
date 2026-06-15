@@ -127,3 +127,30 @@ struct RuleEditorView: View {
     ? = exactly one character. Matching is case-insensitive.
     """
 }
+
+#if DEBUG
+#Preview("Rule Editor") {
+    RuleEditorView(
+        rule: PreviewFixtures.sampleRules.first!,
+        browsers: PreviewFixtures.sampleBrowsers,
+        onSave: { _ in },
+        onCancel: {}
+    )
+}
+
+#Preview("Rule Editor — new") {
+    RuleEditorView(
+        rule: Rule(
+            pattern: "",
+            target: BrowserTarget(
+                bundleID: PreviewFixtures.sampleBrowsers.first!.bundleID,
+                profileID: nil
+            ),
+            isEnabled: true
+        ),
+        browsers: PreviewFixtures.sampleBrowsers,
+        onSave: { _ in },
+        onCancel: {}
+    )
+}
+#endif
