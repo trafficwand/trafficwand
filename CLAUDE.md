@@ -41,6 +41,20 @@ TrafficWand is two layers, and keeping them separate is the whole point of the d
   (`NSPanel` + `NSHostingView`), and the concrete adapters that touch `NSWorkspace` /
   `Process` / the filesystem. Tested via `xcodebuild test` (the `TrafficWandTests`
   target).
+  - **The picker offers aliases too.** Alongside the installed browser/profile rows, the
+    picker prepends an **Aliases** section (`PickerViewModel` builds the rows, filtering
+    out aliases whose target browser is uninstalled — they can't launch). Selecting an
+    alias row launches the alias's resolved concrete `BrowserTarget` (so the launch path
+    is unchanged) but carries an `.alias(id)` `RoutingDestination` for "Remember choice":
+    `PickerViewModel.onSelect` delivers `(launchTarget, rememberDestination, remember)`,
+    and `PickerPanelController.handleSelection` persists via `rulePersister.remember(url:
+    destination:)`. So remembering an alias selection writes an **`.alias(id)` rule**
+    (re-pointing the alias later re-routes the remembered site), while a concrete pick
+    still writes a `.browser(...)` rule. Persistence flows through Core's
+    `RememberRule.rule(forURL:destination:)`; the picker seam is
+    `PickerPresenting.presentPicker(url:browsers:aliases:)` (`RoutingService` threads
+    `config.aliases` through — including via the `aliases:` parameter on the private
+    `open(target:url:browsers:aliases:)` fallback).
 
 The rule of thumb: **anything decision-shaped goes in Core and gets a unit test;
 anything that touches the system is a thin adapter in App, kept behind a protocol so the
@@ -91,9 +105,13 @@ menu item) and `SettingsRootView`'s `TabView` selection. The holder is owned by
 `SettingsWindowController` (not by `@State` inside the view) so deep-link
 writes survive across `rootView` updates and stay externally observable in
 tests. The tabs are, in order, **general → rules → aliases → about**; the Aliases tab
-(`AliasesListView` + `AliasEditorView`) is where `ProfileAlias`es are created/edited, and
-the rule and fallback editors (`RuleEditorView`, `GeneralSettingsView`) each let you pick
-either a concrete browser or an alias. `SettingsViewModel` owns alias CRUD + persistence
+(`AliasesListView` + `AliasEditorView`) is where `ProfileAlias`es are created/edited. It
+is a **master-detail** layout (`NavigationSplitView`: a sidebar alias list + an inline
+detail editor) with an always-visible description explaining what aliases are for; the
+inline editor **live-persists** (the name commits on Enter/focus-out, the browser/profile
+on change — no Save/Cancel sheet), and **Add** selects the newly created alias. The rule
+and fallback editors (`RuleEditorView`, `GeneralSettingsView`) each let you pick either a
+concrete browser or an alias. `SettingsViewModel` owns alias CRUD + persistence
 and enforces referential integrity (it refuses to delete an alias that a rule or the
 fallback still references, and exposes a `destinationLabel(for:)` seam that renders an
 alias by name, "(deleted alias)" when dangling, or a browser+profile label).

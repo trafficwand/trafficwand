@@ -411,12 +411,15 @@ each can go green on its own.
 - Modify: `CLAUDE.md`
 - Modify: `README.md` (if it documents the picker / aliases UX)
 
-- [ ] update `CLAUDE.md`: the picker now offers alias rows and a remembered alias
+- [x] update `CLAUDE.md`: the picker now offers alias rows and a remembered alias
       selection persists an `.alias(id)` rule (note the `RememberRule.rule(forURL:
       destination:)` path and the `PickerPresenting.presentPicker(...aliases:)` signature);
       the Aliases tab is now master-detail with live-persist editing + a description
-- [ ] update `README.md` if it describes the picker or the Aliases tab
-- [ ] move this plan to `docs/plans/completed/` (`mkdir -p` first)
+- [x] update `README.md` if it describes the picker or the Aliases tab — updated: the
+      Aliases section, the picker description, and the "remember choice" wording (the old
+      "always concrete, never an alias" claim is now correct: alias picks remember as the
+      alias)
+- [x] move this plan to `docs/plans/completed/` (`mkdir -p` first)
 
 ## Post-Completion
 *Items requiring manual intervention or external systems — informational only*
