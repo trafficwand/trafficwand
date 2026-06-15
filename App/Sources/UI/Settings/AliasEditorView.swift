@@ -1,105 +1,97 @@
 import SwiftUI
 import TrafficWandCore
 
-/// Edits a single profile alias: its display name and the concrete browser +
-/// profile it resolves to.
+/// Inline live-persist editor for a single profile alias: its display name and the
+/// concrete browser + profile it resolves to.
 ///
-/// Presented as a sheet from `AliasesListView`. It edits a local working copy and
-/// only commits via `onSave` when the user confirms, so cancelling leaves the
-/// underlying config untouched. The profile picker is driven by the profiles of
-/// the currently-chosen browser, and switching browsers resets a profile the new
-/// browser can't honor (mirrors `RuleEditorView`).
+/// Shown in the detail pane of `AliasesListView`'s `NavigationSplitView` for the
+/// selected alias. Unlike the former sheet, there is **no Save/Cancel** and no local
+/// draft: every change commits straight through `viewModel.updateAlias`, matching the
+/// app's persist-on-mutation pattern.
+///
+/// - The **name** field commits on Enter (`.onSubmit`) **and** on focus-out: an
+///   editable `TextField` only fires `.onSubmit` on Return, so a `@FocusState` +
+///   `.onChange(of:)` pair flushes the typed name when focus leaves. Committing on
+///   commit boundaries (not every keystroke) avoids persisting a half-typed name.
+/// - The **browser/profile** change commits immediately when `BrowserProfilePicker`
+///   writes through its binding. The profile picker is driven by the profiles of the
+///   currently-chosen browser, and switching browsers resets a profile the new
+///   browser can't honor (mirrors `RuleEditorView`).
 struct AliasEditorView: View {
-    /// The browsers available as alias targets (with discovered profiles).
-    let browsers: [Browser]
+    @Bindable var viewModel: SettingsViewModel
 
-    /// Working copy of the alias being edited.
-    @State private var draft: ProfileAlias
+    /// The id of the alias being edited; the live alias is fetched from the view
+    /// model so the editor always reflects the current persisted value.
+    let aliasID: UUID
 
-    /// Commit handler: receives the finished alias. Called on Save only.
-    let onSave: (ProfileAlias) -> Void
-    /// Dismiss handler: called on Cancel or after Save.
-    let onCancel: () -> Void
+    /// Local editing buffer for the name, committed on Enter / focus-out so a
+    /// half-typed name is never persisted mid-keystroke.
+    @State private var nameText: String
 
-    init(
-        alias: ProfileAlias,
-        browsers: [Browser],
-        onSave: @escaping (ProfileAlias) -> Void,
-        onCancel: @escaping () -> Void
-    ) {
-        self.browsers = browsers
-        self._draft = State(initialValue: alias)
-        self.onSave = onSave
-        self.onCancel = onCancel
-    }
+    @FocusState private var nameFieldFocused: Bool
 
-    /// The browser currently selected (if it is among the available browsers).
-    private var selectedBrowser: Browser? {
-        browsers.first { $0.bundleID == draft.target.bundleID }
+    init(viewModel: SettingsViewModel, aliasID: UUID) {
+        self.viewModel = viewModel
+        self.aliasID = aliasID
+        self._nameText = State(initialValue: viewModel.alias(withID: aliasID)?.name ?? "")
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Edit Alias")
-                .font(.headline)
-
-            Form {
-                Section {
-                    TextField("Name", text: $draft.name, prompt: Text("Personal"))
-                        .textFieldStyle(.roundedBorder)
-                    Text("A reusable name (e.g. \"Personal\", \"Work\") that rules and the "
-                        + "fallback can point at. Re-pointing it here updates every rule that uses it.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section {
-                    BrowserProfilePicker(browsers: browsers, target: $draft.target)
-                }
+        Form {
+            Section {
+                TextField("Name", text: $nameText, prompt: Text("Personal"))
+                    .textFieldStyle(.roundedBorder)
+                    .focused($nameFieldFocused)
+                    .onSubmit { commitName() }
+                    .onChange(of: nameFieldFocused) { _, focused in
+                        // `.onSubmit` only fires on Return; flush on focus-out too.
+                        if !focused { commitName() }
+                    }
+                Text("A reusable name (e.g. \"Personal\", \"Work\") that rules and the "
+                    + "fallback can point at. Re-pointing it here updates every rule that uses it.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .formStyle(.grouped)
 
-            HStack {
-                Spacer()
-                Button("Cancel", role: .cancel, action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                Button("Save") { onSave(draft) }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!canSave)
+            Section {
+                BrowserProfilePicker(browsers: viewModel.browsers, target: targetBinding)
             }
         }
-        .padding(20)
-        .frame(width: 460)
+        .formStyle(.grouped)
+        // Re-seed the name buffer (and reset focus state) when the selection changes
+        // to a different alias, so the field shows the newly-selected alias's name.
+        .onChange(of: aliasID) { _, newID in
+            nameText = viewModel.alias(withID: newID)?.name ?? ""
+        }
     }
 
-    /// Whether the alias can be saved: a non-empty name and a resolvable browser.
-    private var canSave: Bool {
-        !draft.name.trimmingCharacters(in: .whitespaces).isEmpty && selectedBrowser != nil
+    /// Binding to the selected alias's concrete target. Writing commits the whole
+    /// alias (with the new target) via `updateAlias` immediately.
+    private var targetBinding: Binding<BrowserTarget> {
+        Binding(
+            get: { viewModel.alias(withID: aliasID)?.target ?? BrowserTarget(bundleID: "", profileID: nil) },
+            set: { newTarget in
+                guard var alias = viewModel.alias(withID: aliasID) else { return }
+                alias.target = newTarget
+                viewModel.updateAlias(alias)
+            }
+        )
+    }
+
+    /// Commits the buffered name to the alias and persists, unless it is unchanged.
+    private func commitName() {
+        guard var alias = viewModel.alias(withID: aliasID), alias.name != nameText else { return }
+        alias.name = nameText
+        viewModel.updateAlias(alias)
     }
 }
 
 #if DEBUG
 #Preview("Alias Editor") {
     AliasEditorView(
-        alias: PreviewFixtures.sampleAliases.first!,
-        browsers: PreviewFixtures.sampleBrowsers,
-        onSave: { _ in },
-        onCancel: {}
+        viewModel: PreviewFixtures.makePreviewSettingsViewModel(),
+        aliasID: PreviewFixtures.sampleAliases.first!.id
     )
-}
-
-#Preview("Alias Editor — new") {
-    AliasEditorView(
-        alias: ProfileAlias(
-            name: "",
-            target: BrowserTarget(
-                bundleID: PreviewFixtures.sampleBrowsers.first!.bundleID,
-                profileID: nil
-            )
-        ),
-        browsers: PreviewFixtures.sampleBrowsers,
-        onSave: { _ in },
-        onCancel: {}
-    )
+    .frame(width: 460, height: 320)
 }
 #endif

@@ -176,6 +176,17 @@ final class SettingsViewModel {
         persist()
     }
 
+    /// The alias with `id`, or `nil` if no such alias exists.
+    ///
+    /// Used by the master-detail Aliases tab to resolve a `selectedAliasID`
+    /// (held in view `@State`) to the live alias the detail editor edits, so the
+    /// editor always reflects the current persisted value (e.g. after another
+    /// edit re-points it). Kept on the view model to give the lookup a unit-test
+    /// seam and to keep the view declarative.
+    func alias(withID id: UUID) -> ProfileAlias? {
+        aliases.first { $0.id == id }
+    }
+
     // MARK: - Referential integrity
 
     /// The rules whose destination references the alias with `aliasID`.

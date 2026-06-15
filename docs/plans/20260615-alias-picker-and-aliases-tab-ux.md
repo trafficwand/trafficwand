@@ -341,22 +341,22 @@ each can go green on its own.
 - Modify: `App/Tests/AppTests/` (extend `SettingsViewModel`/alias tests for any new
       view-model logic; otherwise assert behavior via the existing CRUD seams)
 
-- [ ] write failing tests for any logic moved to/added in the view model (e.g. a helper
+- [x] write failing tests for any logic moved to/added in the view model (e.g. a helper
       that returns the selected alias by id, or "added alias becomes selected"); confirm
       `updateAlias`/`addAlias`/`deleteAlias` live-persist (already covered — extend if the
       new flow adds logic)
-- [ ] restructure `AliasesListView` to a `NavigationSplitView`: sidebar = alias list
+- [x] restructure `AliasesListView` to a `NavigationSplitView`: sidebar = alias list
       with Add + swipe/contextual delete (keep the blocked-delete alert and
       `attemptDelete`); detail = inline editor for the selected alias, placeholder
       otherwise; track `selectedAliasID` in `@State`; Add selects the new alias.
       **Remove** the now-dead `editing`/`EditingAlias` state and the `.sheet` modifier
-- [ ] convert `AliasEditorView` to an inline live-persist editor: name commits via
+- [x] convert `AliasEditorView` to an inline live-persist editor: name commits via
       `viewModel.updateAlias` on Enter **and on focus-out** — wire `@FocusState`
       (`.focused(...)` + `.onChange(of: isFocused)`), since `.onSubmit` alone only fires
       on Enter; `BrowserProfilePicker` change commits via `updateAlias`; remove the
       Save/Cancel chrome and the local-draft-only model
-- [ ] update `#Preview`s for the master-detail layout (selected + empty-selection states)
-- [ ] run `task test` and `task lint` — must pass before next task
+- [x] update `#Preview`s for the master-detail layout (selected + empty-selection states)
+- [x] run `task test` and `task lint` — must pass before next task
 
 ### Task 6: Aliases tab description (App)
 

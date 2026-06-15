@@ -1,54 +1,31 @@
 import SwiftUI
 import TrafficWandCore
 
-/// The Aliases tab: a list of reusable profile aliases with add, edit, and delete.
+/// The Aliases tab: a master-detail editor for reusable profile aliases.
 ///
-/// All mutations flow through `SettingsViewModel`, which persists each change
-/// immediately. Adding or editing presents `AliasEditorView` as a sheet, committing
-/// only on Save. Deleting a referenced alias is **blocked**: the row's delete action
-/// surfaces an alert explaining which rules (and/or the fallback) still point at it,
-/// because deleting it would orphan those references.
+/// The sidebar lists the aliases with an Add button and a swipe/contextual delete;
+/// selecting one shows `AliasEditorView` inline in the detail pane. All mutations flow
+/// through `SettingsViewModel`, which persists each change immediately — there is no
+/// Save/Cancel sheet; edits in the detail editor persist live (name on Enter/focus-out,
+/// browser/profile on change).
+///
+/// Deleting a referenced alias is **blocked**: the row's delete action surfaces an
+/// alert explaining which rules (and/or the fallback) still point at it, because
+/// deleting it would orphan those references.
 struct AliasesListView: View {
     @Bindable var viewModel: SettingsViewModel
 
-    /// The alias currently being edited in the sheet, or `nil` when no sheet is up.
-    @State private var editing: EditingAlias?
+    /// The alias currently selected in the sidebar / shown in the detail pane.
+    @State private var selectedAliasID: UUID?
 
     /// The alias whose blocked-delete explanation is currently shown, or `nil`.
     @State private var blockedDelete: ProfileAlias?
 
-    /// Wraps the alias under edit plus whether it is a brand-new (add) alias, so the
-    /// sheet's Save commits via the right view-model method.
-    private struct EditingAlias: Identifiable {
-        let alias: ProfileAlias
-        let isNew: Bool
-        var id: UUID { alias.id }
-    }
-
     var body: some View {
-        VStack(spacing: 0) {
-            if viewModel.aliases.isEmpty {
-                emptyState
-            } else {
-                aliasList
-            }
-            Divider()
-            toolbar
-        }
-        .sheet(item: $editing) { item in
-            AliasEditorView(
-                alias: item.alias,
-                browsers: viewModel.browsers,
-                onSave: { saved in
-                    if item.isNew {
-                        viewModel.addAlias(saved)
-                    } else {
-                        viewModel.updateAlias(saved)
-                    }
-                    editing = nil
-                },
-                onCancel: { editing = nil }
-            )
+        NavigationSplitView {
+            sidebar
+        } detail: {
+            detail
         }
         .alert(
             "Alias in use",
@@ -64,12 +41,59 @@ struct AliasesListView: View {
         }
     }
 
-    private var emptyState: some View {
+    // MARK: - Sidebar
+
+    private var sidebar: some View {
+        List(selection: $selectedAliasID) {
+            ForEach(viewModel.aliases) { alias in
+                AliasRow(
+                    name: alias.name,
+                    targetLabel: viewModel.browserLabel(for: alias.target)
+                )
+                .tag(alias.id)
+                .swipeActions(edge: .trailing) {
+                    Button(role: .destructive) {
+                        attemptDelete(alias)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+                .contextMenu {
+                    Button(role: .destructive) {
+                        attemptDelete(alias)
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+            }
+        }
+        .toolbar {
+            ToolbarItem {
+                Button(action: addAlias) {
+                    Label("Add Alias", systemImage: "plus")
+                }
+                .disabled(viewModel.browsers.isEmpty)
+            }
+        }
+    }
+
+    // MARK: - Detail
+
+    @ViewBuilder
+    private var detail: some View {
+        if let id = selectedAliasID, viewModel.alias(withID: id) != nil {
+            AliasEditorView(viewModel: viewModel, aliasID: id)
+        } else {
+            placeholder
+        }
+    }
+
+    private var placeholder: some View {
         VStack(spacing: 8) {
             Image(systemName: "link")
                 .font(.largeTitle)
                 .foregroundStyle(.secondary)
-            Text("No aliases yet")
+            Text(viewModel.aliases.isEmpty ? "No aliases yet" : "Select an alias")
                 .font(.headline)
             Text("Create a reusable alias (e.g. \"Personal\" or \"Work\") and point rules "
                 + "at it. Change the alias once to re-route every rule that uses it.")
@@ -81,53 +105,18 @@ struct AliasesListView: View {
         .padding()
     }
 
-    private var aliasList: some View {
-        List {
-            ForEach(viewModel.aliases) { alias in
-                // The `ZStack` wrapper is load-bearing: a custom row View placed
-                // directly inside a `List`'s `ForEach` crashes the macOS Xcode
-                // preview (matches the `RulesListView` workaround).
-                ZStack {
-                    AliasRow(
-                        name: alias.name,
-                        targetLabel: viewModel.browserLabel(for: alias.target)
-                    )
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    editing = EditingAlias(alias: alias, isNew: false)
-                }
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
-                        attemptDelete(alias)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
-            }
-        }
-    }
+    // MARK: - Actions
 
-    private var toolbar: some View {
-        HStack {
-            Button {
-                editing = EditingAlias(alias: defaultNewAlias, isNew: true)
-            } label: {
-                Label("Add Alias", systemImage: "plus")
-            }
-            .disabled(viewModel.browsers.isEmpty)
-            Spacer()
-        }
-        .padding(8)
-    }
-
-    /// A blank alias pre-targeting the first available browser, used when adding.
-    private var defaultNewAlias: ProfileAlias {
+    /// Creates a blank alias (pre-targeting the first browser), persists it, and
+    /// selects it so the detail editor opens ready to edit.
+    private func addAlias() {
         let bundleID = viewModel.browsers.first?.bundleID ?? ""
-        return ProfileAlias(
+        let alias = ProfileAlias(
             name: "",
             target: BrowserTarget(bundleID: bundleID, profileID: nil)
         )
+        viewModel.addAlias(alias)
+        selectedAliasID = alias.id
     }
 
     /// Deletes the alias, or surfaces the blocked-delete alert when it is referenced.
@@ -135,6 +124,7 @@ struct AliasesListView: View {
         if viewModel.isReferenced(alias.id) {
             blockedDelete = alias
         } else {
+            if selectedAliasID == alias.id { selectedAliasID = nil }
             viewModel.deleteAlias(id: alias.id)
         }
     }
@@ -165,30 +155,29 @@ private struct AliasRow: View {
     let targetLabel: String
 
     var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(name.isEmpty ? "(no name)" : name)
-                    .font(.body)
-                Text(targetLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-            Image(systemName: "chevron.right")
+        VStack(alignment: .leading, spacing: 2) {
+            Text(name.isEmpty ? "(no name)" : name)
+                .font(.body)
+            Text(targetLabel)
                 .font(.caption)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
         }
     }
 }
 
 #if DEBUG
-#Preview("Aliases") {
+// Master-detail list (opens to the empty-selection placeholder; clicking a sidebar
+// row drives the inline detail editor — previewed standalone in `AliasEditorView`).
+#Preview("Aliases — list") {
     AliasesListView(viewModel: PreviewFixtures.makePreviewSettingsViewModel())
+        .frame(width: 640, height: 380)
 }
 
+// The detail placeholder shown when no alias is selected, against an empty config.
 #Preview("Aliases — empty") {
     AliasesListView(
         viewModel: PreviewFixtures.makePreviewSettingsViewModel(config: PreviewFixtures.emptyConfig)
     )
+    .frame(width: 640, height: 380)
 }
 #endif
