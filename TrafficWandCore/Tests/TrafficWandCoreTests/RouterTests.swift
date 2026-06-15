@@ -10,7 +10,7 @@ struct RouterTests {
     private func matchingRule(bundleID: String, profileID: String? = nil) -> Rule {
         Rule(
             pattern: "*.github.com",
-            target: BrowserTarget(bundleID: bundleID, profileID: profileID),
+            destination: .browser(BrowserTarget(bundleID: bundleID, profileID: profileID)),
             isEnabled: true
         )
     }
@@ -29,7 +29,7 @@ struct RouterTests {
     func ruleMatchOpensTarget() {
         let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Work")
         let config = AppConfig(
-            rules: [Rule(pattern: "*.github.com", target: target, isEnabled: true)],
+            rules: [Rule(pattern: "*.github.com", destination: .browser(target), isEnabled: true)],
             fallback: .picker
         )
         let decision = Router.decide(
@@ -46,8 +46,8 @@ struct RouterTests {
         let ruleTarget = BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)
         let fallbackTarget = BrowserTarget(bundleID: "org.mozilla.firefox", profileID: nil)
         let config = AppConfig(
-            rules: [Rule(pattern: "*.github.com", target: ruleTarget, isEnabled: true)],
-            fallback: .defaultBrowser(fallbackTarget)
+            rules: [Rule(pattern: "*.github.com", destination: .browser(ruleTarget), isEnabled: true)],
+            fallback: .defaultBrowser(.browser(fallbackTarget))
         )
         let decision = Router.decide(
             url: url,
@@ -61,7 +61,7 @@ struct RouterTests {
     @Test("No match + .defaultBrowser yields .open(target)")
     func noMatchDefaultBrowserOpens() {
         let target = BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)
-        let config = AppConfig(rules: [], fallback: .defaultBrowser(target))
+        let config = AppConfig(rules: [], fallback: .defaultBrowser(.browser(target)))
         let decision = Router.decide(
             url: url,
             config: config,
@@ -114,10 +114,14 @@ struct RouterTests {
     func nonMatchingRuleFallsThrough() {
         let fallbackTarget = BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)
         let config = AppConfig(
-            rules: [matchingRule(bundleID: "ignored")].map {
-                Rule(pattern: "*.example.com", target: $0.target, isEnabled: true)
-            },
-            fallback: .defaultBrowser(fallbackTarget)
+            rules: [
+                Rule(
+                    pattern: "*.example.com",
+                    destination: .browser(BrowserTarget(bundleID: "ignored", profileID: nil)),
+                    isEnabled: true
+                )
+            ],
+            fallback: .defaultBrowser(.browser(fallbackTarget))
         )
         let decision = Router.decide(
             url: url,
@@ -132,10 +136,82 @@ struct RouterTests {
     func disabledRuleSkipped() {
         let ruleTarget = BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)
         let config = AppConfig(
-            rules: [Rule(pattern: "*.github.com", target: ruleTarget, isEnabled: false)],
+            rules: [Rule(pattern: "*.github.com", destination: .browser(ruleTarget), isEnabled: false)],
             fallback: .picker
         )
         let browsers = [browser("a")]
+        let decision = Router.decide(
+            url: url,
+            config: config,
+            lastUsed: nil,
+            availableBrowsers: browsers
+        )
+        #expect(decision == .prompt(url: url, browsers: browsers))
+    }
+
+    // MARK: - Alias resolution
+
+    @Test("A matching rule with an .alias destination resolves to the alias's target")
+    func ruleMatchAliasResolvesToTarget() {
+        let aliasID = UUID()
+        let aliasTarget = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 2")
+        let config = AppConfig(
+            aliases: [ProfileAlias(id: aliasID, name: "Personal", target: aliasTarget)],
+            rules: [Rule(pattern: "*.github.com", destination: .alias(aliasID), isEnabled: true)],
+            fallback: .picker
+        )
+        let decision = Router.decide(
+            url: url,
+            config: config,
+            lastUsed: nil,
+            availableBrowsers: []
+        )
+        #expect(decision == .open(aliasTarget))
+    }
+
+    @Test("A matching rule with a dangling .alias destination yields .prompt")
+    func ruleMatchDanglingAliasPrompts() {
+        let config = AppConfig(
+            aliases: [],
+            rules: [Rule(pattern: "*.github.com", destination: .alias(UUID()), isEnabled: true)],
+            fallback: .picker
+        )
+        let browsers = [browser("com.apple.Safari")]
+        let decision = Router.decide(
+            url: url,
+            config: config,
+            lastUsed: nil,
+            availableBrowsers: browsers
+        )
+        #expect(decision == .prompt(url: url, browsers: browsers))
+    }
+
+    @Test("No match + .defaultBrowser(.alias) resolves to the alias's target")
+    func noMatchDefaultBrowserAliasResolves() {
+        let aliasID = UUID()
+        let aliasTarget = BrowserTarget(bundleID: "org.mozilla.firefox", profileID: "Work")
+        let config = AppConfig(
+            aliases: [ProfileAlias(id: aliasID, name: "Work", target: aliasTarget)],
+            rules: [],
+            fallback: .defaultBrowser(.alias(aliasID))
+        )
+        let decision = Router.decide(
+            url: url,
+            config: config,
+            lastUsed: nil,
+            availableBrowsers: []
+        )
+        #expect(decision == .open(aliasTarget))
+    }
+
+    @Test("No match + .defaultBrowser(.alias) with a dangling alias yields .prompt")
+    func noMatchDefaultBrowserDanglingAliasPrompts() {
+        let config = AppConfig(
+            aliases: [],
+            rules: [],
+            fallback: .defaultBrowser(.alias(UUID()))
+        )
+        let browsers = [browser("com.apple.Safari")]
         let decision = Router.decide(
             url: url,
             config: config,

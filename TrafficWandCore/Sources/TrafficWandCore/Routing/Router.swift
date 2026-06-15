@@ -5,13 +5,18 @@ import Foundation
 ///
 /// Decision logic (locked during planning):
 /// 1. If an enabled rule matches the URL's host (`RuleMatcher.firstMatch`),
-///    open in that rule's target.
+///    resolve its `destination` against `config.aliases` and open in the
+///    resulting target. A dangling alias reference (resolves to `nil`) falls
+///    back to the picker (`.prompt`) — never a dropped or mis-routed link.
 /// 2. Otherwise consult `config.fallback`:
-///    - `.defaultBrowser(target)` → open in that target.
+///    - `.defaultBrowser(destination)` → resolve the destination against
+///      `config.aliases` and open in it; a dangling alias resolves to `.prompt`.
 ///    - `.picker` → prompt with the available browsers.
 ///    - `.lastUsed` → open the recorded last-used target if there is one;
 ///      otherwise prompt. The picker is always the ultimate fallback, so
 ///      `.lastUsed` with nothing recorded resolves to `.prompt`.
+///
+/// Alias resolution is pure and does not read or write last-used state.
 public enum Router {
     /// Decides where a link should go.
     ///
@@ -28,12 +33,20 @@ public enum Router {
         availableBrowsers: [Browser]
     ) -> RoutingDecision {
         if let rule = RuleMatcher.firstMatch(for: url, in: config.rules) {
-            return .open(rule.target)
+            if let target = rule.destination.resolved(in: config.aliases) {
+                return .open(target)
+            }
+            // Dangling alias reference → fall back to the picker.
+            return .prompt(url: url, browsers: availableBrowsers)
         }
 
         switch config.fallback {
-        case .defaultBrowser(let target):
-            return .open(target)
+        case .defaultBrowser(let destination):
+            if let target = destination.resolved(in: config.aliases) {
+                return .open(target)
+            }
+            // Dangling alias reference → fall back to the picker.
+            return .prompt(url: url, browsers: availableBrowsers)
         case .picker:
             return .prompt(url: url, browsers: availableBrowsers)
         case .lastUsed:

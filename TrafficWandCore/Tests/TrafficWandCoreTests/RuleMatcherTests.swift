@@ -8,7 +8,7 @@ struct RuleMatcherTests {
     private func rule(_ pattern: String, isEnabled: Bool = true) -> Rule {
         Rule(
             pattern: pattern,
-            target: BrowserTarget(bundleID: "test.\(pattern)", profileID: nil),
+            destination: .browser(BrowserTarget(bundleID: "test.\(pattern)", profileID: nil)),
             isEnabled: isEnabled
         )
     }

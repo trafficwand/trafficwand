@@ -13,9 +13,14 @@ struct AppConfigUpsertTests {
     ) -> Rule {
         Rule(
             pattern: pattern,
-            target: BrowserTarget(bundleID: bundleID, profileID: profileID),
+            destination: .browser(BrowserTarget(bundleID: bundleID, profileID: profileID)),
             isEnabled: isEnabled
         )
+    }
+
+    /// Convenience: a `.browser` destination.
+    private func dest(_ bundleID: String, _ profileID: String? = nil) -> RoutingDestination {
+        .browser(BrowserTarget(bundleID: bundleID, profileID: profileID))
     }
 
     @Test("Appends the rule when no existing rule has the same pattern")
@@ -45,7 +50,7 @@ struct AppConfigUpsertTests {
         #expect(result.rules[0] == incoming)
     }
 
-    @Test("Replaces the target and re-enables when an existing rule shares the pattern")
+    @Test("Replaces the destination and re-enables when an existing rule shares the pattern")
     func replacesTargetAndReEnablesOnMatch() {
         let original = rule(
             "*google.com",
@@ -65,8 +70,8 @@ struct AppConfigUpsertTests {
 
         // No duplicate: same count.
         #expect(result.rules.count == 1)
-        // Updated target.
-        #expect(result.rules[0].target == BrowserTarget(bundleID: "com.google.Chrome", profileID: "Default"))
+        // Updated destination.
+        #expect(result.rules[0].destination == dest("com.google.Chrome", "Default"))
         // Re-enabled.
         #expect(result.rules[0].isEnabled == true)
         // Position and identity preserved.
@@ -93,8 +98,8 @@ struct AppConfigUpsertTests {
         // Existing rule's identity and original pattern string are preserved.
         #expect(result.rules[0].id == original.id)
         #expect(result.rules[0].pattern == "*X.com")
-        // Target replaced and rule re-enabled.
-        #expect(result.rules[0].target == BrowserTarget(bundleID: "com.google.Chrome", profileID: nil))
+        // Destination replaced and rule re-enabled.
+        #expect(result.rules[0].destination == .browser(BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)))
         #expect(result.rules[0].isEnabled == true)
     }
 
@@ -113,8 +118,33 @@ struct AppConfigUpsertTests {
         #expect(result.rules[2] == last)
         // The matched rule stays in the middle with its id preserved.
         #expect(result.rules[1].id == middle.id)
-        #expect(result.rules[1].target == BrowserTarget(bundleID: "com.google.Chrome", profileID: nil))
+        #expect(result.rules[1].destination == .browser(BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)))
         #expect(result.rules[1].isEnabled == true)
+    }
+
+    @Test("upserting a .browser rule over an existing .alias rule demotes it to .browser")
+    func upsertBrowserOverAliasDemotes() {
+        let aliasID = UUID()
+        let original = Rule(
+            pattern: "*google.com",
+            destination: .alias(aliasID),
+            isEnabled: true
+        )
+        let config = AppConfig(
+            aliases: [ProfileAlias(id: aliasID, name: "Work", target: BrowserTarget(bundleID: "x", profileID: nil))],
+            rules: [original],
+            fallback: .picker
+        )
+
+        let incoming = rule("*google.com", bundleID: "com.google.Chrome", profileID: "Default")
+        let result = config.upserting(incoming)
+
+        // No duplicate; the alias-backed rule's destination is replaced with the
+        // concrete browser (design decision #4 — remember-over-alias demotion).
+        #expect(result.rules.count == 1)
+        #expect(result.rules[0].id == original.id)
+        #expect(result.rules[0].destination == dest("com.google.Chrome", "Default"))
+        #expect(result.rules[0].isEnabled == true)
     }
 
     @Test("upserting does not mutate the receiver (pure)")

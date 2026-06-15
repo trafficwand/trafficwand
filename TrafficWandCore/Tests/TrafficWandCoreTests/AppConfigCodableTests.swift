@@ -14,12 +14,12 @@ struct AppConfigCodableTests {
     @Test("Round-trips an AppConfig with a .picker fallback")
     func roundTripPicker() throws {
         let config = AppConfig(
-            schemaVersion: 1,
+            schemaVersion: 2,
             rules: [
                 Rule(
                     id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
                     pattern: "*.github.com",
-                    target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Default"),
+                    destination: .browser(BrowserTarget(bundleID: "com.google.Chrome", profileID: "Default")),
                     isEnabled: true
                 )
             ],
@@ -33,13 +33,13 @@ struct AppConfigCodableTests {
     func roundTripDefaultBrowser() throws {
         let target = BrowserTarget(bundleID: "org.mozilla.firefox", profileID: "Personal")
         let config = AppConfig(
-            schemaVersion: 1,
+            schemaVersion: 2,
             rules: [],
-            fallback: .defaultBrowser(target)
+            fallback: .defaultBrowser(.browser(target))
         )
         let decoded = try roundTrip(config)
         #expect(decoded == config)
-        #expect(decoded.fallback == .defaultBrowser(target))
+        #expect(decoded.fallback == .defaultBrowser(.browser(target)))
     }
 
     @Test("Round-trips an AppConfig with a .lastUsed fallback")
@@ -50,7 +50,7 @@ struct AppConfigCodableTests {
                 Rule(
                     id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
                     pattern: "*example.com",
-                    target: BrowserTarget(bundleID: "com.apple.Safari", profileID: nil),
+                    destination: .browser(BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)),
                     isEnabled: false
                 )
             ],
@@ -59,6 +59,27 @@ struct AppConfigCodableTests {
         let decoded = try roundTrip(config)
         #expect(decoded == config)
         #expect(decoded.fallback == .lastUsed)
+    }
+
+    @Test("Round-trips an AppConfig preserving its aliases")
+    func roundTripPreservesAliases() throws {
+        let aliasID = UUID(uuidString: "00000000-0000-0000-0000-0000000000AA")!
+        let alias = ProfileAlias(
+            id: aliasID,
+            name: "Personal",
+            target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 2")
+        )
+        let config = AppConfig(
+            schemaVersion: 2,
+            aliases: [alias],
+            rules: [Rule(pattern: "*example.com", destination: .alias(aliasID), isEnabled: true)],
+            fallback: .defaultBrowser(.alias(aliasID))
+        )
+        let decoded = try roundTrip(config)
+        #expect(decoded == config)
+        #expect(decoded.aliases == [alias])
+        #expect(decoded.rules[0].destination == .alias(aliasID))
+        #expect(decoded.fallback == .defaultBrowser(.alias(aliasID)))
     }
 
     @Test("BrowserTarget round-trips with and without a profileID")
@@ -74,13 +95,14 @@ struct AppConfigCodableTests {
         #expect(decodedWithoutProfile.profileID == nil)
     }
 
-    @Test("Default config has empty rules, .picker fallback, and schemaVersion 1")
+    @Test("Default config has empty aliases/rules, .picker fallback, and schemaVersion 2")
     func defaultConfig() {
         let config = AppConfig.default
+        #expect(config.aliases.isEmpty)
         #expect(config.rules.isEmpty)
         #expect(config.fallback == .picker)
         #expect(config.schemaVersion == AppConfig.currentSchemaVersion)
-        #expect(AppConfig.currentSchemaVersion == 1)
+        #expect(AppConfig.currentSchemaVersion == 2)
     }
 
     @Test("Default config round-trips")
@@ -106,14 +128,18 @@ struct AppConfigJSONShapeTests {
     func decodePickerSample() throws {
         let json = """
         {
-          "schemaVersion": 1,
+          "schemaVersion": 2,
+          "aliases": [],
           "rules": [
             {
               "id": "11111111-1111-1111-1111-111111111111",
               "pattern": "*.github.com",
-              "target": {
-                "bundleID": "com.google.Chrome",
-                "profileID": "Default"
+              "destination": {
+                "type": "browser",
+                "target": {
+                  "bundleID": "com.google.Chrome",
+                  "profileID": "Default"
+                }
               },
               "isEnabled": true
             }
@@ -124,11 +150,11 @@ struct AppConfigJSONShapeTests {
         }
         """
         let config = try decode(json)
-        #expect(config.schemaVersion == 1)
+        #expect(config.schemaVersion == 2)
         #expect(config.rules.count == 1)
         #expect(config.rules[0].pattern == "*.github.com")
-        #expect(config.rules[0].target.bundleID == "com.google.Chrome")
-        #expect(config.rules[0].target.profileID == "Default")
+        let expectedTarget = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Default")
+        #expect(config.rules[0].destination == .browser(expectedTarget))
         #expect(config.rules[0].isEnabled == true)
         #expect(config.fallback == .picker)
     }
@@ -137,13 +163,17 @@ struct AppConfigJSONShapeTests {
     func decodeDefaultBrowserSample() throws {
         let json = """
         {
-          "schemaVersion": 1,
+          "schemaVersion": 2,
+          "aliases": [],
           "rules": [],
           "fallback": {
             "type": "defaultBrowser",
             "target": {
-              "bundleID": "org.mozilla.firefox",
-              "profileID": "Personal"
+              "type": "browser",
+              "target": {
+                "bundleID": "org.mozilla.firefox",
+                "profileID": "Personal"
+              }
             }
           }
         }
@@ -151,14 +181,15 @@ struct AppConfigJSONShapeTests {
         let config = try decode(json)
         #expect(config.rules.isEmpty)
         let expectedTarget = BrowserTarget(bundleID: "org.mozilla.firefox", profileID: "Personal")
-        #expect(config.fallback == .defaultBrowser(expectedTarget))
+        #expect(config.fallback == .defaultBrowser(.browser(expectedTarget)))
     }
 
     @Test("Decodes a hand-written sample with a .lastUsed fallback (no nested payload)")
     func decodeLastUsedSample() throws {
         let json = """
         {
-          "schemaVersion": 1,
+          "schemaVersion": 2,
+          "aliases": [],
           "rules": [],
           "fallback": {
             "type": "lastUsed"
@@ -184,7 +215,7 @@ struct AppConfigJSONShapeTests {
         let defaultTarget = BrowserTarget(bundleID: "x", profileID: nil)
         let pickerJSON = try jsonString(encoder.encode(FallbackPolicy.picker))
         let lastUsedJSON = try jsonString(encoder.encode(FallbackPolicy.lastUsed))
-        let defaultJSON = try jsonString(encoder.encode(FallbackPolicy.defaultBrowser(defaultTarget)))
+        let defaultJSON = try jsonString(encoder.encode(FallbackPolicy.defaultBrowser(.browser(defaultTarget))))
         #expect(pickerJSON.contains("\"picker\""))
         #expect(lastUsedJSON.contains("\"lastUsed\""))
         #expect(defaultJSON.contains("\"defaultBrowser\""))

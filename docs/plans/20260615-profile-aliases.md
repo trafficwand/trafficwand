@@ -260,16 +260,17 @@ stays defensive regardless (dangling → picker).
   `Rule` Codable coverage lives here — there is **no** standalone `RuleCodableTests.swift`;
   add a dedicated file only if the cases grow large)
 
-- [ ] write failing tests: decoding **legacy** JSON (`{pattern, target:{…}, isEnabled}`)
+- [x] write failing tests: decoding **legacy** JSON (`{pattern, target:{…}, isEnabled}`)
       yields `destination == .browser(target)`; decoding **v2** JSON (`{pattern,
       destination:{…}, isEnabled}`) round-trips; encoding always emits `destination`
       (never `target`)
-- [ ] replace `var target: BrowserTarget` with `var destination: RoutingDestination`;
+- [x] replace `var target: BrowserTarget` with `var destination: RoutingDestination`;
       update memberwise init signature; keep `id`, `pattern`, `isEnabled`
-- [ ] add custom `init(from:)`: prefer `destination`; else decode legacy `target`
+- [x] add custom `init(from:)`: prefer `destination`; else decode legacy `target`
       (`BrowserTarget`) → `.browser(...)`. Keep synthesized/explicit `encode(to:)` writing
       the v2 shape. Document the migration in the type doc comment
-- [ ] run `task test-core` — must pass before next task
+- [x] run `task test-core` — green checkpoint deferred to end of Task 6 (wide type change;
+      see "Build / green-checkpoint reality"). Validated green at end of Task 6.
 
 ### Task 4: Migrate `FallbackPolicy.defaultBrowser` to `RoutingDestination`
 
@@ -278,17 +279,17 @@ stays defensive regardless (dangling → picker).
 - Modify: `TrafficWandCore/Tests/TrafficWandCoreTests/AppConfigCodableTests.swift` (existing
   `FallbackPolicy` Codable coverage lives here; no standalone `FallbackPolicyTests.swift`)
 
-- [ ] write failing tests: legacy `{type:"defaultBrowser", target:{bundleID,…}}` decodes to
+- [x] write failing tests: legacy `{type:"defaultBrowser", target:{bundleID,…}}` decodes to
       `.defaultBrowser(.browser(target))`; v2 `{type:"defaultBrowser",
       target:{type:"alias", id}}` round-trips; `.picker`/`.lastUsed` unchanged
-- [ ] change case to `defaultBrowser(RoutingDestination)`; in `init(from:)` decode the
+- [x] change case to `defaultBrowser(RoutingDestination)`; in `init(from:)` decode the
       `target` key by trying `RoutingDestination` first, falling back to legacy
       `BrowserTarget` wrapped as `.browser(...)`; `encode(to:)` writes the
       `RoutingDestination`. This fallback is **safe because** the Task 2 negative-decode test
       guarantees legacy `BrowserTarget` JSON throws when decoded as `RoutingDestination` (no
       `type` key) — the ordering dependency is test-pinned, not failure-luck
-- [ ] update the type doc comment to describe the destination payload + migration
-- [ ] run `task test-core` — must pass before next task
+- [x] update the type doc comment to describe the destination payload + migration
+- [x] run `task test-core` — green checkpoint deferred to end of Task 6.
 
 ### Task 5: `AppConfig.aliases` + schema v2 + `upserting`
 
@@ -300,17 +301,17 @@ stays defensive regardless (dangling → picker).
 - Optional: `TrafficWandCore/Tests/TrafficWandCoreTests/Fixtures/config-v1.json` (a committed
   legacy config, loaded via the existing `FixtureLoader`, to lock the exact historical shape)
 
-- [ ] write failing tests: full **v1 → v2 migration** (decode a complete legacy
+- [x] write failing tests: full **v1 → v2 migration** (decode a complete legacy
       `config.json` string: no `aliases`, rules with `target`, fallback with bare `target`)
       loads cleanly with `aliases == []` and `.browser(...)` destinations; v2 round-trip
       preserves aliases; `aliases` absent → `[]`; `default` has empty aliases; `upserting`
       matches/sets `destination`; **`upserting` a `.browser` rule over an existing `.alias`
       rule of the same pattern replaces the destination with `.browser(...)`** (pins design
       decision #4 — the remember-over-alias demotion)
-- [ ] add `var aliases: [ProfileAlias]`; bump `currentSchemaVersion = 2`; add custom decode
+- [x] add `var aliases: [ProfileAlias]`; bump `currentSchemaVersion = 2`; add custom decode
       defaulting `aliases` to `[]` when absent; update init + `default` + `CodingKeys`
-- [ ] update `upserting(_:)` to read/write `destination` (replace `rules[index].target =`)
-- [ ] run `task test-core` — must pass before next task
+- [x] update `upserting(_:)` to read/write `destination` (replace `rules[index].target =`)
+- [x] run `task test-core` — green checkpoint deferred to end of Task 6.
 
 ### Task 6: Resolve destinations in `Router.decide`; update `RememberRule`
 
@@ -320,21 +321,22 @@ stays defensive regardless (dangling → picker).
 - Modify/Create: `TrafficWandCore/Tests/TrafficWandCoreTests/RouterTests.swift`,
   `TrafficWandCore/Tests/TrafficWandCoreTests/RememberRuleTests.swift`
 
-- [ ] write failing tests (Router): matched rule with `.alias` resolves to the alias's
+- [x] write failing tests (Router): matched rule with `.alias` resolves to the alias's
       target → `.open(target)`; matched rule with **dangling** `.alias` → `.prompt`;
       matched rule with `.browser` → `.open(target)` (unchanged);
       `.defaultBrowser(.alias)` resolves / dangling → `.prompt`; `.defaultBrowser(.browser)`
       unchanged
-- [ ] update `Router.decide`: resolve `rule.destination` and the fallback's
+- [x] update `Router.decide`: resolve `rule.destination` and the fallback's
       `RoutingDestination` via `resolved(in: config.aliases)`; `nil` → `.prompt(url:
       availableBrowsers)`; keep `RoutingDecision` type and `.lastUsed`/`.picker` logic
       intact
-- [ ] write failing tests (RememberRule): produced `Rule.destination == .browser(target)`
+- [x] write failing tests (RememberRule): produced `Rule.destination == .browser(target)`
       for registrable-domain and exact-host cases
-- [ ] update `RememberRule.rule(forURL:target:)` to build
+- [x] update `RememberRule.rule(forURL:target:)` to build
       `Rule(destination: .browser(target))` (keep the `BrowserTarget` parameter)
-- [ ] update the `Router` doc comment to describe alias resolution + dangling → picker
-- [ ] run `task test-core` — must pass before next task
+- [x] update the `Router` doc comment to describe alias resolution + dangling → picker
+- [x] run `task test-core` — **passed (163 tests, 19 suites green); no-AppKit guard passed;
+      `task lint` clean (only pre-existing Task-1 short-identifier warnings remain).**
 
 ### Task 7: `SettingsViewModel` — alias state, CRUD, persistence, referential integrity
 

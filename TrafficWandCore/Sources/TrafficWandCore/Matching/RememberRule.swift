@@ -28,7 +28,9 @@ import Foundation
 /// breadth.
 public enum RememberRule {
     /// Returns the `Rule` to persist for remembering `target` for `url`, or
-    /// `nil` when `url` has no host to scope a rule to.
+    /// `nil` when `url` has no host to scope a rule to. "Remember this site" is a
+    /// one-off concrete choice, so the built rule always carries a
+    /// `.browser(target)` destination — it never invents an alias.
     ///
     /// - Parameters:
     ///   - url: The link whose destination should be remembered.
@@ -38,11 +40,11 @@ public enum RememberRule {
         let normalizedHost = host.lowercased()
 
         if let registrable = RegistrableDomain.of(host: normalizedHost) {
-            return Rule(pattern: "*\(registrable)", target: target, isEnabled: true)
+            return Rule(pattern: "*\(registrable)", destination: .browser(target), isEnabled: true)
         }
 
         // No registrable domain (IP literal or single-label host): scope to the
         // exact host so the rule matches only it.
-        return Rule(pattern: normalizedHost, target: target, isEnabled: true)
+        return Rule(pattern: normalizedHost, destination: .browser(target), isEnabled: true)
     }
 }

@@ -12,7 +12,7 @@ struct RememberRuleTests {
         let rule = try #require(RememberRule.rule(forURL: url, target: target))
         #expect(rule.pattern == "*x.com")
         #expect(rule.isEnabled)
-        #expect(rule.target == target)
+        #expect(rule.destination == .browser(target))
     }
 
     @Test("A subdomain URL collapses to the registrable domain pattern")
@@ -67,7 +67,7 @@ struct RememberRuleTests {
         let rule = try #require(RememberRule.rule(forURL: url, target: target))
         #expect(rule.pattern == "192.168.0.1")
         #expect(rule.isEnabled)
-        #expect(rule.target == target)
+        #expect(rule.destination == .browser(target))
     }
 
     @Test("An IPv6-literal host yields an exact-host pattern with no leading star")
