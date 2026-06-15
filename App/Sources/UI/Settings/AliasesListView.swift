@@ -44,6 +44,9 @@ struct AliasesListView: View {
     // MARK: - Sidebar
 
     private var sidebar: some View {
+        // Keep the List as the sidebar's direct content so it fills the column and
+        // renders rows; the description is the first row (with `.fixedSize` so the
+        // multi-line Text claims its full height instead of truncating to one line).
         List(selection: $selectedAliasID) {
             Section {
                 Text("An alias is a named, reusable destination (e.g. \"Personal\" or "
@@ -51,6 +54,7 @@ struct AliasesListView: View {
                     + "once to re-route everything that uses it.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     .listRowSeparator(.hidden)
             }
             ForEach(viewModel.aliases) { alias in
