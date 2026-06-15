@@ -47,9 +47,27 @@ tasks:
 
   build:
     desc: Build the app target
+    vars:
+      CONFIG: '{{.CONFIG | default "Debug"}}'
     deps: [generate]
     cmds:
-      - xcodebuild build -project TrafficWand.xcodeproj -scheme {{.SCHEME}} -destination 'platform=macOS'
+      - xcodebuild build -project TrafficWand.xcodeproj -scheme {{.SCHEME}} -configuration "{{.CONFIG}}" -destination 'platform=macOS'
+
+  install:
+    desc: Build Release and install TrafficWand.app to ~/Applications (quits any running instance, no relaunch)
+    vars:
+      CONFIG: Release
+    deps: [{ task: build, vars: { CONFIG: '{{.CONFIG}}' } }]
+    cmds:
+      - ./scripts/install-app.sh "{{.CONFIG}}"
+
+  install-dev:
+    desc: Build Debug and install TrafficWand.app to ~/Applications (quits any running instance, no relaunch)
+    vars:
+      CONFIG: Debug
+    deps: [{ task: build, vars: { CONFIG: '{{.CONFIG}}' } }]
+    cmds:
+      - ./scripts/install-app.sh "{{.CONFIG}}"
 
   test-core:
     desc: Run the Core package tests and enforce the no-AppKit-import guard
