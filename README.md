@@ -71,14 +71,16 @@ All workflows go through the `Taskfile`:
 | Command           | What it does                                                                                                  |
 | ----------------- | ------------------------------------------------------------------------------------------------------------- |
 | `task generate`   | Generate `TrafficWand.xcodeproj` from `project.yml` (XcodeGen).                                               |
-| `task build`      | Build the app target (`xcodebuild build`).                                                                    |
-| `task build-info` | Write `BuildInfo.xcconfig` with the current short git commit hash (auto-run by `build`/`run`/`test`/default). |
-| `task run`        | Build and launch the app.                                                                                     |
-| `task test`       | Run the app test target (`xcodebuild test`); includes Core via SPM.                                           |
-| `task test-core`  | Run the pure Core package tests (`swift test`) + the no-AppKit guard.                                         |
-| `task lint`       | Run SwiftLint across the repo.                                                                                |
-| `task dmg`        | Build, sign, notarize, and package the app as a DMG (release — see §Distribution for setup).                  |
-| `task`            | Default: generate + build + lint + all tests.                                                                 |
+| `task build`      | Build the app target (`xcodebuild build`). Accepts an optional `CONFIG` var (default `Debug`; e.g. `CONFIG=Release task build`). |
+| `task build-info` | Write `BuildInfo.xcconfig` with the current short git commit hash (auto-run by `build`/`run`/`test`/default).                   |
+| `task run`        | Build and launch the app.                                                                                                         |
+| `task test`       | Run the app test target (`xcodebuild test`); includes Core via SPM.                                                               |
+| `task test-core`  | Run the pure Core package tests (`swift test`) + the no-AppKit guard.                                                             |
+| `task lint`       | Run SwiftLint across the repo.                                                                                                    |
+| `task dmg`        | Build, sign, notarize, and package the app as a DMG (release — see §Distribution for setup).                                     |
+| `task install`    | Release build installed to `~/Applications`. Quits any running instance; does not relaunch. (unsigned — Gatekeeper may prompt on first launch) |
+| `task install-dev` | Debug build installed to `~/Applications`. Quits any running instance; does not relaunch.                                       |
+| `task`            | Default: generate + build + lint + all tests.                                                                                     |
 
 Typical first run:
 

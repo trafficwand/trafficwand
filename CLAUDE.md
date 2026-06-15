@@ -75,12 +75,14 @@ preview mocks and sample data live in `App/Sources/UI/Previews/PreviewFixtures.s
 | Command          | What it does                                                      |
 | ---------------- | ---------------------------------------------------------------- |
 | `task generate`  | Generate the Xcode project from `project.yml` (XcodeGen).        |
-| `task build`     | Build the app target.                                            |
+| `task build`     | Build the app target (optional `CONFIG` var, default `Debug`; e.g. `CONFIG=Release task build`). |
 | `task run`       | Build and launch the app.                                        |
 | `task test`      | Run the app test target (`xcodebuild test`, includes Core).     |
 | `task test-core` | Run Core tests (`swift test`) + the no-AppKit import guard.     |
 | `task lint`      | Run SwiftLint.                                                   |
 | `task dmg`       | Build, sign, notarize, and package the app as a DMG (release).  |
+| `task install`   | Release build installed to `~/Applications`; quits running instance, no relaunch. |
+| `task install-dev` | Debug build installed to `~/Applications`; quits running instance, no relaunch. |
 | `task sparkle:install`  | Download the pinned Sparkle binary tools into `.sparkle/`. |
 | `task sparkle:gen-keys` | Generate the Sparkle EdDSA signing keypair (operator, one-time). |
 | `task`           | Default: generate + build + lint + test-core + test.            |
