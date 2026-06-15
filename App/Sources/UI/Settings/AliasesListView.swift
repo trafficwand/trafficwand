@@ -75,13 +75,28 @@ struct AliasesListView: View {
                 }
             }
         }
-        .toolbar {
-            ToolbarItem {
+        // Pin an Add control to the BOTTOM of the sidebar — the native source-list
+        // idiom (System Settings / Mail / Finder sidebars). A `.toolbar` item here
+        // would instead be hoisted into the Settings window's titlebar (next to the
+        // window title), which looks stray since the tab itself owns no titlebar
+        // chrome. `.safeAreaInset` keeps the bar fixed while the list scrolls.
+        .safeAreaInset(edge: .bottom) {
+            HStack(spacing: 0) {
                 Button(action: addAlias) {
-                    Label("Add Alias", systemImage: "plus")
+                    Image(systemName: "plus")
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
                 }
+                .buttonStyle(.borderless)
                 .disabled(viewModel.browsers.isEmpty)
+                .help("Add Alias")
+                .accessibilityLabel("Add Alias")
+                Spacer()
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .overlay(alignment: .top) { Divider() }
+            .background(.bar)
         }
     }
 
