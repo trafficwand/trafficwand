@@ -80,20 +80,12 @@ final class SettingsViewModelTests: XCTestCase {
         )
     }
 
-    private func chromeTarget(_ profile: String? = nil) -> BrowserTarget {
-        BrowserTarget(bundleID: "com.google.Chrome", profileID: profile)
-    }
-
-    private func firefoxTarget(_ profile: String? = nil) -> BrowserTarget {
-        BrowserTarget(bundleID: "org.mozilla.firefox", profileID: profile)
-    }
-
     private func chromeDestination(_ profile: String? = nil) -> RoutingDestination {
-        .browser(chromeTarget(profile))
+        .browser(BrowserTarget(bundleID: "com.google.Chrome", profileID: profile))
     }
 
     private func firefoxDestination(_ profile: String? = nil) -> RoutingDestination {
-        .browser(firefoxTarget(profile))
+        .browser(BrowserTarget(bundleID: "org.mozilla.firefox", profileID: profile))
     }
 
     private func makeViewModel(
@@ -207,17 +199,28 @@ final class SettingsViewModelTests: XCTestCase {
 
     // MARK: - delete rule
 
-    func testDeleteRulePersists() {
+    func testDeleteRuleByIDPersists() {
         let first = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
         let second = Rule(pattern: "*b.com", destination: firefoxDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [first, second], fallback: .picker))
         vm.load()
 
-        vm.deleteRules(at: IndexSet(integer: 0))
-
-        XCTAssertEqual(vm.rules, [second])
-        XCTAssertEqual(store.lastSaved?.rules, [second])
+        // Delete the SECOND rule by id: a buggy by-index implementation
+        // (e.g. remove(at: 0)) would wrongly drop `first`, so this pins the by-id contract.
+        vm.deleteRule(id: second.id)
+        XCTAssertEqual(vm.rules, [first])
+        XCTAssertEqual(store.lastSaved?.rules, [first])
         XCTAssertEqual(store.saveCount, 1)
+    }
+
+    func testDeleteUnknownRuleByIDIsNoOp() {
+        let rule = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
+        let (vm, store) = makeViewModel(config: AppConfig(rules: [rule], fallback: .picker))
+        vm.load()
+
+        vm.deleteRule(id: UUID())
+        XCTAssertEqual(vm.rules, [rule])
+        XCTAssertEqual(store.saveCount, 0)
     }
 
     // MARK: - reorder rule

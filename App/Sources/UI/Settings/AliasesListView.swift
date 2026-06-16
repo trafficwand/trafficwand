@@ -3,15 +3,17 @@ import TrafficWandCore
 
 /// The Aliases tab: a master-detail editor for reusable profile aliases.
 ///
-/// The sidebar lists the aliases with an Add button and a swipe/contextual delete;
-/// selecting one shows `AliasEditorView` inline in the detail pane. All mutations flow
-/// through `SettingsViewModel`, which persists each change immediately — there is no
-/// Save/Cancel sheet; edits in the detail editor persist live (name on Enter/focus-out,
-/// browser/profile on change).
+/// The sidebar lists the aliases with paired "+" / "−" buttons in a bottom bar (the
+/// native source-list idiom); selecting one shows `AliasEditorView` inline in the detail
+/// pane. All mutations flow through `SettingsViewModel`, which persists each change
+/// immediately — there is no Save/Cancel sheet; edits in the detail editor persist live
+/// (name on Enter/focus-out, browser/profile on change).
 ///
-/// Deleting a referenced alias is **blocked**: the row's delete action surfaces an
-/// alert explaining which rules (and/or the fallback) still point at it, because
-/// deleting it would orphan those references.
+/// Delete is the "−" button, which removes the currently-selected alias (and is disabled
+/// when nothing is selected) — there is no swipe/contextual delete on the rows. It routes
+/// through `attemptDelete`, so deleting a referenced alias is **blocked**: an alert
+/// explains which rules (and/or the fallback) still point at it, because deleting it would
+/// orphan those references.
 struct AliasesListView: View {
     @Bindable var viewModel: SettingsViewModel
 
@@ -54,20 +56,6 @@ struct AliasesListView: View {
                     targetLabel: viewModel.browserLabel(for: alias.target)
                 )
                 .tag(alias.id)
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
-                        attemptDelete(alias)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
-                .contextMenu {
-                    Button(role: .destructive) {
-                        attemptDelete(alias)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
             }
         }
         // Pin an Add control to the BOTTOM of the sidebar — the native source-list
@@ -86,6 +74,18 @@ struct AliasesListView: View {
                 .disabled(viewModel.browsers.isEmpty)
                 .help("Add Alias")
                 .accessibilityLabel("Add Alias")
+
+                // Delete the selected alias; disabled when nothing is selected. Routes
+                // through `attemptDelete` so a referenced alias is blocked-and-explained.
+                Button(action: deleteSelectedAlias) {
+                    Image(systemName: "minus")
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless)
+                .disabled(selectedAliasID == nil)
+                .help("Delete Alias")
+                .accessibilityLabel("Delete Alias")
                 Spacer()
             }
             .padding(.horizontal, 8)
@@ -154,13 +154,23 @@ struct AliasesListView: View {
         selectedAliasID = alias.id
     }
 
+    /// Deletes the currently-selected alias via the "−" button. A no-op when nothing
+    /// is selected (the button is also disabled in that state).
+    private func deleteSelectedAlias() {
+        guard let id = selectedAliasID else { return }
+        attemptDelete(id: id)
+    }
+
     /// Deletes the alias, or surfaces the blocked-delete alert when it is referenced.
-    private func attemptDelete(_ alias: ProfileAlias) {
-        if viewModel.isReferenced(alias.id) {
+    /// Takes the alias *id* and re-fetches the current value so the blocked alert
+    /// reflects a live rename rather than a stale view-build snapshot.
+    private func attemptDelete(id: UUID) {
+        guard let alias = viewModel.alias(withID: id) else { return }
+        if viewModel.isReferenced(id) {
             blockedDelete = alias
         } else {
-            if selectedAliasID == alias.id { selectedAliasID = nil }
-            viewModel.deleteAlias(id: alias.id)
+            if selectedAliasID == id { selectedAliasID = nil }
+            viewModel.deleteAlias(id: id)
         }
     }
 
@@ -179,7 +189,7 @@ struct AliasesListView: View {
             parts.append("the fallback policy")
         }
         let used = parts.joined(separator: " and ")
-        return "\"\(alias.name)\" is still used by \(used). "
+        return "“(alias.name)” is still used by \(used). "
             + "Make sure the alias isn't used before deleting it."
     }
 }

@@ -1,94 +1,139 @@
 import SwiftUI
 import TrafficWandCore
 
-/// Edits a single routing rule: its glob pattern, destination (a concrete browser
-/// + profile **or** a reusable alias), and enabled flag.
+/// Inline live-persist editor for a single routing rule: its glob pattern, destination
+/// (a concrete browser + profile **or** a reusable alias), and enabled flag.
 ///
-/// Presented as a sheet from `RulesListView`. It edits a local working copy and
-/// only commits via `onSave` when the user confirms, so cancelling leaves the
-/// underlying config untouched. A segmented control switches the destination
-/// between "Browser" (the bundle/profile pickers) and "Alias" (a picker over the
-/// configured aliases); `commit()` builds the matching `RoutingDestination`.
+/// Shown in the detail pane of `RulesListView`'s `NavigationSplitView` for the selected
+/// rule. There is **no Save/Cancel** and no local draft of the whole rule: every change
+/// commits straight through `SettingsViewModel`, matching the app's persist-on-mutation
+/// pattern (mirrors `AliasEditorView`). Deletion is not hosted here — it lives on the
+/// "−" button in `RulesListView`'s sidebar bottom bar (paired with "+", with a delete
+/// confirmation).
+///
+/// - The **pattern** field commits on Enter (`.onSubmit`) **and** on focus-out: an
+///   editable `TextField` only fires `.onSubmit` on Return, so a `@FocusState` +
+///   `.onChange(of:)` pair flushes the typed pattern when focus leaves. Committing on
+///   commit boundaries (not every keystroke) avoids persisting a half-typed pattern.
+///   The commit is **rule-identity-safe**: it is given the rule id to write to
+///   explicitly, so a focus-out that races a selection change can never write the
+///   buffered text onto the newly-selected rule. The detail pane in `RulesListView`
+///   additionally pins this view's identity with `.id(ruleID)` so switching selection
+///   re-inits the editor (fresh `patternText`); the editor itself still flushes the
+///   **outgoing** rule on `.onChange(of: ruleID)` (and on `.onDisappear`) so a
+///   typed-but-unsubmitted pattern is neither lost nor misrouted.
+/// - An empty pattern persists (and shows "(no pattern)" in the row), mirroring the
+///   alias editor's empty name → "(no name)"; there is no `canSave` gate.
+/// - The **destination** commits immediately when `DestinationEditor` writes through its
+///   binding; `DestinationEditor.pushDestination` already refuses an unusable target, so
+///   destination validity stays enforced without a save gate.
+/// - The **Enabled** toggle commits immediately via `setRule`, so it stays in lockstep
+///   with the sidebar row's enable checkbox (both write the same `@Observable` state).
 struct RuleEditorView: View {
-    /// The browsers available as rule destinations (with discovered profiles).
-    let browsers: [Browser]
+    @Bindable var viewModel: SettingsViewModel
 
-    /// The aliases available as rule destinations.
-    let aliases: [ProfileAlias]
+    /// The id of the rule being edited; the live rule is fetched from the view model so
+    /// the editor always reflects the current persisted value.
+    let ruleID: UUID
 
-    /// Working copy of the rule being edited.
-    @State private var draft: Rule
+    /// Local editing buffer for the pattern, committed on Enter / focus-out so a
+    /// half-typed pattern is never persisted mid-keystroke.
+    @State private var patternText: String
 
-    /// Commit handler: receives the finished rule. Called on Save only.
-    let onSave: (Rule) -> Void
-    /// Dismiss handler: called on Cancel or after Save.
-    let onCancel: () -> Void
+    @FocusState private var patternFieldFocused: Bool
 
-    init(
-        rule: Rule,
-        browsers: [Browser],
-        aliases: [ProfileAlias],
-        onSave: @escaping (Rule) -> Void,
-        onCancel: @escaping () -> Void
-    ) {
-        self.browsers = browsers
-        self.aliases = aliases
-        self._draft = State(initialValue: rule)
-        self.onSave = onSave
-        self.onCancel = onCancel
+    init(viewModel: SettingsViewModel, ruleID: UUID) {
+        self.viewModel = viewModel
+        self.ruleID = ruleID
+        self._patternText = State(initialValue: viewModel.rule(withID: ruleID)?.pattern ?? "")
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Edit Rule")
-                .font(.headline)
-
-            Form {
-                Section {
-                    TextField("Pattern", text: $draft.pattern, prompt: Text("*.github.com"))
-                        .textFieldStyle(.roundedBorder)
-                    Text(Self.globHelpText)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section {
-                    DestinationEditor(
-                        browsers: browsers,
-                        aliases: aliases,
-                        destination: $draft.destination
-                    )
-                }
-
-                Section {
-                    Toggle("Enabled", isOn: $draft.isEnabled)
-                }
+        Form {
+            Section {
+                TextField("Pattern", text: $patternText, prompt: Text("*.github.com"))
+                    .textFieldStyle(.roundedBorder)
+                    .focused($patternFieldFocused)
+                    .onSubmit { commitPattern(to: ruleID) }
+                    .onChange(of: patternFieldFocused) { _, focused in
+                        // `.onSubmit` only fires on Return; flush on focus-out too.
+                        // Commit explicitly to the rule currently being edited so a
+                        // focus-out that races a selection change can't misroute.
+                        if !focused { commitPattern(to: ruleID) }
+                    }
+                Text(Self.globHelpText)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
-            .formStyle(.grouped)
 
-            HStack {
-                Spacer()
-                Button("Cancel", role: .cancel, action: onCancel)
-                    .keyboardShortcut(.cancelAction)
-                Button("Save") { onSave(draft) }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(!canSave)
+            Section {
+                DestinationEditor(
+                    browsers: viewModel.browsers,
+                    aliases: viewModel.aliases,
+                    destination: destinationBinding
+                )
+            }
+
+            Section {
+                Toggle("Enabled", isOn: enabledBinding)
             }
         }
-        .padding(20)
-        .frame(width: 460)
+        .formStyle(.grouped)
+        // When the selection changes to a different rule, flush the OUTGOING rule's
+        // buffered pattern first (using `oldID`, before re-seeding) so a typed-but-
+        // unsubmitted pattern is committed to the right rule, then re-seed the buffer
+        // for the newly-selected rule. (With `.id(ruleID)` on the detail view this path
+        // is normally not hit — SwiftUI re-inits the editor — but it is kept as a
+        // belt-and-braces safeguard against a reused instance.)
+        .onChange(of: ruleID) { oldID, newID in
+            commitPattern(to: oldID)
+            patternText = viewModel.rule(withID: newID)?.pattern ?? ""
+        }
+        // Flush a typed-but-unsubmitted pattern when the editor is torn down (selection
+        // cleared / switched to the placeholder), since `.onChange(of: focus)` does not
+        // reliably fire on removal.
+        .onDisappear {
+            commitPattern(to: ruleID)
+        }
     }
 
-    /// Whether the rule can be saved: a non-empty pattern and a destination that
-    /// resolves to a real browser or a still-present alias.
-    private var canSave: Bool {
-        guard !draft.pattern.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
-        switch draft.destination {
-        case .browser(let target):
-            return browsers.contains { $0.bundleID == target.bundleID }
-        case .alias(let id):
-            return aliases.contains { $0.id == id }
-        }
+    /// Binding to the selected rule's destination. Writing commits the whole rule (with
+    /// the new destination) via `updateRule` immediately. The `get` fallback is
+    /// read-only — `DestinationEditor` never persists it as an unusable target.
+    private var destinationBinding: Binding<RoutingDestination> {
+        Binding(
+            get: {
+                viewModel.rule(withID: ruleID)?.destination
+                    ?? .browser(BrowserTarget(bundleID: "", profileID: nil))
+            },
+            set: { newDestination in
+                guard var rule = viewModel.rule(withID: ruleID) else { return }
+                rule.destination = newDestination
+                viewModel.updateRule(rule)
+            }
+        )
+    }
+
+    /// Binding to the selected rule's enabled flag. Writing commits via `setRule`, so it
+    /// stays in sync with the sidebar row's enable checkbox.
+    private var enabledBinding: Binding<Bool> {
+        Binding(
+            get: { viewModel.rule(withID: ruleID)?.isEnabled ?? true },
+            set: { newValue in
+                guard let rule = viewModel.rule(withID: ruleID) else { return }
+                viewModel.setRule(rule, enabled: newValue)
+            }
+        )
+    }
+
+    /// Commits the buffered pattern to the rule identified by `id` and persists, unless
+    /// it is unchanged. Taking the id explicitly (rather than reading the view's current
+    /// `ruleID`) makes the commit rule-identity-safe: a focus-out that races a selection
+    /// change writes to the rule that was being edited, never the newly-selected one.
+    private func commitPattern(to id: UUID) {
+        guard var rule = viewModel.rule(withID: id), rule.pattern != patternText else { return }
+        rule.pattern = patternText
+        viewModel.updateRule(rule)
     }
 
     /// Documented v1 glob semantics with concrete examples, shown under the field.
@@ -102,30 +147,17 @@ struct RuleEditorView: View {
 #if DEBUG
 #Preview("Rule Editor") {
     RuleEditorView(
-        rule: PreviewFixtures.sampleRules.first!,
-        browsers: PreviewFixtures.sampleBrowsers,
-        aliases: PreviewFixtures.sampleAliases,
-        onSave: { _ in },
-        onCancel: {}
+        viewModel: PreviewFixtures.makePreviewSettingsViewModel(),
+        ruleID: PreviewFixtures.sampleRules.first!.id
     )
+    .frame(width: 460, height: 360)
 }
 
-#Preview("Rule Editor — new") {
+#Preview("Rule Editor — alias destination") {
     RuleEditorView(
-        rule: Rule(
-            pattern: "",
-            destination: .browser(
-                BrowserTarget(
-                    bundleID: PreviewFixtures.sampleBrowsers.first!.bundleID,
-                    profileID: nil
-                )
-            ),
-            isEnabled: true
-        ),
-        browsers: PreviewFixtures.sampleBrowsers,
-        aliases: PreviewFixtures.sampleAliases,
-        onSave: { _ in },
-        onCancel: {}
+        viewModel: PreviewFixtures.makePreviewSettingsViewModel(),
+        ruleID: PreviewFixtures.sampleRules[2].id
     )
+    .frame(width: 460, height: 360)
 }
 #endif

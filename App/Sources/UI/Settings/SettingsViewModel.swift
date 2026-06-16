@@ -120,9 +120,14 @@ final class SettingsViewModel {
         persist()
     }
 
-    /// Deletes the rules at `offsets` and persists.
-    func deleteRules(at offsets: IndexSet) {
-        rules.remove(atOffsets: offsets)
+    /// Deletes the rule with `id` and persists.
+    ///
+    /// No-op (and no save) if no rule with that id exists. Mirrors `updateRule`'s
+    /// by-id + no-op-if-absent shape. This is the single delete path for rules —
+    /// the rule editor's "Delete Rule" button routes through here.
+    func deleteRule(id: UUID) {
+        guard let index = rules.firstIndex(where: { $0.id == id }) else { return }
+        rules.remove(at: index)
         persist()
     }
 
@@ -185,6 +190,17 @@ final class SettingsViewModel {
     /// seam and to keep the view declarative.
     func alias(withID id: UUID) -> ProfileAlias? {
         aliases.first { $0.id == id }
+    }
+
+    /// The rule with `id`, or `nil` if no such rule exists.
+    ///
+    /// Used by the master-detail Rules tab to resolve a `selectedRuleID`
+    /// (held in view `@State`) to the live rule the inline detail editor edits,
+    /// so the editor always reflects the current persisted value (e.g. after an
+    /// edit re-points it). Kept on the view model to give the lookup a unit-test
+    /// seam and to keep the view declarative.
+    func rule(withID id: UUID) -> Rule? {
+        rules.first { $0.id == id }
     }
 
     // MARK: - Referential integrity

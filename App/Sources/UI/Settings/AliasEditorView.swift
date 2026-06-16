@@ -7,7 +7,8 @@ import TrafficWandCore
 /// Shown in the detail pane of `AliasesListView`'s `NavigationSplitView` for the
 /// selected alias. Unlike the former sheet, there is **no Save/Cancel** and no local
 /// draft: every change commits straight through `viewModel.updateAlias`, matching the
-/// app's persist-on-mutation pattern.
+/// app's persist-on-mutation pattern. Deletion is not hosted here — it lives on the
+/// "−" button in `AliasesListView`'s sidebar bottom bar (paired with "+").
 ///
 /// - The **name** field commits on Enter (`.onSubmit`) **and** on focus-out: an
 ///   editable `TextField` only fires `.onSubmit` on Return, so a `@FocusState` +

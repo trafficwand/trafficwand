@@ -76,7 +76,8 @@ struct AboutSettingsView: View {
 
             VStack(spacing: 12) {
                 Text(
-                    "TrafficWand is built in my spare time. It's open-source and free to use — "
+                    "TrafficWand is built in my spare time.\n"
+                    + "It's open-source and free to use — "
                     + "if it's useful to you, sponsoring helps fund continued development."
                 )
                     .font(.callout)
