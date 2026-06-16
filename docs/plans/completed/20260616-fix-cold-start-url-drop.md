@@ -259,11 +259,11 @@ immediately. Equivalent to today's behavior.
 - Modify: `CLAUDE.md` (add `LinkIntake` to the App-layer URL-intake description)
 - Modify: this plan file (move on completion)
 
-- [ ] add `LinkIntake` to the CLAUDE.md App-layer description for consistency with the
+- [x] add `LinkIntake` to the CLAUDE.md App-layer description for consistency with the
       other documented seams: URL intake flows `AppMain.application(_:open:)` → `LinkIntake`
       (buffers links that arrive before the pipeline is ready, flushes on launch-finish) →
       `RoutingService`
-- [ ] move this plan to `docs/plans/completed/`
+- [x] move this plan to `docs/plans/completed/`
 
 ## Post-Completion
 

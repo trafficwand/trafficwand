@@ -36,8 +36,12 @@ TrafficWand is two layers, and keeping them separate is the whole point of the d
     any Core source imports AppKit. Do not import AppKit (or any UI framework) in Core.
 
 - **`App/`** — a **thin AppKit/SwiftUI adapter layer**. It owns the menu-bar agent
-  (`StatusBarController`), URL intake (`AppMain.application(_:open:)` →
-  `RoutingService`), Settings (SwiftUI hosted via `NSHostingController`), the picker
+  (`StatusBarController`), URL intake (`AppMain.application(_:open:)` → `LinkIntake` →
+  `RoutingService` — `LinkIntake` buffers links that arrive before the routing pipeline is
+  built (cold-start safety, issue #16) and flushes them in arrival order as the final step
+  of `applicationDidFinishLaunching`; it is a concrete, directly-tested type
+  (`LinkIntakeTests`), not a protocol), Settings (SwiftUI hosted via `NSHostingController`),
+  the picker
   (`NSPanel` + `NSHostingView`), and the concrete adapters that touch `NSWorkspace` /
   `Process` / the filesystem. Tested via `xcodebuild test` (the `TrafficWandTests`
   target).
