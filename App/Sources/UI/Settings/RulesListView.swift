@@ -135,7 +135,7 @@ private struct RuleRow: View {
                 set: { onToggle($0) }
             ))
             .labelsHidden()
-            .toggleStyle(.switch)
+            .toggleStyle(.checkbox)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(rule.pattern.isEmpty ? "(no pattern)" : rule.pattern)

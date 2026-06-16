@@ -190,16 +190,19 @@ work is purely the thin AppKit/SwiftUI adapter layer plus one new view-model sea
 **Files:**
 - Modify: `App/Sources/UI/Settings/RulesListView.swift`
 
-- [ ] in `RuleRow`, change `.toggleStyle(.switch)` to `.toggleStyle(.checkbox)`, keeping the
+- [x] in `RuleRow`, change `.toggleStyle(.switch)` to `.toggleStyle(.checkbox)`, keeping the
       `Toggle("", isOn:).labelsHidden()` on the leading edge and the `.opacity(rule.isEnabled
       ? 1 : 0.5)` dimming
-- [ ] confirm the row's `.onTapGesture` still opens the editor and the checkbox tap only
-      toggles enable (the `Toggle` consumes its own hit area)
-- [ ] update the `#Preview` if needed so disabled/enabled rows render correctly
-- [ ] this is a pure SwiftUI restyle with no new view-model seam; covered by the existing
+- [x] confirm the row's `.onTapGesture` still opens the editor and the checkbox tap only
+      toggles enable (the `Toggle` consumes its own hit area) — unchanged; the `Toggle` and
+      `.onTapGesture` are separate hit areas
+- [x] update the `#Preview` if needed so disabled/enabled rows render correctly — no change
+      needed; the existing fixture preview covers enabled/disabled rows
+- [x] this is a pure SwiftUI restyle with no new view-model seam; covered by the existing
       `testSetRuleEnabledPersists`. Add no new unit test (the toggle action is unchanged);
-      verify manually per Post-Completion
-- [ ] run `task test` and `task lint` — must pass before next task
+      verify manually per Post-Completion — confirmed: toggle routes through the already-tested
+      `setRule` seam, no new test
+- [x] run `task test` and `task lint` — must pass before next task
 
 ### Task 3: Move rule deletion into `RuleEditorView` with confirmation
 
