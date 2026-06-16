@@ -32,17 +32,17 @@ struct FileConfigStoreTests {
                 Rule(
                     id: UUID(uuidString: "00000000-0000-0000-0000-000000000001")!,
                     pattern: "*.github.com",
-                    target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Default"),
+                    destination: .browser(BrowserTarget(bundleID: "com.google.Chrome", profileID: "Default")),
                     isEnabled: true
                 ),
                 Rule(
                     id: UUID(uuidString: "00000000-0000-0000-0000-000000000002")!,
                     pattern: "*example.com",
-                    target: BrowserTarget(bundleID: "org.mozilla.firefox", profileID: "Personal"),
+                    destination: .browser(BrowserTarget(bundleID: "org.mozilla.firefox", profileID: "Personal")),
                     isEnabled: false
                 )
             ],
-            fallback: .defaultBrowser(BrowserTarget(bundleID: "com.apple.Safari", profileID: nil))
+            fallback: .defaultBrowser(.browser(BrowserTarget(bundleID: "com.apple.Safari", profileID: nil)))
         )
     }
 

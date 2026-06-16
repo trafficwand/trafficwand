@@ -12,7 +12,7 @@ Set it as your default browser once, write a few rules like `*.github.com → Ch
 - Lives quietly in the **menu bar** (no Dock icon).
 - **First-match-wins** ordered rules with wildcard globs.
 - Targets a **browser + optional profile** per rule (Chrome "Work", Firefox
-  "Personal", …).
+  "Personal", …) — directly, or via a reusable **alias** you can re-point in one place.
 - Configurable **fallback** for links that match no rule: show a **picker**, send to a
   single **default browser**, or reuse the **last-used** browser.
 - Profile routing that works **even when the target browser is already running**.
@@ -171,16 +171,48 @@ profile, so they launch their default).
 
 ---
 
+## Aliases
+
+Instead of repeating the same browser/profile across many rules, define a reusable
+**alias** — a named binding to a concrete browser + profile (e.g. **"Work"** → Chrome
+"Work Profile"). Rules and the default-browser fallback can then target *either* a
+concrete browser/profile *or* an alias.
+
+The point is late binding: rules store a *reference* to the alias, not a copy. Re-point
+**"Work"** at a different browser in the **Aliases** tab and every rule (and the fallback)
+that targets **"Work"** follows the change at once — no rule-by-rule editing.
+
+- Manage aliases in **Settings ▸ Aliases**: a master-detail tab — pick an alias from the
+  sidebar list and edit it inline in the detail pane. Edits persist live (the name commits
+  when you press Enter or click away; the browser/profile commits on change), so there's no
+  Save/Cancel step. **Add** drops in a new alias and selects it.
+- In the rule editor and the default-browser fallback, switch the destination between a
+  concrete **Browser** and an **Alias**.
+- The **picker** lists your aliases too (in an **Aliases** section above the browsers), so
+  you can route a one-off link — or *remember* one — to an alias.
+- An alias that is still referenced by a rule or the fallback **cannot be deleted** until
+  the references are removed — the UI tells you which rules block it.
+- If an alias reference is ever dangling (e.g. a hand-edited config), the link safely
+  falls through to the **picker** rather than being dropped or misrouted.
+
+When you pick an **alias** in the picker and tick "Remember choice for `<domain>`", the
+saved rule references that alias by name — so re-pointing the alias later also re-routes
+the remembered site. Picking a concrete **browser/profile** instead remembers that exact
+choice.
+
+---
+
 ## Fallback policy
 
 For links that match no rule, choose one of:
 
-- **Picker** — a floating panel appears listing your installed browsers (shown with their
-  real app icons) and their profiles; pick where the link goes. Navigate with the keyboard
-  (arrow keys move the highlight, Return activates the highlighted destination, Esc
-  cancels) or the mouse. Tick **"Remember choice for `<domain>`"** before choosing to
-  persist a rule that automatically routes that whole domain (apex + subdomains) to the
-  picked browser/profile from then on. You can also copy the URL or cancel. The gear in
+- **Picker** — a floating panel appears listing your aliases (in an **Aliases** section at
+  the top) and your installed browsers (shown with their real app icons) and their
+  profiles; pick where the link goes. Navigate with the keyboard (arrow keys move the
+  highlight, Return activates the highlighted destination, Esc cancels) or the mouse. Tick
+  **"Remember choice for `<domain>`"** before choosing to persist a rule that automatically
+  routes that whole domain (apex + subdomains) to the picked destination from then on (an
+  alias pick is remembered *as the alias*; a concrete pick as that browser/profile). You can also copy the URL or cancel. The gear in
   the picker header opens Settings on the Rules tab, and **⌘,** opens Settings on the
   General tab — handy when the menu-bar icon is hidden behind the MacBook notch.
 - **Single default browser** — the link always opens in one configured browser/profile,

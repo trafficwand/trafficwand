@@ -88,6 +88,14 @@ final class SettingsViewModelTests: XCTestCase {
         BrowserTarget(bundleID: "org.mozilla.firefox", profileID: profile)
     }
 
+    private func chromeDestination(_ profile: String? = nil) -> RoutingDestination {
+        .browser(chromeTarget(profile))
+    }
+
+    private func firefoxDestination(_ profile: String? = nil) -> RoutingDestination {
+        .browser(firefoxTarget(profile))
+    }
+
     private func makeViewModel(
         config: AppConfig,
         browsers: [Browser] = [],
@@ -105,7 +113,7 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - load()
 
     func testLoadPopulatesRulesAndBrowsersAndFallback() {
-        let rule = Rule(pattern: "*github.com", target: chromeTarget("Work"), isEnabled: true)
+        let rule = Rule(pattern: "*github.com", destination: chromeDestination("Work"), isEnabled: true)
         let config = AppConfig(rules: [rule], fallback: .lastUsed)
         let browsers = [
             browser("com.google.Chrome", "Google Chrome"),
@@ -126,14 +134,14 @@ final class SettingsViewModelTests: XCTestCase {
     /// model when the Settings window regains focus so an in-memory edit doesn't
     /// clobber a picker-added rule.
     func testReloadAfterExternalSavePicksUpNewRules() {
-        let existing = Rule(pattern: "*github.com", target: chromeTarget(), isEnabled: true)
+        let existing = Rule(pattern: "*github.com", destination: chromeDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [existing], fallback: .picker))
         vm.load()
         XCTAssertEqual(vm.rules, [existing])
 
         // Simulate an external writer (the picker) appending a remembered rule and
         // changing the fallback while the view model already holds the old state.
-        let remembered = Rule(pattern: "*example.com", target: firefoxTarget(), isEnabled: true)
+        let remembered = Rule(pattern: "*example.com", destination: firefoxDestination(), isEnabled: true)
         store.loaded = AppConfig(rules: [existing, remembered], fallback: .lastUsed)
 
         vm.load()
@@ -158,7 +166,7 @@ final class SettingsViewModelTests: XCTestCase {
         let (vm, store) = makeViewModel(config: AppConfig(rules: [], fallback: .picker))
         vm.load()
 
-        let newRule = Rule(pattern: "*.example.com", target: chromeTarget(), isEnabled: true)
+        let newRule = Rule(pattern: "*.example.com", destination: chromeDestination(), isEnabled: true)
         vm.addRule(newRule)
 
         XCTAssertEqual(vm.rules, [newRule])
@@ -169,13 +177,13 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - edit rule
 
     func testEditRulePersistsTheChange() {
-        let original = Rule(pattern: "*github.com", target: chromeTarget(), isEnabled: true)
+        let original = Rule(pattern: "*github.com", destination: chromeDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [original], fallback: .picker))
         vm.load()
 
         var edited = original
         edited.pattern = "*.github.com"
-        edited.target = firefoxTarget("Personal")
+        edited.destination = firefoxDestination("Personal")
         edited.isEnabled = false
         vm.updateRule(edited)
 
@@ -186,11 +194,11 @@ final class SettingsViewModelTests: XCTestCase {
     }
 
     func testEditUnknownRuleDoesNothing() {
-        let original = Rule(pattern: "*github.com", target: chromeTarget(), isEnabled: true)
+        let original = Rule(pattern: "*github.com", destination: chromeDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [original], fallback: .picker))
         vm.load()
 
-        let stranger = Rule(pattern: "*.nope.com", target: chromeTarget(), isEnabled: true)
+        let stranger = Rule(pattern: "*.nope.com", destination: chromeDestination(), isEnabled: true)
         vm.updateRule(stranger)
 
         XCTAssertEqual(vm.rules, [original])
@@ -200,8 +208,8 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - delete rule
 
     func testDeleteRulePersists() {
-        let first = Rule(pattern: "*a.com", target: chromeTarget(), isEnabled: true)
-        let second = Rule(pattern: "*b.com", target: firefoxTarget(), isEnabled: true)
+        let first = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
+        let second = Rule(pattern: "*b.com", destination: firefoxDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [first, second], fallback: .picker))
         vm.load()
 
@@ -215,9 +223,9 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - reorder rule
 
     func testReorderRuleChangesOrderAndPersists() {
-        let first = Rule(pattern: "*a.com", target: chromeTarget(), isEnabled: true)
-        let second = Rule(pattern: "*b.com", target: firefoxTarget(), isEnabled: true)
-        let third = Rule(pattern: "*c.com", target: chromeTarget(), isEnabled: true)
+        let first = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
+        let second = Rule(pattern: "*b.com", destination: firefoxDestination(), isEnabled: true)
+        let third = Rule(pattern: "*c.com", destination: chromeDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [first, second, third], fallback: .picker))
         vm.load()
 
@@ -232,7 +240,7 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - toggle enable
 
     func testSetRuleEnabledPersists() {
-        let rule = Rule(pattern: "*a.com", target: chromeTarget(), isEnabled: true)
+        let rule = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [rule], fallback: .picker))
         vm.load()
 
@@ -249,11 +257,11 @@ final class SettingsViewModelTests: XCTestCase {
         let (vm, store) = makeViewModel(config: AppConfig(rules: [], fallback: .picker))
         vm.load()
 
-        let target = chromeTarget("Work")
-        vm.setFallback(.defaultBrowser(target))
+        let destination = chromeDestination("Work")
+        vm.setFallback(.defaultBrowser(destination))
 
-        XCTAssertEqual(vm.fallback, .defaultBrowser(target))
-        XCTAssertEqual(store.lastSaved?.fallback, .defaultBrowser(target))
+        XCTAssertEqual(vm.fallback, .defaultBrowser(destination))
+        XCTAssertEqual(store.lastSaved?.fallback, .defaultBrowser(destination))
         XCTAssertEqual(store.saveCount, 1)
     }
 
@@ -277,7 +285,7 @@ final class SettingsViewModelTests: XCTestCase {
         // reflected in memory so the UI shows the user's intent.
         store.saveError = ConfigStoreError.corruptConfiguration
 
-        let newRule = Rule(pattern: "*.example.com", target: chromeTarget(), isEnabled: true)
+        let newRule = Rule(pattern: "*.example.com", destination: chromeDestination(), isEnabled: true)
         vm.addRule(newRule)
 
         XCTAssertEqual(vm.rules, [newRule], "Mutation is kept in memory even when save fails.")
@@ -298,7 +306,7 @@ final class SettingsViewModelTests: XCTestCase {
     // MARK: - persistence preserves the rest of the config
 
     func testFallbackChangeKeepsRules() {
-        let rule = Rule(pattern: "*a.com", target: chromeTarget(), isEnabled: true)
+        let rule = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [rule], fallback: .picker))
         vm.load()
 
@@ -306,6 +314,44 @@ final class SettingsViewModelTests: XCTestCase {
 
         XCTAssertEqual(store.lastSaved?.rules, [rule])
         XCTAssertEqual(store.lastSaved?.schemaVersion, AppConfig.currentSchemaVersion)
+    }
+
+    /// Loading a legacy (schemaVersion 1) config and mutating it must migrate the
+    /// document forward: the persisted config is stamped with the current schema
+    /// version, matching the "new writes always use schema v2" contract on
+    /// `AppConfig`. (A default config already carries `currentSchemaVersion`, so the
+    /// existing `testFallbackChangeKeepsRules` can't distinguish bump from preserve.)
+    func testPersistMigratesLegacySchemaVersionForward() {
+        let rule = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
+        let legacy = AppConfig(schemaVersion: 1, rules: [rule], fallback: .picker)
+        let (vm, store) = makeViewModel(config: legacy)
+        vm.load()
+
+        vm.setFallback(.lastUsed)
+
+        XCTAssertEqual(
+            store.lastSaved?.schemaVersion,
+            AppConfig.currentSchemaVersion,
+            "A load-then-save migrates a legacy v1 document forward to the current schema."
+        )
+    }
+
+    /// A document written by a *newer* build (a higher schemaVersion than this one
+    /// understands) must never be downgraded on save.
+    func testPersistNeverDowngradesNewerSchemaVersion() {
+        let future = AppConfig.currentSchemaVersion + 1
+        let rule = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
+        let newer = AppConfig(schemaVersion: future, rules: [rule], fallback: .picker)
+        let (vm, store) = makeViewModel(config: newer)
+        vm.load()
+
+        vm.setFallback(.lastUsed)
+
+        XCTAssertEqual(
+            store.lastSaved?.schemaVersion,
+            future,
+            "A save must not downgrade a document written by a newer build."
+        )
     }
 
     // MARK: - automatic updates toggle (seam in the view model)

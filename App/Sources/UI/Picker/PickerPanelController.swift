@@ -7,10 +7,11 @@ import os
 /// and carries out the user's choice.
 ///
 /// Conforms to `PickerPresenting`, so `RoutingService` hands every `.prompt`
-/// decision here. `presentPicker(url:browsers:)` builds a `PickerViewModel`, hosts
-/// `BrowserPickerView` in a borderless nonactivating `NSPanel` (so the menu-bar
-/// agent can show it without becoming a regular foreground app), and wires the
-/// view model's outcomes:
+/// decision here. `presentPicker(url:browsers:aliases:)` builds a `PickerViewModel`
+/// (forwarding the `aliases` so the view model renders them as the top "Aliases"
+/// section), hosts `BrowserPickerView` in a borderless nonactivating `NSPanel` (so
+/// the menu-bar agent can show it without becoming a regular foreground app), and
+/// wires the view model's outcomes:
 ///
 ///  - **selection** → launch the chosen `BrowserTarget` via the injected
 ///    `BrowserLaunching`, record it via the injected `LastUsedRecording`, and (when
@@ -84,12 +85,12 @@ final class PickerPanelController: NSObject, PickerPresenting {
 
     // MARK: - PickerPresenting
 
-    func presentPicker(url: URL, browsers: [Browser]) {
-        let viewModel = makeViewModel(url: url, browsers: browsers)
+    func presentPicker(url: URL, browsers: [Browser], aliases: [ProfileAlias] = []) {
+        let viewModel = makeViewModel(url: url, browsers: browsers, aliases: aliases)
         showPanel(hosting: BrowserPickerView(viewModel: viewModel, iconProvider: iconProvider))
     }
 
-    /// Builds the `PickerViewModel` for `url`/`browsers` with all outcome
+    /// Builds the `PickerViewModel` for `url`/`browsers`/`aliases` with all outcome
     /// closures wired to this controller.
     ///
     /// Internal (not private) so unit tests can construct the wired view model
@@ -97,12 +98,18 @@ final class PickerPanelController: NSObject, PickerPresenting {
     /// `presentPicker` used to inline — selection routes through
     /// `handleSelection`, cancel through `dismiss`, copy through
     /// `copyToPasteboard`, and open-settings through `handleOpenSettings`.
-    func makeViewModel(url: URL, browsers: [Browser]) -> PickerViewModel {
+    func makeViewModel(url: URL, browsers: [Browser], aliases: [ProfileAlias] = []) -> PickerViewModel {
         PickerViewModel(
             url: url,
             browsers: browsers,
-            onSelect: { [weak self] target, remember in
-                self?.handleSelection(target: target, url: url, browsers: browsers, remember: remember)
+            aliases: aliases,
+            onSelect: { [weak self] launchTarget, rememberDestination, remember in
+                self?.handleSelection(
+                    launchTarget: launchTarget,
+                    rememberDestination: rememberDestination,
+                    context: PickerContext(url: url, browsers: browsers, aliases: aliases),
+                    remember: remember
+                )
             },
             onCancel: { [weak self] in
                 self?.dismiss()
@@ -123,42 +130,59 @@ final class PickerPanelController: NSObject, PickerPresenting {
     /// Bails out if a dismiss animation is in flight — the panel is still
     /// hit-testable during the ~0.18s fade and re-entry here would double-launch.
     ///
-    /// If the selected target's browser cannot be resolved among `browsers` (it
-    /// should not happen — the picker only offers targets from that very list — but
-    /// defend against it), the link is NOT dropped: the picker is re-presented so
-    /// the user can pick again, and the unresolvable target is NOT recorded as
-    /// last-used nor remembered. On a resolvable selection, last-used is recorded,
-    /// the choice is persisted as a routing rule when `remember` is set, and the
-    /// chosen target launched; a launch failure is logged, never fatal.
-    private func handleSelection(target: BrowserTarget, url: URL, browsers: [Browser], remember: Bool) {
+    /// If the concrete `launchTarget`'s browser cannot be resolved among `browsers`
+    /// (it should not happen — the picker only offers targets from that very list,
+    /// and uninstalled-target aliases are filtered out — but defend against it), the
+    /// link is NOT dropped: the picker is re-presented so the user can pick again,
+    /// and the unresolvable target is NOT recorded as last-used nor remembered. On a
+    /// resolvable selection, last-used is recorded, the choice is persisted as a
+    /// routing rule (the chosen `rememberDestination` — an `.alias(id)` for an alias
+    /// pick, a `.browser(...)` otherwise) when `remember` is set, and the chosen
+    /// target launched; a launch failure is logged, never fatal.
+    private func handleSelection(
+        launchTarget: BrowserTarget,
+        rememberDestination: RoutingDestination,
+        context: PickerContext,
+        remember: Bool
+    ) {
         guard !isDismissing else { return }
 
-        guard let browser = browsers.first(where: { $0.bundleID == target.bundleID }) else {
+        let url = context.url
+        guard let browser = context.browsers.first(where: { $0.bundleID == launchTarget.bundleID }) else {
             Self.logger.error(
                 """
                 Picker selected a target with no installed browser: \
-                \(target.bundleID, privacy: .public); re-presenting picker
+                \(launchTarget.bundleID, privacy: .public); re-presenting picker
                 """
             )
             // Recover rather than lose the link: show the picker again.
-            presentPicker(url: url, browsers: browsers)
+            presentPicker(url: url, browsers: context.browsers, aliases: context.aliases)
             return
         }
 
-        lastUsedStore.set(target)
+        lastUsedStore.set(launchTarget)
 
         if remember {
-            rulePersister.remember(url: url, target: target)
+            rulePersister.remember(url: url, destination: rememberDestination)
         }
 
         defer { dismiss() }
 
         do {
-            try launcher.launch(target: target, browser: browser, url: url)
+            try launcher.launch(target: launchTarget, browser: browser, url: url)
         } catch {
-            let detail = "\(url.absoluteString) in \(target.bundleID): \(String(describing: error))"
+            let detail = "\(url.absoluteString) in \(launchTarget.bundleID): \(String(describing: error))"
             Self.logger.error("Picker launch failed: \(detail, privacy: .public)")
         }
+    }
+
+    /// The link + offered browsers/aliases for an active picker presentation,
+    /// grouped so `handleSelection` can recover (re-present) without a long
+    /// parameter list.
+    private struct PickerContext {
+        let url: URL
+        let browsers: [Browser]
+        let aliases: [ProfileAlias]
     }
 
     /// Handles a request from the picker to open Settings on `tab` (gear

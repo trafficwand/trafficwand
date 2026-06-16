@@ -42,7 +42,7 @@ final class PickerPanelControllerOpenSettingsTests: XCTestCase {
 
     /// No-op `RulePersisting`: open-settings does not remember a rule.
     private struct NoopRulePersister: RulePersisting {
-        func remember(url: URL, target: BrowserTarget) {}
+        func remember(url: URL, destination: RoutingDestination) {}
     }
 
     /// Stub icon provider — open-settings does not paint, but the controller's

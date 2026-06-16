@@ -1,8 +1,8 @@
 import SwiftUI
 import TrafficWandCore
 
-/// The Settings window container: a `TabView` hosting the General, Rules, and
-/// About tabs.
+/// The Settings window container: a `TabView` hosting the General, Rules,
+/// Aliases, and About tabs.
 ///
 /// It owns the `SettingsViewModel` and triggers `load()` on appear so the window
 /// always reflects the persisted config and the current installed-browser list.
@@ -34,6 +34,12 @@ struct SettingsRootView: View {
                     Label("Rules", systemImage: "arrow.triangle.branch")
                 }
                 .tag(SettingsTab.rules)
+
+            AliasesListView(viewModel: viewModel)
+                .tabItem {
+                    Label("Aliases", systemImage: "link")
+                }
+                .tag(SettingsTab.aliases)
 
             AboutSettingsView()
                 .tabItem {

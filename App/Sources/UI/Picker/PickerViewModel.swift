@@ -9,11 +9,15 @@ import TrafficWandCore
 /// outcomes, each delivered through an injected closure so the view model itself
 /// performs **no** AppKit / launching / pasteboard work:
 ///
-///  - `select(browser:profile:)` → resolves a `BrowserTarget` (bundle ID + the
-///    chosen profile's family-native id, or `nil` for the default profile) and
-///    hands it to `onSelect` along with the current `rememberChoice` flag. The
-///    controller launches it and records last-used, and when `rememberChoice` is
-///    true it also persists a routing rule for the site.
+///  - `select(item:)` → resolves the concrete
+///    `BrowserTarget` to launch **and** the `RoutingDestination` to remember, and
+///    hands both to `onSelect` along with the current `rememberChoice` flag. For an
+///    alias row the launch target is the alias's resolved `BrowserTarget` while the
+///    remember destination is `.alias(id)` (the reusable, late-binding rule); for a
+///    browser/profile row both collapse to `.browser(target)`. The controller
+///    launches the concrete target and records last-used, and when `rememberChoice`
+///    is true it persists a routing rule for the site (an alias rule for an alias
+///    pick, a concrete rule otherwise).
 ///  - `copyURL()` → hands the URL string to `onCopy` (the actual `NSPasteboard`
 ///    write is the controller's / view's thin closure), keeping the decision
 ///    (what string to copy) testable.
@@ -34,6 +38,12 @@ final class PickerViewModel {
 
     /// The browsers (with profiles) offered to the user.
     let browsers: [Browser]
+
+    /// The reusable aliases offered to the user (rendered as the "Aliases" section
+    /// at the top of the list). Only aliases whose `target.bundleID` is among the
+    /// offered `browsers` are surfaced as rows (an uninstalled-target alias can't
+    /// launch); see `selectableItems`.
+    let aliases: [ProfileAlias]
 
     /// The URL rendered in the panel and copied by `copyURL()`.
     var urlString: String { url.absoluteString }
@@ -56,31 +66,77 @@ final class PickerViewModel {
         return RegistrableDomain.of(host: host) ?? host.lowercased()
     }
 
-    /// One selectable destination in the flattened picker list: a browser's
-    /// default (when `profile == nil`) or a specific profile of that browser.
+    /// One selectable destination in the flattened picker list: a reusable alias,
+    /// a browser's default, or a specific profile of a browser.
     struct SelectableItem: Identifiable {
-        /// Stable identity: the browser's bundle ID plus a structurally-distinct
-        /// suffix for the default row (`#self`) versus a profile row
-        /// (`#profile:<profile.id>`). The `profile:` prefix keeps a profile whose
-        /// id happens to be `self` — or, more realistically, a Firefox profile
-        /// literally named `default`/`default-release` — from ever colliding with
-        /// the default-row sentinel. Unique within the list.
+        /// Stable identity:
+        /// - alias rows are `"alias:<uuid>"` (the `alias:` prefix can't collide
+        ///   with the `bundleID#…` forms);
+        /// - the browser's bundle ID plus a structurally-distinct suffix for the
+        ///   default row (`#self`) versus a profile row (`#profile:<profile.id>`).
+        ///   The `profile:` prefix keeps a profile whose id happens to be `self` —
+        ///   or, more realistically, a Firefox profile literally named
+        ///   `default`/`default-release` — from ever colliding with the
+        ///   default-row sentinel. Unique within the list. Stays a `String` so the
+        ///   view's `hoveredItemID: SelectableItem.ID` and `ForEach`/keyboard
+        ///   identity keep working.
         let id: String
-        let browser: Browser
-        /// The chosen profile, or `nil` for the browser's default profile.
-        let profile: BrowserProfile?
+
+        /// What this row represents: a reusable alias, or a browser with an
+        /// optional profile (`nil` → the browser's default profile).
+        let kind: Kind
+
+        // swiftlint:disable:next nesting
+        enum Kind {
+            case alias(ProfileAlias)
+            case browser(Browser, BrowserProfile?)
+        }
+
+        /// The concrete `BrowserTarget` to launch when this row is chosen: the
+        /// alias's resolved target for an alias row, or the browser's bundle ID +
+        /// the chosen profile's id for a browser/profile row.
+        var launchTarget: BrowserTarget {
+            switch kind {
+            case .alias(let alias):
+                return alias.target
+            case .browser(let browser, let profile):
+                return BrowserTarget(bundleID: browser.bundleID, profileID: profile?.id)
+            }
+        }
+
+        /// The `RoutingDestination` to persist when "Remember choice" is ticked: an
+        /// `.alias(id)` for an alias row (the reusable, late-binding rule) or a
+        /// concrete `.browser(target)` otherwise.
+        var rememberDestination: RoutingDestination {
+            switch kind {
+            case .alias(let alias):
+                return .alias(alias.id)
+            case .browser:
+                return .browser(launchTarget)
+            }
+        }
     }
 
-    /// The flattened, ordered list of selectable destinations: for each browser,
-    /// its default row first, then one row per profile in display order.
+    /// The flattened, ordered list of selectable destinations: the installed
+    /// aliases first (in order), then for each browser its default row followed by
+    /// one row per profile in display order.
     let selectableItems: [SelectableItem]
 
     /// Index of the keyboard-highlighted item within `selectableItems`.
     var selectedIndex: Int = 0
 
-    /// Delivers the chosen routing target on selection along with whether the
-    /// user asked to remember the choice.
-    private let onSelect: (BrowserTarget, _ remember: Bool) -> Void
+    /// The selection callback shape: the concrete `BrowserTarget` to launch, the
+    /// `RoutingDestination` to persist (an `.alias(id)` for an alias pick, a
+    /// `.browser(target)` for a concrete pick), and whether to remember the choice.
+    typealias SelectHandler = (
+        _ launchTarget: BrowserTarget,
+        _ rememberDestination: RoutingDestination,
+        _ remember: Bool
+    ) -> Void
+
+    /// Delivers, on selection, the launch target, the remember destination, and the
+    /// remember flag (see ``SelectHandler``).
+    private let onSelect: SelectHandler
 
     /// Invoked when the user cancels (Esc / Cancel). Yields no selection.
     private let onCancel: () -> Void
@@ -95,8 +151,11 @@ final class PickerViewModel {
     /// - Parameters:
     ///   - url: The link being routed.
     ///   - browsers: The browsers (with profiles) to offer.
-    ///   - onSelect: Receives the resolved `BrowserTarget` when the user picks a
-    ///     browser (and optionally a profile), plus whether to remember the choice.
+    ///   - aliases: The reusable aliases to offer at the top of the list. Aliases
+    ///     whose `target.bundleID` is not among `browsers` (uninstalled targets,
+    ///     which can't launch) are filtered out.
+    ///   - onSelect: Receives the concrete `BrowserTarget` to launch, the
+    ///     `RoutingDestination` to remember, and whether to remember the choice.
     ///   - onCancel: Invoked when the user dismisses the picker without choosing.
     ///   - onCopy: Receives the URL string when the user copies it; the caller
     ///     performs the actual pasteboard write.
@@ -106,44 +165,68 @@ final class PickerViewModel {
     init(
         url: URL,
         browsers: [Browser],
-        onSelect: @escaping (BrowserTarget, _ remember: Bool) -> Void,
+        aliases: [ProfileAlias] = [],
+        onSelect: @escaping SelectHandler,
         onCancel: @escaping () -> Void,
         onCopy: @escaping (String) -> Void,
         onOpenSettings: @escaping (SettingsTab) -> Void
     ) {
         self.url = url
         self.browsers = browsers
+        self.aliases = aliases
         self.onSelect = onSelect
         self.onCancel = onCancel
         self.onCopy = onCopy
         self.onOpenSettings = onOpenSettings
 
-        // Flatten browsers → (default, then profiles) into one ordered list.
-        self.selectableItems = browsers.flatMap { browser -> [SelectableItem] in
+        // Alias rows first, filtered to those whose target browser is installed
+        // (an uninstalled-target alias can't launch, so it would dead-end).
+        let installedBundleIDs = Set(browsers.map(\.bundleID))
+        let aliasItems = aliases
+            .filter { installedBundleIDs.contains($0.target.bundleID) }
+            .map { alias in
+                SelectableItem(id: "alias:\(alias.id.uuidString)", kind: .alias(alias))
+            }
+
+        // Then flatten browsers → (default, then profiles) into one ordered list.
+        let browserItems = browsers.flatMap { browser -> [SelectableItem] in
             let defaultItem = SelectableItem(
                 id: "\(browser.bundleID)#self",
-                browser: browser,
-                profile: nil
+                kind: .browser(browser, nil)
             )
             let profileItems = browser.profiles.map { profile in
                 SelectableItem(
                     id: "\(browser.bundleID)#profile:\(profile.id)",
-                    browser: browser,
-                    profile: profile
+                    kind: .browser(browser, profile)
                 )
             }
             return [defaultItem] + profileItems
         }
+
+        self.selectableItems = aliasItems + browserItems
+    }
+
+    /// Selects `item` as the routing destination, handing its concrete
+    /// `launchTarget` and `rememberDestination` to `onSelect` along with the
+    /// current `rememberChoice` flag.
+    func select(item: SelectableItem) {
+        onSelect(item.launchTarget, item.rememberDestination, rememberChoice)
     }
 
     /// Selects `browser` (and optionally `profile`) as the routing destination.
     ///
-    /// Builds a `BrowserTarget` carrying the browser's bundle ID and the chosen
-    /// profile's family-native id (`nil` → launch the default profile) and hands
-    /// it to `onSelect` along with the current `rememberChoice` flag.
+    /// Looks the matching row up in `selectableItems` (rather than re-deriving its id
+    /// scheme, which would risk drifting from `init`) and delegates to `select(item:)`.
+    /// `nil` profile → the browser's default row. No-op when no matching row exists
+    /// (e.g. a browser not among the offered list). A test-only convenience; production
+    /// selection flows through `select(item:)`.
     func select(browser: Browser, profile: BrowserProfile?) {
-        let target = BrowserTarget(bundleID: browser.bundleID, profileID: profile?.id)
-        onSelect(target, rememberChoice)
+        let item = selectableItems.first { item in
+            guard case .browser(let rowBrowser, let rowProfile) = item.kind else { return false }
+            return rowBrowser.bundleID == browser.bundleID && rowProfile?.id == profile?.id
+        }
+        guard let item else { return }
+        select(item: item)
     }
 
     /// Moves the keyboard highlight by `delta`, clamping to the bounds of
@@ -157,8 +240,25 @@ final class PickerViewModel {
     /// Selects the currently highlighted item, if any.
     func activateSelection() {
         guard selectableItems.indices.contains(selectedIndex) else { return }
-        let item = selectableItems[selectedIndex]
-        select(browser: item.browser, profile: item.profile)
+        select(item: selectableItems[selectedIndex])
+    }
+
+    /// The resolved "Browser — Profile" (or just "Browser") label for a concrete
+    /// `target`, using the offered `browsers` to resolve names. Returns `nil` when the
+    /// target's browser is not among the offered browsers (e.g. an alias whose target
+    /// is uninstalled), so the row can hide the secondary line.
+    ///
+    /// Pure decision logic kept on the view model (per CLAUDE.md) so the picker rows
+    /// stay declarative and this labeling is unit-testable.
+    func browserLabel(for target: BrowserTarget) -> String? {
+        guard let browser = browsers.first(where: { $0.bundleID == target.bundleID }) else {
+            return nil
+        }
+        if let profileID = target.profileID,
+           let profile = browser.profiles.first(where: { $0.id == profileID }) {
+            return "\(browser.name) — \(profile.name)"
+        }
+        return browser.name
     }
 
     /// Copies the URL string via the injected `onCopy` closure.

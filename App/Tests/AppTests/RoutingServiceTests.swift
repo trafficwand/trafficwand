@@ -13,6 +13,7 @@ private struct LaunchCall: Equatable {
 private struct PickerCall: Equatable {
     let url: URL
     let browserBundleIDs: [String]
+    let aliases: [ProfileAlias]
 }
 
 /// Tests for `RoutingService.route(url:)` (Task 13).
@@ -67,8 +68,8 @@ final class RoutingServiceTests: XCTestCase {
     /// Mock picker presenter recording `presentPicker` calls.
     private final class MockPicker: PickerPresenting {
         private(set) var calls: [PickerCall] = []
-        func presentPicker(url: URL, browsers: [Browser]) {
-            calls.append(PickerCall(url: url, browserBundleIDs: browsers.map(\.bundleID)))
+        func presentPicker(url: URL, browsers: [Browser], aliases: [ProfileAlias]) {
+            calls.append(PickerCall(url: url, browserBundleIDs: browsers.map(\.bundleID), aliases: aliases))
         }
     }
 
@@ -108,7 +109,7 @@ final class RoutingServiceTests: XCTestCase {
         // called with that target (resolving the Browser whose bundleID matches)
         // and last-used must be recorded; the picker must NOT be shown.
         let target = BrowserTarget(bundleID: "com.google.Chrome", profileID: "Work")
-        let rule = Rule(pattern: "*github.com", target: target, isEnabled: true)
+        let rule = Rule(pattern: "*github.com", destination: .browser(target), isEnabled: true)
         let config = AppConfig(rules: [rule], fallback: .picker)
         let browsers = [
             browser("com.google.Chrome", "Google Chrome"),
@@ -165,6 +166,27 @@ final class RoutingServiceTests: XCTestCase {
         XCTAssertTrue(lastUsed.recorded.isEmpty)
     }
 
+    func testPromptDecisionPassesConfigAliasesToPicker() throws {
+        // The aliases in config must reach the picker so it can offer alias rows.
+        let alias = ProfileAlias(
+            name: "Work",
+            target: BrowserTarget(bundleID: "com.google.Chrome", profileID: "Profile 1")
+        )
+        let config = AppConfig(aliases: [alias], rules: [], fallback: .picker)
+        let browsers = [browser("com.google.Chrome", "Google Chrome")]
+
+        let picker = MockPicker()
+        let service = makeService(
+            config: config, browsers: browsers,
+            launcher: MockLauncher(), lastUsedStore: MockLastUsed(), picker: picker
+        )
+
+        service.route(url: url)
+
+        XCTAssertEqual(picker.calls.count, 1)
+        XCTAssertEqual(picker.calls.first?.aliases, [alias])
+    }
+
     // MARK: - .open with target not in available browsers
 
     func testOpenDecisionWithUnknownTargetFallsBackToPicker() throws {
@@ -175,7 +197,18 @@ final class RoutingServiceTests: XCTestCase {
         // unresolvable target must NOT be recorded as last-used (it would mislead
         // the .lastUsed fallback toward a browser that no longer exists).
         let target = BrowserTarget(bundleID: "com.unknown.Browser", profileID: nil)
-        let config = AppConfig(rules: [], fallback: .defaultBrowser(target))
+        // Seed an alias so we can assert config.aliases is threaded through the
+        // private `open(...)` recovery path into the fallback picker (not just the
+        // direct `.prompt` path), so a remembered alias still works on recovery.
+        let alias = ProfileAlias(
+            name: "Work",
+            target: BrowserTarget(bundleID: "com.google.Chrome", profileID: nil)
+        )
+        let config = AppConfig(
+            aliases: [alias],
+            rules: [],
+            fallback: .defaultBrowser(.browser(target))
+        )
         let browsers = [browser("com.google.Chrome", "Google Chrome")]
 
         let launcher = MockLauncher()
@@ -192,6 +225,7 @@ final class RoutingServiceTests: XCTestCase {
         XCTAssertEqual(picker.calls.count, 1)
         XCTAssertEqual(picker.calls.first?.url, url)
         XCTAssertEqual(picker.calls.first?.browserBundleIDs, ["com.google.Chrome"])
+        XCTAssertEqual(picker.calls.first?.aliases, [alias])
         XCTAssertTrue(lastUsed.recorded.isEmpty)
     }
 }

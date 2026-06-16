@@ -1,28 +1,23 @@
 import SwiftUI
 import TrafficWandCore
 
-/// Edits a single routing rule: its glob pattern, destination browser + profile,
-/// and enabled flag.
+/// Edits a single routing rule: its glob pattern, destination (a concrete browser
+/// + profile **or** a reusable alias), and enabled flag.
 ///
 /// Presented as a sheet from `RulesListView`. It edits a local working copy and
 /// only commits via `onSave` when the user confirms, so cancelling leaves the
-/// underlying config untouched. The pattern field is annotated with glob examples
-/// (the documented v1 host-glob semantics) and the profile picker is driven by the
-/// profiles of the currently-chosen browser.
+/// underlying config untouched. A segmented control switches the destination
+/// between "Browser" (the bundle/profile pickers) and "Alias" (a picker over the
+/// configured aliases); `commit()` builds the matching `RoutingDestination`.
 struct RuleEditorView: View {
     /// The browsers available as rule destinations (with discovered profiles).
     let browsers: [Browser]
 
+    /// The aliases available as rule destinations.
+    let aliases: [ProfileAlias]
+
     /// Working copy of the rule being edited.
     @State private var draft: Rule
-
-    /// The chosen browser's bundle ID, tracked separately so the profile picker can
-    /// react to browser changes (and reset the profile when it is unsupported).
-    @State private var selectedBundleID: String
-
-    /// The chosen profile id (`nil` = default profile), tracked separately from the
-    /// target so the picker can bind to an optional cleanly.
-    @State private var selectedProfileID: String?
 
     /// Commit handler: receives the finished rule. Called on Save only.
     let onSave: (Rule) -> Void
@@ -32,20 +27,15 @@ struct RuleEditorView: View {
     init(
         rule: Rule,
         browsers: [Browser],
+        aliases: [ProfileAlias],
         onSave: @escaping (Rule) -> Void,
         onCancel: @escaping () -> Void
     ) {
         self.browsers = browsers
+        self.aliases = aliases
         self._draft = State(initialValue: rule)
-        self._selectedBundleID = State(initialValue: rule.target.bundleID)
-        self._selectedProfileID = State(initialValue: rule.target.profileID)
         self.onSave = onSave
         self.onCancel = onCancel
-    }
-
-    /// The browser currently selected (if it is among the available browsers).
-    private var selectedBrowser: Browser? {
-        browsers.first { $0.bundleID == selectedBundleID }
     }
 
     var body: some View {
@@ -63,20 +53,11 @@ struct RuleEditorView: View {
                 }
 
                 Section {
-                    Picker("Browser", selection: $selectedBundleID) {
-                        ForEach(browsers) { browser in
-                            Text(browser.name).tag(browser.bundleID)
-                        }
-                    }
-
-                    if let selectedBrowser, !selectedBrowser.profiles.isEmpty {
-                        Picker("Profile", selection: $selectedProfileID) {
-                            Text("Default").tag(String?.none)
-                            ForEach(selectedBrowser.profiles) { profile in
-                                Text(profile.name).tag(String?.some(profile.id))
-                            }
-                        }
-                    }
+                    DestinationEditor(
+                        browsers: browsers,
+                        aliases: aliases,
+                        destination: $draft.destination
+                    )
                 }
 
                 Section {
@@ -89,35 +70,25 @@ struct RuleEditorView: View {
                 Spacer()
                 Button("Cancel", role: .cancel, action: onCancel)
                     .keyboardShortcut(.cancelAction)
-                Button("Save") { commit() }
+                Button("Save") { onSave(draft) }
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canSave)
             }
         }
         .padding(20)
         .frame(width: 460)
-        .onChange(of: selectedBundleID) { _, _ in
-            // Switching to a browser that lacks the previously-chosen profile clears
-            // the profile so we never persist a profile the new browser can't honor.
-            if let selectedBrowser, !selectedBrowser.profiles.contains(where: { $0.id == selectedProfileID }) {
-                selectedProfileID = nil
-            }
-        }
     }
 
-    /// Whether the rule can be saved: a non-empty pattern and a resolvable browser.
-    /// Guards against persisting an unusable target (e.g. an empty browser list).
+    /// Whether the rule can be saved: a non-empty pattern and a destination that
+    /// resolves to a real browser or a still-present alias.
     private var canSave: Bool {
-        !draft.pattern.trimmingCharacters(in: .whitespaces).isEmpty && selectedBrowser != nil
-    }
-
-    private func commit() {
-        var finished = draft
-        finished.target = BrowserTarget(
-            bundleID: selectedBundleID,
-            profileID: selectedProfileID
-        )
-        onSave(finished)
+        guard !draft.pattern.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
+        switch draft.destination {
+        case .browser(let target):
+            return browsers.contains { $0.bundleID == target.bundleID }
+        case .alias(let id):
+            return aliases.contains { $0.id == id }
+        }
     }
 
     /// Documented v1 glob semantics with concrete examples, shown under the field.
@@ -133,6 +104,7 @@ struct RuleEditorView: View {
     RuleEditorView(
         rule: PreviewFixtures.sampleRules.first!,
         browsers: PreviewFixtures.sampleBrowsers,
+        aliases: PreviewFixtures.sampleAliases,
         onSave: { _ in },
         onCancel: {}
     )
@@ -142,13 +114,16 @@ struct RuleEditorView: View {
     RuleEditorView(
         rule: Rule(
             pattern: "",
-            target: BrowserTarget(
-                bundleID: PreviewFixtures.sampleBrowsers.first!.bundleID,
-                profileID: nil
+            destination: .browser(
+                BrowserTarget(
+                    bundleID: PreviewFixtures.sampleBrowsers.first!.bundleID,
+                    profileID: nil
+                )
             ),
             isEnabled: true
         ),
         browsers: PreviewFixtures.sampleBrowsers,
+        aliases: PreviewFixtures.sampleAliases,
         onSave: { _ in },
         onCancel: {}
     )

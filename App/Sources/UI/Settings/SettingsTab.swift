@@ -8,5 +8,6 @@ import Foundation
 enum SettingsTab: String, CaseIterable {
     case general
     case rules
+    case aliases
     case about
 }

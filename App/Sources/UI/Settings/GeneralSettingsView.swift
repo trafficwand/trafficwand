@@ -55,24 +55,24 @@ struct GeneralSettingsView: View {
             Section("When no rule matches") {
                 Picker("Fallback", selection: fallbackModeBinding) {
                     ForEach(FallbackMode.allCases) { mode in
-                        // The "specific browser" mode needs a real browser to target;
-                        // disable it when no browsers are installed so we never persist
-                        // an unusable empty-bundleID target (mirrors the Rule editor).
+                        // The "specific browser" mode needs a real destination; disable
+                        // it only when there is neither a browser nor an alias to target,
+                        // so we never persist an unusable empty-bundleID target.
                         Text(mode.title)
                             .tag(mode)
-                            .disabled(mode == .defaultBrowser && viewModel.browsers.isEmpty)
+                            .disabled(mode == .defaultBrowser && !hasAnyDestination)
                     }
                 }
                 .pickerStyle(.radioGroup)
 
-                if viewModel.browsers.isEmpty {
-                    Text("Install a browser to route to a specific one.")
+                if !hasAnyDestination {
+                    Text("Install a browser or create an alias to route to a specific one.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
 
                 if currentMode == .defaultBrowser {
-                    fallbackBrowserPickers
+                    fallbackDestinationEditor
                 }
             }
 
@@ -106,8 +106,14 @@ struct GeneralSettingsView: View {
         }
     }
 
+    /// Whether there is any destination (browser or alias) to route to. Entering
+    /// `.defaultBrowser` mode is refused unless this is true.
+    private var hasAnyDestination: Bool {
+        !viewModel.browsers.isEmpty || !viewModel.aliases.isEmpty
+    }
+
     /// Binding that maps a `FallbackMode` selection back to a `FallbackPolicy`,
-    /// preserving any already-chosen target when switching into `.defaultBrowser`.
+    /// preserving any already-chosen destination when switching into `.defaultBrowser`.
     private var fallbackModeBinding: Binding<FallbackMode> {
         Binding(
             get: { currentMode },
@@ -118,72 +124,52 @@ struct GeneralSettingsView: View {
                 case .lastUsed:
                     viewModel.setFallback(.lastUsed)
                 case .defaultBrowser:
-                    // Refuse to enter .defaultBrowser with no browsers: it would
-                    // persist an unusable empty-bundleID target. The option is also
-                    // visually disabled above; this is the load-bearing guard.
-                    guard !viewModel.browsers.isEmpty else { return }
-                    viewModel.setFallback(.defaultBrowser(currentDefaultTarget))
+                    // Refuse to enter .defaultBrowser with no destination at all: it
+                    // would persist an unusable empty-bundleID target. The option is
+                    // also visually disabled above; this is the load-bearing guard.
+                    guard hasAnyDestination else { return }
+                    viewModel.setFallback(.defaultBrowser(currentDefaultDestination))
                 }
             }
         )
     }
 
-    /// The target used when entering `.defaultBrowser` mode: the existing one if the
-    /// policy already carries it, else the first available browser, else empty.
-    private var currentDefaultTarget: BrowserTarget {
-        if case .defaultBrowser(let target) = viewModel.fallback {
-            return target
+    /// The destination used when entering `.defaultBrowser` mode: the existing one if
+    /// the policy already carries it, else the first browser, else the first alias.
+    private var currentDefaultDestination: RoutingDestination {
+        if case .defaultBrowser(let destination) = viewModel.fallback {
+            return destination
         }
-        let bundleID = viewModel.browsers.first?.bundleID ?? ""
-        return BrowserTarget(bundleID: bundleID, profileID: nil)
+        if let bundleID = viewModel.browsers.first?.bundleID {
+            return .browser(BrowserTarget(bundleID: bundleID, profileID: nil))
+        }
+        if let alias = viewModel.aliases.first {
+            return .alias(alias.id)
+        }
+        return .browser(BrowserTarget(bundleID: "", profileID: nil))
     }
 
-    // MARK: - Fallback browser + profile pickers
+    // MARK: - Fallback destination editor (browser-or-alias)
 
+    /// Browser-or-alias editor for the `.defaultBrowser` destination, persisting any
+    /// change straight through `setFallback`. Reuses the same `DestinationEditor`
+    /// control as the rule editor so the segmented control, profile-reset, and
+    /// alias-empty disabling live in one place.
     @ViewBuilder
-    private var fallbackBrowserPickers: some View {
-        Picker("Browser", selection: fallbackBundleBinding) {
-            ForEach(viewModel.browsers) { browser in
-                Text(browser.name).tag(browser.bundleID)
-            }
-        }
-
-        if let browser = selectedFallbackBrowser, !browser.profiles.isEmpty {
-            Picker("Profile", selection: fallbackProfileBinding) {
-                Text("Default").tag(String?.none)
-                ForEach(browser.profiles) { profile in
-                    Text(profile.name).tag(String?.some(profile.id))
-                }
-            }
-        }
-    }
-
-    private var selectedFallbackBrowser: Browser? {
-        viewModel.browsers.first { $0.bundleID == currentDefaultTarget.bundleID }
-    }
-
-    private var fallbackBundleBinding: Binding<String> {
-        Binding(
-            get: { currentDefaultTarget.bundleID },
-            set: { bundleID in
-                // Switching browser resets the profile unless the new browser has it.
-                let newBrowser = viewModel.browsers.first { $0.bundleID == bundleID }
-                let keepProfile = newBrowser?.profiles.contains { $0.id == currentDefaultTarget.profileID } ?? false
-                viewModel.setFallback(.defaultBrowser(
-                    BrowserTarget(bundleID: bundleID, profileID: keepProfile ? currentDefaultTarget.profileID : nil)
-                ))
-            }
+    private var fallbackDestinationEditor: some View {
+        DestinationEditor(
+            browsers: viewModel.browsers,
+            aliases: viewModel.aliases,
+            destination: fallbackDestinationBinding
         )
     }
 
-    private var fallbackProfileBinding: Binding<String?> {
+    /// Binding over the `.defaultBrowser` destination: reads the current one and
+    /// persists edits immediately via `setFallback`.
+    private var fallbackDestinationBinding: Binding<RoutingDestination> {
         Binding(
-            get: { currentDefaultTarget.profileID },
-            set: { profileID in
-                viewModel.setFallback(.defaultBrowser(
-                    BrowserTarget(bundleID: currentDefaultTarget.bundleID, profileID: profileID)
-                ))
-            }
+            get: { currentDefaultDestination },
+            set: { viewModel.setFallback(.defaultBrowser($0)) }
         )
     }
 

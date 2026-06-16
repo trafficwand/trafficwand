@@ -37,6 +37,7 @@ struct RulesListView: View {
             RuleEditorView(
                 rule: item.rule,
                 browsers: viewModel.browsers,
+                aliases: viewModel.aliases,
                 onSave: { saved in
                     if item.isNew {
                         viewModel.addRule(saved)
@@ -77,7 +78,7 @@ struct RulesListView: View {
                 ZStack {
                     RuleRow(
                         rule: rule,
-                        browserName: browserName(for: rule.target.bundleID),
+                        destinationLabel: viewModel.destinationLabel(for: rule.destination),
                         onToggle: { enabled in viewModel.setRule(rule, enabled: enabled) }
                     )
                 }
@@ -113,21 +114,16 @@ struct RulesListView: View {
         let bundleID = viewModel.browsers.first?.bundleID ?? ""
         return Rule(
             pattern: "",
-            target: BrowserTarget(bundleID: bundleID, profileID: nil),
+            destination: .browser(BrowserTarget(bundleID: bundleID, profileID: nil)),
             isEnabled: true
         )
     }
-
-    /// Display name for a target bundle ID, falling back to the raw id if unknown.
-    private func browserName(for bundleID: String) -> String {
-        viewModel.browsers.first { $0.bundleID == bundleID }?.name ?? bundleID
-    }
 }
 
-/// A single rule row: enable toggle, pattern, and destination browser name.
+/// A single rule row: enable toggle, pattern, and destination label.
 private struct RuleRow: View {
     let rule: Rule
-    let browserName: String
+    let destinationLabel: String
     let onToggle: (Bool) -> Void
 
     var body: some View {
@@ -152,13 +148,6 @@ private struct RuleRow: View {
                 .foregroundStyle(.tertiary)
         }
         .opacity(rule.isEnabled ? 1 : 0.5)
-    }
-
-    private var destinationLabel: String {
-        if let profile = rule.target.profileID {
-            return "\(browserName) — \(profile)"
-        }
-        return browserName
     }
 }
 #if DEBUG
