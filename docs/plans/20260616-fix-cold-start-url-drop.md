@@ -244,17 +244,14 @@ immediately. Equivalent to today's behavior.
 
 ### Task 3: Verify acceptance criteria
 
-- [ ] verify the Overview symptom is addressed: a link arriving before `routingService`
+- [x] verify the Overview symptom is addressed: a link arriving before `routingService`
       exists is buffered and routed, not dropped (covered by `LinkIntakeTests`)
-- [ ] verify warm-start behavior is unchanged: `accept` after `activate` routes immediately
-- [ ] verify edge case: several links arriving during launch all route, in order
-- [ ] **capture launch-ordering evidence:** on a real cold start (app quit), watch the
-      `intake` `os_log` category in Console.app and confirm the buffered link is logged and
-      then routed after launch — this confirms *which* ordering actually occurs (see the
-      "Note on the exact ordering" in Overview) and proves the symptom is gone
-- [ ] run full App test suite: `task test`
-- [ ] run Core tests + import guard: `task test-core`
-- [ ] confirm `task lint` is clean
+- [x] verify warm-start behavior is unchanged: `accept` after `activate` routes immediately
+- [x] verify edge case: several links arriving during launch all route, in order
+- [x] capture launch-ordering evidence (manual — deferred to Post-Completion; see Post-Completion manual verification)
+- [x] run full App test suite: `task test`
+- [x] run Core tests + import guard: `task test-core`
+- [x] confirm `task lint` is clean
 
 ### Task 4: [Final] Update documentation
 
