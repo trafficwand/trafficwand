@@ -23,19 +23,27 @@ struct RuleEditorView: View {
     let onSave: (Rule) -> Void
     /// Dismiss handler: called on Cancel or after Save.
     let onCancel: () -> Void
+    /// Delete handler: when non-nil (editing an existing rule, not adding), a
+    /// destructive "Delete Rule" button is shown that, on confirmation, calls this.
+    let onDelete: (() -> Void)?
+
+    /// Drives the delete confirmation dialog.
+    @State private var showingDeleteConfirmation = false
 
     init(
         rule: Rule,
         browsers: [Browser],
         aliases: [ProfileAlias],
         onSave: @escaping (Rule) -> Void,
-        onCancel: @escaping () -> Void
+        onCancel: @escaping () -> Void,
+        onDelete: (() -> Void)? = nil
     ) {
         self.browsers = browsers
         self.aliases = aliases
         self._draft = State(initialValue: rule)
         self.onSave = onSave
         self.onCancel = onCancel
+        self.onDelete = onDelete
     }
 
     var body: some View {
@@ -67,6 +75,11 @@ struct RuleEditorView: View {
             .formStyle(.grouped)
 
             HStack {
+                if onDelete != nil {
+                    Button("Delete Rule", role: .destructive) {
+                        showingDeleteConfirmation = true
+                    }
+                }
                 Spacer()
                 Button("Cancel", role: .cancel, action: onCancel)
                     .keyboardShortcut(.cancelAction)
@@ -77,6 +90,14 @@ struct RuleEditorView: View {
         }
         .padding(20)
         .frame(width: 460)
+        .confirmationDialog(
+            "Delete this rule?",
+            isPresented: $showingDeleteConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Delete", role: .destructive) { onDelete?() }
+            Button("Cancel", role: .cancel) {}
+        }
     }
 
     /// Whether the rule can be saved: a non-empty pattern and a destination that
@@ -126,6 +147,17 @@ struct RuleEditorView: View {
         aliases: PreviewFixtures.sampleAliases,
         onSave: { _ in },
         onCancel: {}
+    )
+}
+
+#Preview("Rule Editor — deletable") {
+    RuleEditorView(
+        rule: PreviewFixtures.sampleRules.first!,
+        browsers: PreviewFixtures.sampleBrowsers,
+        aliases: PreviewFixtures.sampleAliases,
+        onSave: { _ in },
+        onCancel: {},
+        onDelete: {}
     )
 }
 #endif

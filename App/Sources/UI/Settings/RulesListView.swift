@@ -5,9 +5,11 @@ import TrafficWandCore
 /// delete, and per-row enable toggling.
 ///
 /// All mutations flow through `SettingsViewModel`, which persists each change
-/// immediately (Acceptance Criterion #5). Reordering uses SwiftUI's `onMove`;
-/// deletion uses `onDelete`. Adding or editing presents `RuleEditorView` as a
-/// sheet, committing only on Save.
+/// immediately (Acceptance Criterion #5). Reordering uses SwiftUI's `onMove`.
+/// Adding or editing presents `RuleEditorView` as a sheet, committing only on
+/// Save; deletion happens from within that editor via its destructive "Delete
+/// Rule" button plus a confirmation dialog (shown only when editing an existing
+/// rule).
 struct RulesListView: View {
     @Bindable var viewModel: SettingsViewModel
 
@@ -46,7 +48,11 @@ struct RulesListView: View {
                     }
                     editing = nil
                 },
-                onCancel: { editing = nil }
+                onCancel: { editing = nil },
+                onDelete: item.isNew ? nil : {
+                    viewModel.deleteRule(id: item.rule.id)
+                    editing = nil
+                }
             )
         }
     }
@@ -89,11 +95,6 @@ struct RulesListView: View {
             }
             .onMove { source, destination in
                 viewModel.moveRules(fromOffsets: source, toOffset: destination)
-            }
-            .onDelete { offsets in
-                for index in offsets {
-                    viewModel.deleteRule(id: viewModel.rules[index].id)
-                }
             }
         }
     }

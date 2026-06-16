@@ -210,22 +210,22 @@ work is purely the thin AppKit/SwiftUI adapter layer plus one new view-model sea
 - Modify: `App/Sources/UI/Settings/RuleEditorView.swift`
 - Modify: `App/Sources/UI/Settings/RulesListView.swift`
 
-- [ ] add `let onDelete: (() -> Void)?` to `RuleEditorView` (initializer param, defaulting
+- [x] add `let onDelete: (() -> Void)?` to `RuleEditorView` (initializer param, defaulting
       to `nil`) and `@State private var showingDeleteConfirmation = false`
-- [ ] render a destructive "Delete Rule" button on the leading side of the button row,
+- [x] render a destructive "Delete Rule" button on the leading side of the button row,
       shown only when `onDelete != nil`; tapping sets `showingDeleteConfirmation = true`
-- [ ] add `.confirmationDialog("Delete this rule?", isPresented: $showingDeleteConfirmation,
+- [x] add `.confirmationDialog("Delete this rule?", isPresented: $showingDeleteConfirmation,
       titleVisibility: .visible)` with a `.destructive` "Delete" that calls `onDelete?()`
       and a cancel action
-- [ ] in `RulesListView`'s `.sheet`, pass `onDelete: item.isNew ? nil : { viewModel.deleteRule(id:
+- [x] in `RulesListView`'s `.sheet`, pass `onDelete: item.isNew ? nil : { viewModel.deleteRule(id:
       item.rule.id); editing = nil }`
-- [ ] remove the `.onDelete { ... }` modifier from the `ForEach` (keep `.onMove`)
-- [ ] update the `RulesListView.swift` file-doc comment: it currently says "deletion uses
+- [x] remove the `.onDelete { ... }` modifier from the `ForEach` (keep `.onMove`)
+- [x] update the `RulesListView.swift` file-doc comment: it currently says "deletion uses
       `onDelete`" — change to reflect that deletion now happens via the editor's delete
       button + confirmation
-- [ ] add a `#Preview` variant exercising the editor with a non-nil `onDelete` so the
+- [x] add a `#Preview` variant exercising the editor with a non-nil `onDelete` so the
       delete button + dialog render in previews
-- [ ] verify via `task test` that the existing rule tests + Task 1's `deleteRule(id:)` tests
+- [x] verify via `task test` that the existing rule tests + Task 1's `deleteRule(id:)` tests
       pass (the delete button's action routes through the already-tested seam) — must pass
       before next task
 
