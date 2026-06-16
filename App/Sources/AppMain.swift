@@ -22,7 +22,10 @@ final class AppMain: NSObject, NSApplicationDelegate {
     private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "intake")
 
     /// The composed routing pipeline (Core `Router` + App adapters). Built once in
-    /// `applicationDidFinishLaunching`; used for every incoming link.
+    /// `applicationDidFinishLaunching` and retained for the app's lifetime. The live
+    /// routing path is the `intake.activate { url in service.route(url:) }` closure,
+    /// which captures the local `service` value (not this property) to avoid a retain
+    /// cycle; this property holds the same instance so the pipeline stays alive.
     private var routingService: RoutingService?
 
     /// Buffer-and-flush seam for incoming links. Retained for the app's lifetime.
