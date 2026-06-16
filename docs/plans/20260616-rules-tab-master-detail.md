@@ -224,7 +224,7 @@ existing `alias(withID:)`).
 - Modify: `App/Sources/UI/Settings/RulesListView.swift`
 - Modify: `App/Sources/UI/Previews/PreviewFixtures.swift` (only if a fixture is needed)
 
-- [ ] rewrite `RuleEditorView` as an inline live-persist editor: `@Bindable var viewModel`,
+- [x] rewrite `RuleEditorView` as an inline live-persist editor: `@Bindable var viewModel`,
       `let ruleID: UUID`, buffered `@State patternText` + `@FocusState`; `Form` with the
       pattern `TextField` (commit on `.onSubmit` and on focus-out via `commitPattern(to:
       ruleID)`), the glob help text, a `DestinationEditor` bound to the destination binding
@@ -232,50 +232,55 @@ existing `alias(withID:)`).
       `setRule`); add `.onChange(of: ruleID)` (flush outgoing + reseed) and `.onDisappear`
       (flush); remove `draft`/`onSave`/`onCancel`/`onDelete`/`canSave`/the delete
       confirmation; update the file-doc header to describe the inline live-persist behavior
-- [ ] update both `RuleEditorView` `#Preview`s to the new `viewModel: + ruleID:` signature
+- [x] update both `RuleEditorView` `#Preview`s to the new `viewModel: + ruleID:` signature
       (use `PreviewFixtures` sample rules); add a fixture if none has a usable rule id
-- [ ] rewrite `RulesListView` as a `NavigationSplitView` (sidebar + detail), mirroring
+- [x] rewrite `RulesListView` as a `NavigationSplitView` (sidebar + detail), mirroring
       `AliasesListView`: `@State selectedRuleID: UUID?`; sidebar `List(selection:)` of
       `RuleRow` (`.tag(rule.id)`, keep the `ZStack` wrapper) with the leading enable
       checkbox preserved and the chevron dropped; keep `.onMove` → `moveRules`
-- [ ] add the `.safeAreaInset(edge: .bottom)` bottom bar with borderless **+** (adds a blank
+- [x] add the `.safeAreaInset(edge: .bottom)` bottom bar with borderless **+** (adds a blank
       rule via `addRule`, selects it; disabled when `browsers.isEmpty`) and **−** (disabled
       when `selectedRuleID == nil`); wire **−** to a `.confirmationDialog("Delete this
       rule?", titleVisibility: .visible)` whose destructive action clears `selectedRuleID`
       then calls `deleteRule(id:)`
-- [ ] build the detail pane: `RuleEditorView(viewModel:, ruleID: id).id(id)` when a rule is
+- [x] build the detail pane: `RuleEditorView(viewModel:, ruleID: id).id(id)` when a rule is
       selected and still exists, else a placeholder ("No rules yet" / "Select a rule" with
       the existing add hint), mirroring `AliasesListView`'s placeholder
-- [ ] update the `RulesListView` `#Preview`s if needed (signature is unchanged — still takes
+- [x] update the `RulesListView` `#Preview`s if needed (signature is unchanged — still takes
       `viewModel`); update the file-doc header to describe the master-detail layout and the
       +/− bar with confirmed delete
-- [ ] no new view-model test needed (UI routes through `addRule`/`updateRule`/`setRule`/
+- [x] no new view-model test needed (UI routes through `addRule`/`updateRule`/`setRule`/
       `deleteRule(id:)`/`moveRules`/`rule(withID:)`, all already tested); confirm this
       explicitly
-- [ ] regression check: confirm the existing rule-mutation tests still pass now that the UI
+- [x] regression check: confirm the existing rule-mutation tests still pass now that the UI
       drives those seams live (not via sheet Save) — `testEditRulePersistsTheChange`,
       `testSetRuleEnabledPersists`, `testDeleteRuleByIDPersists`,
       `testReorderRuleChangesOrderAndPersists`
-- [ ] run `task test` and `task lint` — must pass before next task
+- [x] run `task test` and `task lint` — must pass before next task
 
 ### Task 3: Verify acceptance criteria
-- [ ] Rules tab renders as sidebar + inline editor (master-detail), matching the Aliases tab
-- [ ] editor live-persists: pattern on Enter/focus-out, destination on change, enabled on
+- [x] Rules tab renders as sidebar + inline editor (master-detail), matching the Aliases tab
+- [x] editor live-persists: pattern on Enter/focus-out, destination on change, enabled on
       change — no Save/Cancel
-- [ ] row checkbox and editor "Enabled" toggle stay in sync (both via `setRule`)
-- [ ] **+** adds and selects a new rule; **−** is disabled with no selection and shows a
+- [x] row checkbox and editor "Enabled" toggle stay in sync (both via `setRule`)
+- [x] **+** adds and selects a new rule; **−** is disabled with no selection and shows a
       confirmation dialog before deleting the selected rule
-- [ ] reordering still works (`.onMove`); no leftover sheet / "Add Rule" toolbar button /
+- [x] reordering still works (`.onMove`); no leftover sheet / "Add Rule" toolbar button /
       `EditingRule` / `canSave`
-- [ ] run full suite: `task test` (App + Core) and `task lint`
+- [x] run full suite: `task test` (App + Core) and `task lint`
 
 ### Task 4: [Final] Update documentation
-- [ ] update `CLAUDE.md` if the rules-tab description is now stale (it documents the rule
+- [x] update `CLAUDE.md` if the rules-tab description is now stale (it documents the rule
       editor; the Rules tab now mirrors the Aliases master-detail — adjust the relevant
-      sentence(s))
-- [ ] confirm the `RulesListView.swift` / `RuleEditorView.swift` file-doc headers were
-      updated in Task 2
-- [ ] move this plan to `docs/plans/completed/`
+      sentence(s)) — no *stale* prose found (CLAUDE.md never described a sheet/toolbar model),
+      but added an accurate sentence noting the Rules tab is now the same master-detail layout
+      (NavigationSplitView + +/− bar, inline live-persist, confirmed delete), consistent with
+      the Aliases tab description
+- [x] confirm the `RulesListView.swift` / `RuleEditorView.swift` file-doc headers were
+      updated in Task 2 — confirmed: both headers already describe the master-detail /
+      inline live-persist behavior (no fix needed)
+- [x] move this plan to `docs/plans/completed/` — deferred — review and finalize phases
+      still read this plan path; the exec orchestrator handles final placement.
 
 ## Post-Completion
 *Manual verification — no checkboxes, informational only*

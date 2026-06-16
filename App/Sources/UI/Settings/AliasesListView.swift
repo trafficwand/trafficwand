@@ -189,7 +189,7 @@ struct AliasesListView: View {
             parts.append("the fallback policy")
         }
         let used = parts.joined(separator: " and ")
-        return "\"\(alias.name)\" is still used by \(used). "
+        return "“(alias.name)” is still used by \(used). "
             + "Make sure the alias isn't used before deleting it."
     }
 }

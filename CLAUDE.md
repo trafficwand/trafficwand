@@ -109,8 +109,13 @@ tests. The tabs are, in order, **general → rules → aliases → about**; the 
 is a **master-detail** layout (`NavigationSplitView`: a sidebar alias list + an inline
 detail editor) with an always-visible description explaining what aliases are for; the
 inline editor **live-persists** (the name commits on Enter/focus-out, the browser/profile
-on change — no Save/Cancel sheet), and **Add** selects the newly created alias. The rule
-and fallback editors (`RuleEditorView`, `GeneralSettingsView`) each let you pick either a
+on change — no Save/Cancel sheet), and **Add** selects the newly created alias. The Rules
+tab (`RulesListView` + `RuleEditorView`) uses the **same master-detail** layout
+(`NavigationSplitView`: a sidebar rule list with a +/− bottom bar + an inline live-persist
+editor — the pattern commits on Enter/focus-out, the destination and the enabled flag on
+change, no Save/Cancel sheet); reordering is retained (`.onMove`), and unlike aliases the
+"−" delete is guarded by a **confirmation dialog** ("Delete this rule?"). The rule and
+fallback editors (`RuleEditorView`, `GeneralSettingsView`) each let you pick either a
 concrete browser or an alias. `SettingsViewModel` owns alias CRUD + persistence
 and enforces referential integrity (it refuses to delete an alias that a rule or the
 fallback still references, and exposes a `destinationLabel(for:)` seam that renders an
