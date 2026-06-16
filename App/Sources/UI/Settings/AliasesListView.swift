@@ -3,15 +3,17 @@ import TrafficWandCore
 
 /// The Aliases tab: a master-detail editor for reusable profile aliases.
 ///
-/// The sidebar lists the aliases with an Add button and a swipe/contextual delete;
-/// selecting one shows `AliasEditorView` inline in the detail pane. All mutations flow
-/// through `SettingsViewModel`, which persists each change immediately — there is no
+/// The sidebar lists the aliases with an Add button; selecting one shows
+/// `AliasEditorView` inline in the detail pane. All mutations flow through
+/// `SettingsViewModel`, which persists each change immediately — there is no
 /// Save/Cancel sheet; edits in the detail editor persist live (name on Enter/focus-out,
 /// browser/profile on change).
 ///
-/// Deleting a referenced alias is **blocked**: the row's delete action surfaces an
-/// alert explaining which rules (and/or the fallback) still point at it, because
-/// deleting it would orphan those references.
+/// Delete lives on the editor's "Delete Alias" button (the single, discoverable delete
+/// path — there is no swipe/contextual delete on the rows). It routes through
+/// `attemptDelete`, so deleting a referenced alias is **blocked**: an alert explains
+/// which rules (and/or the fallback) still point at it, because deleting it would orphan
+/// those references.
 struct AliasesListView: View {
     @Bindable var viewModel: SettingsViewModel
 
@@ -54,20 +56,6 @@ struct AliasesListView: View {
                     targetLabel: viewModel.browserLabel(for: alias.target)
                 )
                 .tag(alias.id)
-                .swipeActions(edge: .trailing) {
-                    Button(role: .destructive) {
-                        attemptDelete(alias)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
-                .contextMenu {
-                    Button(role: .destructive) {
-                        attemptDelete(alias)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
             }
         }
         // Pin an Add control to the BOTTOM of the sidebar — the native source-list
@@ -103,7 +91,11 @@ struct AliasesListView: View {
             // Pin identity to the selected alias so switching selection RE-INITS the
             // editor (fresh name buffer / focus state) rather than reusing the instance
             // and risking a stale buffered name being committed to the wrong alias.
-            AliasEditorView(viewModel: viewModel, aliasID: id)
+            // Delete routes back through `attemptDelete` (integrity guard + blocked
+            // alert + selection-clear), reusing the existing teardown-safe path. It
+            // takes the alias *id* (not a snapshotted value) so the blocked-delete alert
+            // re-fetches the current alias — a live rename can't surface a stale name.
+            AliasEditorView(viewModel: viewModel, aliasID: id, onDelete: { attemptDelete(id: id) })
                 .id(id)
         } else {
             placeholder
@@ -155,12 +147,15 @@ struct AliasesListView: View {
     }
 
     /// Deletes the alias, or surfaces the blocked-delete alert when it is referenced.
-    private func attemptDelete(_ alias: ProfileAlias) {
-        if viewModel.isReferenced(alias.id) {
+    /// Takes the alias *id* and re-fetches the current value so the blocked alert
+    /// reflects a live rename rather than a stale view-build snapshot.
+    private func attemptDelete(id: UUID) {
+        guard let alias = viewModel.alias(withID: id) else { return }
+        if viewModel.isReferenced(id) {
             blockedDelete = alias
         } else {
-            if selectedAliasID == alias.id { selectedAliasID = nil }
-            viewModel.deleteAlias(id: alias.id)
+            if selectedAliasID == id { selectedAliasID = nil }
+            viewModel.deleteAlias(id: id)
         }
     }
 

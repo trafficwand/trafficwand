@@ -235,26 +235,27 @@ work is purely the thin AppKit/SwiftUI adapter layer plus one new view-model sea
 - Modify: `App/Sources/UI/Settings/AliasEditorView.swift`
 - Modify: `App/Sources/UI/Settings/AliasesListView.swift`
 
-- [ ] add `let onDelete: () -> Void` to `AliasEditorView` and render a destructive "Delete
+- [x] add `let onDelete: () -> Void` to `AliasEditorView` and render a destructive "Delete
       Alias" button (its own `Section` or below the form), calling `onDelete()` directly
       (no confirmation dialog)
-- [ ] in `AliasesListView`'s detail builder, fetch the live alias and pass
+- [x] in `AliasesListView`'s detail builder, fetch the live alias and pass
       `onDelete: { attemptDelete(alias) }` so the existing integrity guard + `blockedDelete`
       alert + selection-clear are reused
-- [ ] remove the `.swipeActions` and `.contextMenu` delete from the sidebar `AliasRow`
+- [x] remove the `.swipeActions` and `.contextMenu` delete from the sidebar `AliasRow`
       (keep `attemptDelete(_:)`, `blockedDelete`, and the alert)
-- [ ] update the `AliasesListView.swift` file-doc comment: it currently describes a
+- [x] update the `AliasesListView.swift` file-doc comment: it currently describes a
       "swipe/contextual delete" and "the row's delete action surfaces an alert" — change to
       reflect that delete now lives on the editor's "Delete Alias" button (still routing
       through `attemptDelete` for the blocked-when-referenced alert)
-- [ ] update the `AliasEditorView` `#Preview` to pass an `onDelete: {}` closure
-- [ ] confirm the existing `testDeleteUnreferencedAliasPersists` /
+- [x] update the `AliasEditorView` `#Preview` to pass an `onDelete: {}` closure
+- [x] confirm the existing `testDeleteUnreferencedAliasPersists` /
       `testDeleteReferencedAliasIsNoOp` / `testDeleteAliasReferencedByFallbackIsNoOp` still
       pass (the editor button routes through `attemptDelete` → `deleteAlias`, the same seam
       they cover — the focus-flush race is verified manually, not here)
-- [ ] add a view-model test only if a new seam is introduced; none is expected here — note
-      this explicitly if confirmed
-- [ ] run `task test` and `task lint` — must pass before next task
+- [x] add a view-model test only if a new seam is introduced; none is expected here — note
+      this explicitly if confirmed: no new view-model seam was introduced (delete reuses
+      the existing `attemptDelete` → `deleteAlias` path), so no new view-model test added
+- [x] run `task test` and `task lint` — must pass before next task
 
 ### Task 5: Verify acceptance criteria
 - [x] issue #3 bullet 1 (reorder rules): still works via `.onMove` (unchanged) — confirm

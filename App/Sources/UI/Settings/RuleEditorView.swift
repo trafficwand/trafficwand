@@ -9,6 +9,10 @@ import TrafficWandCore
 /// underlying config untouched. A segmented control switches the destination
 /// between "Browser" (the bundle/profile pickers) and "Alias" (a picker over the
 /// configured aliases); `commit()` builds the matching `RoutingDestination`.
+///
+/// When editing an existing rule (i.e. `onDelete` is non-nil), the editor also shows a
+/// destructive "Delete Rule" button, guarded by a confirmation dialog; it is hidden in
+/// the add case. The title likewise reads "Edit Rule" vs "Add Rule" off that same flag.
 struct RuleEditorView: View {
     /// The browsers available as rule destinations (with discovered profiles).
     let browsers: [Browser]
@@ -48,7 +52,7 @@ struct RuleEditorView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Edit Rule")
+            Text(onDelete == nil ? "Add Rule" : "Edit Rule")
                 .font(.headline)
 
             Form {

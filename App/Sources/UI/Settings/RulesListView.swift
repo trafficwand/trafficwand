@@ -137,6 +137,7 @@ private struct RuleRow: View {
             ))
             .labelsHidden()
             .toggleStyle(.checkbox)
+            .accessibilityLabel(rule.isEnabled ? "Disable rule" : "Enable rule")
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(rule.pattern.isEmpty ? "(no pattern)" : rule.pattern)

@@ -204,9 +204,12 @@ final class SettingsViewModelTests: XCTestCase {
         let second = Rule(pattern: "*b.com", destination: firefoxDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [first, second], fallback: .picker))
         vm.load()
-        vm.deleteRule(id: first.id)
-        XCTAssertEqual(vm.rules, [second])
-        XCTAssertEqual(store.lastSaved?.rules, [second])
+
+        // Delete the SECOND rule by id: a buggy by-index implementation
+        // (e.g. remove(at: 0)) would wrongly drop `first`, so this pins the by-id contract.
+        vm.deleteRule(id: second.id)
+        XCTAssertEqual(vm.rules, [first])
+        XCTAssertEqual(store.lastSaved?.rules, [first])
         XCTAssertEqual(store.saveCount, 1)
     }
 
@@ -214,6 +217,7 @@ final class SettingsViewModelTests: XCTestCase {
         let rule = Rule(pattern: "*a.com", destination: chromeDestination(), isEnabled: true)
         let (vm, store) = makeViewModel(config: AppConfig(rules: [rule], fallback: .picker))
         vm.load()
+
         vm.deleteRule(id: UUID())
         XCTAssertEqual(vm.rules, [rule])
         XCTAssertEqual(store.saveCount, 0)
