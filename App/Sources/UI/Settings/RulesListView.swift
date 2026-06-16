@@ -91,7 +91,9 @@ struct RulesListView: View {
                 viewModel.moveRules(fromOffsets: source, toOffset: destination)
             }
             .onDelete { offsets in
-                viewModel.deleteRules(at: offsets)
+                for index in offsets {
+                    viewModel.deleteRule(id: viewModel.rules[index].id)
+                }
             }
         }
     }

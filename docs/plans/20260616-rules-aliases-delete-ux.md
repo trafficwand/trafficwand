@@ -172,16 +172,18 @@ work is purely the thin AppKit/SwiftUI adapter layer plus one new view-model sea
 - Modify: `App/Sources/UI/Settings/SettingsViewModel.swift`
 - Modify: `App/Tests/AppTests/SettingsViewModelTests.swift`
 
-- [ ] write failing test `testDeleteRuleByIDPersists`: two rules loaded, `deleteRule(id:)`
+- [x] write failing test `testDeleteRuleByIDPersists`: two rules loaded, `deleteRule(id:)`
       the first → `rules == [second]`, `store.lastSaved?.rules == [second]`, `saveCount == 1`
-- [ ] write failing test `testDeleteUnknownRuleByIDIsNoOp`: `deleteRule(id:)` with a random
+- [x] write failing test `testDeleteUnknownRuleByIDIsNoOp`: `deleteRule(id:)` with a random
       UUID → rules unchanged, `saveCount == 0`
-- [ ] implement `deleteRule(id:)` in `SettingsViewModel` (find by id, remove, persist;
+- [x] implement `deleteRule(id:)` in `SettingsViewModel` (find by id, remove, persist;
       no-op if absent), placed beside `deleteRules(at:)`/`updateRule`
-- [ ] remove `deleteRules(at: IndexSet)` and replace `testDeleteRulePersists` with the new
+- [x] remove `deleteRules(at: IndexSet)` and replace `testDeleteRulePersists` with the new
       by-id tests (it was the only caller once `.onDelete` is removed in Task 3 — verify no
-      other references with a grep)
-- [ ] run `task test` — must pass before next task
+      other references with a grep). Note: `RulesListView`'s `.onDelete` still exists until
+      Task 3, so it was re-pointed to `deleteRule(id:)` (mapping offsets→ids) to keep the
+      build green; Task 3 removes that `.onDelete` entirely.
+- [x] run `task test` — must pass before next task
 
 ### Task 2: Rule rows use a leading checkbox instead of a switch
 

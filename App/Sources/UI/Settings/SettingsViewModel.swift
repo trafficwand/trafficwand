@@ -120,9 +120,14 @@ final class SettingsViewModel {
         persist()
     }
 
-    /// Deletes the rules at `offsets` and persists.
-    func deleteRules(at offsets: IndexSet) {
-        rules.remove(atOffsets: offsets)
+    /// Deletes the rule with `id` and persists.
+    ///
+    /// No-op (and no save) if no rule with that id exists. Mirrors `updateRule`'s
+    /// by-id + no-op-if-absent shape. This is the single delete path for rules —
+    /// the rule editor's "Delete Rule" button routes through here.
+    func deleteRule(id: UUID) {
+        guard let index = rules.firstIndex(where: { $0.id == id }) else { return }
+        rules.remove(at: index)
         persist()
     }
 
