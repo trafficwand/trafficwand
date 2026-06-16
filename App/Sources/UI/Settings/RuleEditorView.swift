@@ -83,6 +83,9 @@ struct RuleEditorView: View {
                     Button("Delete Rule", role: .destructive) {
                         showingDeleteConfirmation = true
                     }
+                    // A standalone destructive push button is not red on macOS (only in
+                    // menus/confirmation dialogs); tint the label explicitly.
+                    .foregroundStyle(.red)
                 }
                 Spacer()
                 Button("Cancel", role: .cancel, action: onCancel)

@@ -7,11 +7,8 @@ import TrafficWandCore
 /// Shown in the detail pane of `AliasesListView`'s `NavigationSplitView` for the
 /// selected alias. Unlike the former sheet, there is **no Save/Cancel** and no local
 /// draft: every change commits straight through `viewModel.updateAlias`, matching the
-/// app's persist-on-mutation pattern.
-///
-/// The editor also hosts a destructive "Delete Alias" button (`onDelete`); the caller
-/// routes it through the referential-integrity guard, so deleting an alias still
-/// referenced by a rule or the fallback is blocked with an explanatory alert.
+/// app's persist-on-mutation pattern. Deletion is not hosted here — it lives on the
+/// "−" button in `AliasesListView`'s sidebar bottom bar (paired with "+").
 ///
 /// - The **name** field commits on Enter (`.onSubmit`) **and** on focus-out: an
 ///   editable `TextField` only fires `.onSubmit` on Return, so a `@FocusState` +
@@ -35,22 +32,15 @@ struct AliasEditorView: View {
     /// model so the editor always reflects the current persisted value.
     let aliasID: UUID
 
-    /// Invoked when the user taps "Delete Alias". The parent (`AliasesListView`)
-    /// routes this through its `attemptDelete`, which enforces referential
-    /// integrity (blocking + alerting when the alias is still referenced) and
-    /// clears the selection before deleting an unreferenced alias.
-    let onDelete: () -> Void
-
     /// Local editing buffer for the name, committed on Enter / focus-out so a
     /// half-typed name is never persisted mid-keystroke.
     @State private var nameText: String
 
     @FocusState private var nameFieldFocused: Bool
 
-    init(viewModel: SettingsViewModel, aliasID: UUID, onDelete: @escaping () -> Void) {
+    init(viewModel: SettingsViewModel, aliasID: UUID) {
         self.viewModel = viewModel
         self.aliasID = aliasID
-        self.onDelete = onDelete
         self._nameText = State(initialValue: viewModel.alias(withID: aliasID)?.name ?? "")
     }
 
@@ -71,14 +61,6 @@ struct AliasEditorView: View {
 
             Section {
                 BrowserProfilePicker(browsers: viewModel.browsers, target: targetBinding)
-            }
-
-            // Delete lives here, on the editor for the selected alias — the single,
-            // discoverable delete path. No confirmation: an unreferenced alias is
-            // low-stakes, and a referenced one is blocked-and-explained by the parent's
-            // `attemptDelete` (the integrity guard + "Alias in use" alert).
-            Section {
-                Button("Delete Alias", role: .destructive, action: onDelete)
             }
         }
         .formStyle(.grouped)
@@ -129,8 +111,7 @@ struct AliasEditorView: View {
 #Preview("Alias Editor") {
     AliasEditorView(
         viewModel: PreviewFixtures.makePreviewSettingsViewModel(),
-        aliasID: PreviewFixtures.sampleAliases.first!.id,
-        onDelete: {}
+        aliasID: PreviewFixtures.sampleAliases.first!.id
     )
     .frame(width: 460, height: 320)
 }
