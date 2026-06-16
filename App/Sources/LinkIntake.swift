@@ -18,6 +18,11 @@ final class LinkIntake {
     private var route: ((URL) -> Void)?
     private var pending: [URL] = []
 
+    /// `nonisolated` so the instance can be created as a default value of a
+    /// stored property in a nonisolated context (e.g. `AppMain`'s synthesized
+    /// initializer). The init touches no main-actor state.
+    nonisolated init() {}
+
     /// Accept a link: route now if ready, otherwise buffer until `activate`.
     func accept(_ url: URL) {
         if let route { route(url) } else { pending.append(url) }

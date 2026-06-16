@@ -223,24 +223,24 @@ immediately. Equivalent to today's behavior.
 **Files:**
 - Modify: `App/Sources/AppMain.swift`
 
-- [ ] add a `private let intake = LinkIntake()` property (retained for the app's lifetime),
+- [x] add a `private let intake = LinkIntake()` property (retained for the app's lifetime),
       with a doc comment explaining the cold-start buffering it provides
-- [ ] in `application(_:open:)`, replace the `guard let routingService … dropping` block
+- [x] in `application(_:open:)`, replace the `guard let routingService … dropping` block
       with `for url in urls { Self.logger.log("Routing URL: …"); intake.accept(url) }`
       (keep the existing per-URL log line)
-- [ ] capture the routing pipeline into a **local** in `applicationDidFinishLaunching`:
+- [x] capture the routing pipeline into a **local** in `applicationDidFinishLaunching`:
       assign `let service = Self.makeRoutingService(...)` and set `routingService = service`
-- [ ] **as the final statement of `applicationDidFinishLaunching`** (after `statusBarController`
+- [x] **as the final statement of `applicationDidFinishLaunching`** (after `statusBarController`
       is built — see Critical #1 / "flush *last*" rationale), call
       `intake.activate { url in service.route(url: url) }` capturing the local `service`
       value (no `self`, no `[weak self]`) so buffered launch links flush only once the app
       is fully wired
-- [ ] remove the now-dead "Received URLs before routing service was ready; dropping." error
+- [x] remove the now-dead "Received URLs before routing service was ready; dropping." error
       path and update the `application(_:open:)` doc comment to describe buffer-until-ready
-- [ ] update the file-level doc comment (lines 5–13) to note that intake buffers links that
+- [x] update the file-level doc comment (lines 5–13) to note that intake buffers links that
       arrive before the routing pipeline is ready (cold-start safety)
-- [ ] run App tests (`task test`) — full suite must pass before Task 3
-- [ ] confirm `task lint` is clean
+- [x] run App tests (`task test`) — full suite must pass before Task 3 (198 tests pass)
+- [x] confirm `task lint` is clean
 
 ### Task 3: Verify acceptance criteria
 
