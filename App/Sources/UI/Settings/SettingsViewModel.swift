@@ -192,6 +192,17 @@ final class SettingsViewModel {
         aliases.first { $0.id == id }
     }
 
+    /// The rule with `id`, or `nil` if no such rule exists.
+    ///
+    /// Used by the master-detail Rules tab to resolve a `selectedRuleID`
+    /// (held in view `@State`) to the live rule the inline detail editor edits,
+    /// so the editor always reflects the current persisted value (e.g. after an
+    /// edit re-points it). Kept on the view model to give the lookup a unit-test
+    /// seam and to keep the view declarative.
+    func rule(withID id: UUID) -> Rule? {
+        rules.first { $0.id == id }
+    }
+
     // MARK: - Referential integrity
 
     /// The rules whose destination references the alias with `aliasID`.

@@ -201,21 +201,21 @@ existing `alias(withID:)`).
 - Modify: `App/Sources/UI/Settings/SettingsViewModel.swift`
 - Create: `App/Tests/AppTests/SettingsViewModelRuleLookupTests.swift`
 
-- [ ] put the new tests in a **dedicated file** `SettingsViewModelRuleLookupTests.swift`
+- [x] put the new tests in a **dedicated file** `SettingsViewModelRuleLookupTests.swift`
       mirroring the existing `SettingsViewModelAliasLookupTests.swift` (which was split out
       to keep test files under SwiftLint's `type_body_length` limit) — do NOT append to the
       already-large `SettingsViewModelTests.swift`
-- [ ] write failing test `testRuleWithIDReturnsMatchingRule`: load two rules, assert
+- [x] write failing test `testRuleWithIDReturnsMatchingRule`: load two rules, assert
       `rule(withID: second.id) == second`
-- [ ] write failing test `testRuleWithIDReturnsNilForUnknownID`: assert `rule(withID:
+- [x] write failing test `testRuleWithIDReturnsNilForUnknownID`: assert `rule(withID:
       UUID()) == nil`
-- [ ] write failing test `testRuleWithIDReflectsLivePersistedEdit`: load a rule, call
+- [x] write failing test `testRuleWithIDReflectsLivePersistedEdit`: load a rule, call
       `updateRule` with an edited copy (same id), assert `rule(withID: id)` returns the
       edited value — pins the exact live-fetch property the inline detail editor relies on
       (mirrors `testAliasWithIDReflectsLivePersistedEdit`)
-- [ ] implement `rule(withID:)` in `SettingsViewModel` (`rules.first { $0.id == id }`),
+- [x] implement `rule(withID:)` in `SettingsViewModel` (`rules.first { $0.id == id }`),
       placed beside `alias(withID:)`, with a matching doc comment
-- [ ] run `task test` and `task lint` — must pass before next task
+- [x] run `task test` and `task lint` — must pass before next task
 
 ### Task 2: Convert the Rules tab to master-detail with an inline live-persist editor
 
