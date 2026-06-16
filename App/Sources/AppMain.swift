@@ -7,7 +7,13 @@ import os
 /// TrafficWand runs as a menu-bar agent (`.accessory` activation policy /
 /// `LSUIElement`), registers as an `http`/`https` URL handler (declared in
 /// `Info.plist`), and forwards every link the system hands to
-/// `application(_:open:)` to `RoutingService`.
+/// `application(_:open:)` through `LinkIntake` to `RoutingService`.
+///
+/// On a cold start macOS can deliver the open-URL event before
+/// `applicationDidFinishLaunching` has finished wiring the routing pipeline, so
+/// intake goes through `LinkIntake`: links that arrive before the pipeline is
+/// ready are buffered and flushed in arrival order once launch finishes
+/// (cold-start safety — never drop a link).
 ///
 /// The status-bar menu, Settings, and the picker panel compose the rest of the
 /// app; `.prompt` decisions are presented by the real `PickerPanelController`.
@@ -16,8 +22,18 @@ final class AppMain: NSObject, NSApplicationDelegate {
     private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "intake")
 
     /// The composed routing pipeline (Core `Router` + App adapters). Built once in
-    /// `applicationDidFinishLaunching`; used for every incoming link.
+    /// `applicationDidFinishLaunching` and retained for the app's lifetime. The live
+    /// routing path is the `intake.activate { url in service.route(url:) }` closure,
+    /// which captures the local `service` value (not this property) to avoid a retain
+    /// cycle; this property holds the same instance so the pipeline stays alive.
     private var routingService: RoutingService?
+
+    /// Buffer-and-flush seam for incoming links. Retained for the app's lifetime.
+    /// Links that arrive via `application(_:open:)` before the routing pipeline is
+    /// wired (cold start) are buffered here, then flushed in arrival order once
+    /// `applicationDidFinishLaunching` activates it — so a cold-start link is never
+    /// dropped.
+    private let intake = LinkIntake()
 
     /// The menu-bar status item controller. Retained for the app's lifetime so the
     /// status item stays installed; built in `applicationDidFinishLaunching`.
@@ -69,9 +85,10 @@ final class AppMain: NSObject, NSApplicationDelegate {
         )
         settingsWindowController = SettingsWindowController(viewModel: settingsViewModel)
 
-        routingService = Self.makeRoutingService(
+        let service = Self.makeRoutingService(
             onOpenSettings: { [weak self] tab in self?.openSettings(tab: tab) }
         )
+        routingService = service
 
         statusBarController = StatusBarController(
             onOpenSettings: { [weak self] in self?.openSettings() },
@@ -80,17 +97,25 @@ final class AppMain: NSObject, NSApplicationDelegate {
             updater: updater
         )
         Self.logger.log("TrafficWand launched.")
+
+        // Activate intake LAST, after the whole app is wired (updater, settings,
+        // routing service, status bar). The flush runs synchronously on the launch
+        // stack, so any buffered cold-start link routes only once the app is fully
+        // constructed — a `.prompt` decision then presents the picker over a complete
+        // app. Capturing the local `service` value (not `self`) avoids a retain cycle
+        // (the closure is owned by `intake`, owned by `self`) and the awkward
+        // double-optional of `[weak self]`.
+        intake.activate { url in service.route(url: url) }
     }
 
-    /// URL intake: forward each link to `RoutingService` for routing.
+    /// URL intake: hand each link to `LinkIntake`, which routes it immediately if the
+    /// pipeline is ready or buffers it until `applicationDidFinishLaunching` activates
+    /// intake (cold-start safety — links arriving before the pipeline is wired are
+    /// flushed in arrival order, never dropped).
     func application(_ application: NSApplication, open urls: [URL]) {
-        guard let routingService else {
-            Self.logger.error("Received URLs before routing service was ready; dropping.")
-            return
-        }
         for url in urls {
             Self.logger.log("Routing URL: \(url.absoluteString, privacy: .public)")
-            routingService.route(url: url)
+            intake.accept(url)
         }
     }
 
