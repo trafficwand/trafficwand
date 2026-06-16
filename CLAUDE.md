@@ -37,14 +37,17 @@ TrafficWand is two layers, and keeping them separate is the whole point of the d
 
 - **`App/`** — a **thin AppKit/SwiftUI adapter layer**. It owns the menu-bar agent
   (`StatusBarController`), URL intake (`AppMain.application(_:open:)` → `LinkIntake` →
-  `RoutingService` — `LinkIntake` buffers links that arrive before the routing pipeline is
-  built (cold-start safety, issue #16) and flushes them in arrival order as the final step
-  of `applicationDidFinishLaunching`; it is a concrete, directly-tested type
-  (`LinkIntakeTests`), not a protocol), Settings (SwiftUI hosted via `NSHostingController`),
+  `RoutingService`), Settings (SwiftUI hosted via `NSHostingController`),
   the picker
   (`NSPanel` + `NSHostingView`), and the concrete adapters that touch `NSWorkspace` /
   `Process` / the filesystem. Tested via `xcodebuild test` (the `TrafficWandTests`
   target).
+  - **`LinkIntake` makes cold-start intake drop-proof.** `LinkIntake` is a concrete,
+    directly-tested `@MainActor` type (`LinkIntakeTests`, not a protocol seam) that buffers
+    links arriving via `application(_:open:)` before the routing pipeline is built
+    (cold-start safety, issue #16) and flushes them in arrival order as the final step of
+    `applicationDidFinishLaunching`. When the pipeline is already wired (warm start) it
+    routes immediately — equivalent to the prior direct path.
   - **The picker offers aliases too.** Alongside the installed browser/profile rows, the
     picker prepends an **Aliases** section (`PickerViewModel` builds the rows, filtering
     out aliases whose target browser is uninstalled — they can't launch). Selecting an
