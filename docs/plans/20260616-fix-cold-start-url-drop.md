@@ -199,24 +199,24 @@ immediately. Equivalent to today's behavior.
 - Create: `App/Sources/LinkIntake.swift`
 - Create: `App/Tests/AppTests/LinkIntakeTests.swift`
 
-- [ ] write failing test: `accept(url)` before `activate` buffers the URL (nothing routed yet)
-- [ ] write failing test: `activate(route:)` flushes a single buffered URL to the route closure
-- [ ] write failing test: multiple buffered URLs flush in **arrival order**
-- [ ] write failing test: `accept(url)` **after** `activate` routes immediately (no buffering)
-- [ ] write failing test: `activate` with an empty buffer routes nothing (no-op) and later
+- [x] write failing test: `accept(url)` before `activate` buffers the URL (nothing routed yet)
+- [x] write failing test: `activate(route:)` flushes a single buffered URL to the route closure
+- [x] write failing test: multiple buffered URLs flush in **arrival order**
+- [x] write failing test: `accept(url)` **after** `activate` routes immediately (no buffering)
+- [x] write failing test: `activate` with an empty buffer routes nothing (no-op) and later
       `accept`s still route
-- [ ] write failing test: **warm-path equivalence** — after `activate`, N sequential
+- [x] write failing test: **warm-path equivalence** — after `activate`, N sequential
       `accept`s each route immediately, in order, with nothing buffered
-- [ ] write failing test: **double `activate`** — a second `activate` after activation is a
+- [x] write failing test: **double `activate`** — a second `activate` after activation is a
       no-op (does not re-flush, does not replace routing behavior)
-- [ ] write failing test: **re-entrant accept during flush** — if a flushed route synchronously
+- [x] write failing test: **re-entrant accept during flush** — if a flushed route synchronously
       calls `accept` again, that URL routes immediately (not lost to the cleared buffer)
-- [ ] create `App/Sources/LinkIntake.swift` with the `@MainActor final class LinkIntake`
+- [x] create `App/Sources/LinkIntake.swift` with the `@MainActor final class LinkIntake`
       (`accept` / `activate`, with the `guard self.route == nil` idempotence guard) as
       specified in Technical Details
-- [ ] mirror the existing App test style: `@MainActor final class LinkIntakeTests: XCTestCase`
+- [x] mirror the existing App test style: `@MainActor final class LinkIntakeTests: XCTestCase`
       with `@testable import TrafficWand` (see `RoutingServiceTests.swift`)
-- [ ] run App tests (`task test`) — all `LinkIntakeTests` must pass before Task 2
+- [x] run App tests (`task test`) — all `LinkIntakeTests` must pass before Task 2
 
 ### Task 2: Rewire `AppMain` intake through `LinkIntake` (remove the drop)
 
