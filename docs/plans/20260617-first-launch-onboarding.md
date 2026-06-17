@@ -238,10 +238,10 @@ Thin App-layer feature, no Core changes:
 
 ### Task 7: Verify acceptance criteria
 
-- [ ] all four issue #9 points covered: menu-bar pointer, set-as-default action, rules explained, button to open Rules/Settings (plus the aliases page)
-- [ ] onboarding shows on a clean profile and not on subsequent launches (flag works)
-- [ ] run full App test suite: `task test`
-- [ ] run `task lint` clean
+- [x] all four issue #9 points covered: menu-bar pointer, set-as-default action, rules explained, button to open Rules/Settings (plus the aliases page) — verified by inspection: `OnboardingPage` has cases `.menuBar/.defaultBrowser/.rules/.aliases`; `OnboardingRootView.showsDefaultBrowserButton(for: .defaultBrowser)` renders a live "Set as Default" button wired to `DefaultBrowserManager.setAsDefault`; the last page's primary button "Open Settings" calls `viewModel.openSettings()` → `onOpenSettings(.rules)` then `complete()`
+- [x] onboarding shows on a clean profile and not on subsequent launches (flag works) — verified: `AppMain` builds ONE `OnboardingStore()`, gates `onboardingController.show()` on `store.hasCompletedOnboarding == false`, presented after `intake.activate`; `windowWillClose → complete() → markCompleted()`. Covered by `OnboardingStoreTests` (default not-completed, markCompleted persists, isolated suite, no standard-defaults pollution) + `OnboardingWindowControllerTests.testClosingWindowMarksStoreCompletedAndFiresOnFinish`. AppMain wiring verified by inspection (no test seam, per Task 6 note)
+- [x] run full App test suite: `task test` — 223 tests, 0 failures, ** TEST SUCCEEDED **
+- [x] run `task lint` clean — no violations
 
 ### Task 8: [Final] Documentation + housekeeping
 
