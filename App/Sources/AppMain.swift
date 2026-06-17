@@ -116,14 +116,16 @@ final class AppMain: NSObject, NSApplicationDelegate {
         // `.standard`) and inject that same instance into the retained
         // `OnboardingWindowController`'s view model — single source of truth for the
         // show-once flag. The "Open Settings" deep link reuses `openSettings(tab:)`
-        // (lands on `.rules`); `onFinish` is a no-op (the controller closes its own
-        // window). Presented LAST, after the rest of the app is wired and after
-        // `intake.activate`, so it never gates or alters cold-start link routing.
+        // (lands on `.rules`); `onFinish` closes the onboarding window via the
+        // retained controller (so the last-page button actually dismisses the
+        // window). `complete()` is idempotent, so the resulting `windowWillClose`
+        // re-entry is a no-op. Presented LAST, after the rest of the app is wired and
+        // after `intake.activate`, so it never gates or alters cold-start link routing.
         let onboardingStore = OnboardingStore()
         let onboardingViewModel = OnboardingViewModel(
             store: onboardingStore,
             onOpenSettings: { [weak self] tab in self?.openSettings(tab: tab) },
-            onFinish: {}
+            onFinish: { [weak self] in self?.onboardingWindowController?.close() }
         )
         let onboardingController = OnboardingWindowController(viewModel: onboardingViewModel)
         onboardingWindowController = onboardingController

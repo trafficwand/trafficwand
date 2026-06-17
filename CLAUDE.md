@@ -77,7 +77,8 @@ is tested in `AppTests`. The pieces:
   gate: a struct wrapping an injected `UserDefaults` (default `.standard`), single key,
   `hasCompletedOnboarding` getter + `markCompleted()` (mirrors `LastUsedStore`, tested
   against an isolated `UserDefaults(suiteName:)`). Completion is **on close** — dismissing
-  the window by any path (Done, Open Settings, or the red close button) marks it done.
+  the window by either path (the last-page "Open Settings" button, or the red close button)
+  marks it done.
 - **`OnboardingPage`** + **`OnboardingViewModel`** (`App/Sources/UI/Onboarding/`) — the
   pure, testable flow: a `CaseIterable` enum of **4 pages** in order (`menuBar →
   defaultBrowser → rules → aliases`), each carrying `title`, `body`, and an image source;
@@ -86,8 +87,12 @@ is tested in `AppTests`. The pieces:
   `onOpenSettings`), and `complete()` (`store.markCompleted()` + `onFinish`).
 - **`OnboardingWindowController`** (`App/Sources/UI/Onboarding/`) — mirrors
   `SettingsWindowController`: a lazy `NSWindow` hosting `OnboardingRootView` via
-  `NSHostingController`, activates the app on `show()`, and calls `viewModel.complete()`
-  from `windowWillClose`. `AppMain.applicationDidFinishLaunching` builds **one**
+  `NSHostingController`, activates the app on `show()`, exposes `close()`, and calls
+  `viewModel.complete()` from `windowWillClose`. The view model's `onFinish` is wired to
+  the controller's `close()`, so the last-page "Open Settings" button actually dismisses
+  the window; `complete()` is idempotent (a private `didFinish` guard), so the
+  button-press → `close()` → `windowWillClose` → `complete()` re-entry fires `onFinish`
+  exactly once with no recursion. `AppMain.applicationDidFinishLaunching` builds **one**
   `OnboardingStore`, retains the controller, and gates `show()` on
   `hasCompletedOnboarding == false` — appended *after* `intake.activate` so cold-start link
   routing is untouched.

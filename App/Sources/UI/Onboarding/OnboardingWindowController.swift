@@ -12,10 +12,12 @@ import SwiftUI
 ///
 /// **Completion-on-close:** the controller is its own `NSWindowDelegate` and its
 /// `windowWillClose(_:)` calls `viewModel.complete()`. So dismissing the window via
-/// *any* path — the last page's "Open Settings" button (which also closes), a
-/// future "Done" affordance, or the red close button — marks onboarding completed
-/// exactly once (the store flag makes `complete()` effectively idempotent) and
-/// fires `onFinish`.
+/// *any* path — the last page's "Open Settings" button (whose `onFinish` calls
+/// `close()`) or the red close button — marks onboarding completed exactly once
+/// (`complete()` is idempotent via its `didFinish` guard) and fires `onFinish`.
+/// Wire `onFinish` to call `close()`: the button press completes and closes the
+/// window; the close re-enters `complete()`, which is now a no-op, so there is no
+/// double-fire or recursion.
 @MainActor
 final class OnboardingWindowController: NSObject {
     private let viewModel: OnboardingViewModel
@@ -50,9 +52,10 @@ final class OnboardingWindowController: NSObject {
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
-    /// Test-only: closes the live window (if any), exercising the
-    /// `windowWillClose` completion path.
-    func closeWindowForTesting() {
+    /// Closes the onboarding window (if any). Closing triggers `windowWillClose`,
+    /// which marks completion. Wire this as the view model's `onFinish` so the
+    /// last-page "Open Settings" button actually dismisses the window.
+    func close() {
         windowController?.close()
     }
 

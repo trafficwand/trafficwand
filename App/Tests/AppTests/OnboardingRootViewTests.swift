@@ -87,14 +87,32 @@ final class OnboardingRootViewTests: XCTestCase {
         XCTAssertEqual(OnboardingRootView.primaryButtonTitle(isLastPage: true), "Open Settings")
     }
 
-    func testLastPagePrimaryActionOpensSettings() {
+    func testLastPagePrimaryActionDeepLinksRulesAndCompletes() {
         let vm = makeViewModel()
         for _ in 0..<vm.pages.count { vm.next() }
         XCTAssertTrue(vm.isLastPage)
 
-        // The last-page primary button routes through `openSettings()`; assert that
-        // path delivers the `.rules` deep-link to the injected closure.
-        vm.openSettings()
+        // Exercise the real button wiring (`primaryAction()`), not `openSettings()` /
+        // `complete()` in isolation: on the last page it must deep-link `.rules`,
+        // mark onboarding completed, and fire `onFinish` (here a counter; production
+        // closes the window) — exactly once.
+        makeView(viewModel: vm).primaryAction()
+
         XCTAssertEqual(openedTabs, [.rules])
+        XCTAssertTrue(store.hasCompletedOnboarding)
+        XCTAssertEqual(finishedCount, 1)
+    }
+
+    func testIntermediatePagePrimaryActionAdvances() {
+        let vm = makeViewModel()
+        XCTAssertFalse(vm.isLastPage)
+
+        // On a non-last page, the primary button advances and does NOT complete.
+        makeView(viewModel: vm).primaryAction()
+
+        XCTAssertEqual(vm.currentIndex, 1)
+        XCTAssertTrue(openedTabs.isEmpty)
+        XCTAssertFalse(store.hasCompletedOnboarding)
+        XCTAssertEqual(finishedCount, 0)
     }
 }

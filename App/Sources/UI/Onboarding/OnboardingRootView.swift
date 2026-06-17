@@ -163,8 +163,11 @@ struct OnboardingRootView: View {
     }
 
     /// The primary button: advance on intermediate pages; on the last page open
-    /// Settings (deep-linked to Rules) and complete the flow.
-    private func primaryAction() {
+    /// Settings (deep-linked to Rules) and complete the flow (which closes the
+    /// window via the view model's `onFinish`). Exposed `internal` (not `private`)
+    /// so tests exercise the real button wiring — not `openSettings()`/`complete()`
+    /// in isolation.
+    func primaryAction() {
         if viewModel.isLastPage {
             viewModel.openSettings()
             viewModel.complete()

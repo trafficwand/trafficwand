@@ -124,8 +124,11 @@ final class OnboardingViewModelTests: XCTestCase {
         let vm = makeViewModel()
         vm.complete()
         vm.complete()
+        vm.complete()
         XCTAssertTrue(store.hasCompletedOnboarding)
-        // onFinish fires once per call (the controller dedups via the store flag).
-        XCTAssertEqual(finishedCount, 2)
+        // `complete()` is idempotent via the `didFinish` guard: `onFinish` fires at
+        // most once across all calls, so the button-press → close → windowWillClose
+        // sequence never double-fires (no double-close / re-entrancy).
+        XCTAssertEqual(finishedCount, 1)
     }
 }

@@ -114,9 +114,10 @@ enum PreviewFixtures {
         return viewModel
     }
 
-    /// Builds a sample `OnboardingViewModel` for previews, backed by an isolated
-    /// in-memory-ish `UserDefaults` suite so the preview never marks the dev's own
-    /// install as onboarded. The side-effect closures are no-ops.
+    /// Builds a sample `OnboardingViewModel` for previews, backed by a dedicated
+    /// preview-only `UserDefaults(suiteName:)` (a fixed on-disk suite, separate from
+    /// `.standard`) so the preview never marks the dev's own install as onboarded.
+    /// The side-effect closures are no-ops.
     @MainActor
     static func makePreviewOnboardingViewModel() -> OnboardingViewModel {
         let defaults = UserDefaults(suiteName: "io.tomakado.TrafficWand.preview.onboarding")

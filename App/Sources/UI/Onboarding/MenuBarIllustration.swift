@@ -66,7 +66,10 @@ struct MenuBarIllustration: View {
         .foregroundStyle(.primary)
         .padding(.horizontal, 14)
         .frame(height: 30)
-        .background(.regularMaterial)
+        // A solid, translucent fill rather than `.regularMaterial`: materials don't
+        // reliably rasterize through `ImageRenderer` (they can bake out transparent
+        // or flat), so use a concrete menu-bar-like color that always renders.
+        .background(Color(nsColor: .windowBackgroundColor).opacity(0.85))
     }
 
     /// The real app icon if available, else a generic wand glyph so the
