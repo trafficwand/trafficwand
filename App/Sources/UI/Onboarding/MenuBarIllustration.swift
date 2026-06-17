@@ -8,8 +8,8 @@ import SwiftUI
 /// so this SwiftUI illustration is **rasterized to an `NSImage` via
 /// `ImageRenderer`** (`rendered()`) and shown through `FramedScreenshot`, giving
 /// it the same screenshot treatment as the real screenshots on the other pages.
-struct MenuBarIllustration: View {
-    /// Fixed render size; baked at 2x for a crisp raster (see `rendered()`).
+struct MenuBarIllustration: OnboardingIllustration {
+    /// Fixed render size; baked at 2x for a crisp raster (see `rendered(colorScheme:)`).
     static let renderSize = CGSize(width: 480, height: 300)
 
     /// The color scheme to draw in, so the rasterized illustration matches the
@@ -87,17 +87,5 @@ struct MenuBarIllustration: View {
             .foregroundStyle(.primary)
     }
 
-    /// Rasterizes the illustration to a flat `NSImage` at 2x scale, drawn in the
-    /// given color scheme so it matches the system theme.
-    ///
-    /// `ImageRenderer` is `@MainActor`, so this must be called on the main actor.
-    /// Returns `nil` only if the renderer fails to produce an image.
-    @MainActor
-    static func rendered(colorScheme: ColorScheme = .light) -> NSImage? {
-        let renderer = ImageRenderer(
-            content: MenuBarIllustration().environment(\.colorScheme, colorScheme)
-        )
-        renderer.scale = 2
-        return renderer.nsImage
-    }
+    // `rendered(colorScheme:)` is provided by the `OnboardingIllustration` default.
 }

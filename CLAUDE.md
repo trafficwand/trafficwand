@@ -96,15 +96,20 @@ is tested in `AppTests`. The pieces:
   `OnboardingStore`, retains the controller, and gates `show()` on
   `hasCompletedOnboarding == false` — appended *after* `intake.activate` so cold-start link
   routing is untouched.
-- **Screenshot-asset convention.** `App/Resources/Onboarding.xcassets` holds the **three
-  real screenshots** (user-captured PNGs: `onboarding-default-browser`, `onboarding-rules`,
-  `onboarding-aliases`) — wired into the target via `project.yml` `sources`. The menu-bar
-  page is **not** a screenshot: it is a code-drawn `MenuBarIllustration` rasterized to an
-  `NSImage` via `ImageRenderer`. `FramedScreenshot` resolves a named asset (or a provided
-  rendered `NSImage`) and renders a **drawn placeholder** until a PNG exists, so the
-  feature ships and runs before the screenshots are captured. All page visuals are flat,
-  non-interactive images; the only live controls (Set as Default, Open Settings,
-  Back/Next) live in the footer.
+- **Drawn, theme-aware illustrations (no screenshots).** Every page's visual is a
+  code-drawn SwiftUI illustration rasterized to a flat `NSImage` via `ImageRenderer` —
+  there are no captured-screenshot assets. The illustrations conform to
+  `OnboardingIllustration` (`App/Sources/UI/Onboarding/OnboardingIllustrations.swift`), a
+  protocol whose default `rendered(colorScheme:)` bakes the view in a given theme:
+  `MenuBarIllustration` (a desktop + menu-bar strip with the real status-item glyph,
+  `StatusBarController.statusIconSymbolName`) and `DefaultBrowserIllustration` /
+  `RulesIllustration` / `AliasesIllustration` (each a `MockWindow` chrome on a
+  `DesktopBackdrop`). `OnboardingRootView.illustration(for:)` picks the per-page view and
+  bakes it with the live `@Environment(\.colorScheme)`, so the visuals **follow the system
+  light/dark theme** and re-render on change. `FramedScreenshot` just wraps the baked
+  `NSImage` in a card (backplate + border + shadow), with a drawn placeholder if rendering
+  ever returns `nil`. All page visuals are flat, non-interactive images; the only live
+  controls (Set as Default, Open Settings, Back/Next) live in the footer.
 
 ### Profile aliases & `RoutingDestination` resolution
 

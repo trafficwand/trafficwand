@@ -3,38 +3,26 @@ import SwiftUI
 import XCTest
 @testable import TrafficWand
 
-/// Tests for the onboarding image views' pure helpers.
-///
-/// `FramedScreenshot.image(forAsset:)` is the testable resolution decision: it
-/// returns `nil` for an asset that isn't in the catalog (the placeholder branch)
-/// and a non-`nil` `NSImage` once a matching asset exists. `MenuBarIllustration`
-/// is rasterized via `ImageRenderer` and must produce a non-`nil` `NSImage`.
+/// Tests that every onboarding illustration rasterizes to a non-`nil` `NSImage` in
+/// both light and dark — driving `FramedScreenshot`'s image branch (rather than its
+/// placeholder fallback) and confirming the theme-aware render path works.
 final class OnboardingImageTests: XCTestCase {
 
-    func testImageForAssetReturnsNilForMissingAsset() {
-        // A name that is never in the catalog → nil, driving FramedScreenshot to its
-        // drawn placeholder branch. (Don't key this on a real onboarding asset name:
-        // those resolve once the user drops the screenshot PNG into the catalog.)
-        let resolved = FramedScreenshot.image(forAsset: "definitely-not-a-real-asset-name")
-        XCTAssertNil(resolved)
-    }
-
-    func testImageForAssetReturnsImageWhenPresent() {
-        // A system catalog name that always resolves, exercising the asset branch
-        // without depending on a screenshot PNG that the user adds later.
-        let resolved = FramedScreenshot.image(forAsset: NSImage.applicationIconName)
-        XCTAssertNotNil(resolved)
-    }
-
     @MainActor
-    func testMenuBarIllustrationRasterizesToImage() {
+    func testIllustrationsRasterizeInBothColorSchemes() {
         for scheme in [ColorScheme.light, .dark] {
-            let image = MenuBarIllustration.rendered(colorScheme: scheme)
-            XCTAssertNotNil(image, "expected a rasterized image for \(scheme)")
-            if let image {
-                XCTAssertGreaterThan(image.size.width, 0)
-                XCTAssertGreaterThan(image.size.height, 0)
-            }
+            assertRenders(MenuBarIllustration.rendered(colorScheme: scheme), "menu bar", scheme)
+            assertRenders(DefaultBrowserIllustration.rendered(colorScheme: scheme), "default browser", scheme)
+            assertRenders(RulesIllustration.rendered(colorScheme: scheme), "rules", scheme)
+            assertRenders(AliasesIllustration.rendered(colorScheme: scheme), "aliases", scheme)
+        }
+    }
+
+    private func assertRenders(_ image: NSImage?, _ name: String, _ scheme: ColorScheme) {
+        XCTAssertNotNil(image, "expected \(name) to rasterize in \(scheme)")
+        if let image {
+            XCTAssertGreaterThan(image.size.width, 0, "\(name) width in \(scheme)")
+            XCTAssertGreaterThan(image.size.height, 0, "\(name) height in \(scheme)")
         }
     }
 }

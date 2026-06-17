@@ -46,7 +46,7 @@ struct OnboardingRootView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            FramedScreenshot(source: imageSource(for: viewModel.currentPage), caption: viewModel.currentPage.title)
+            FramedScreenshot(image: illustration(for: viewModel.currentPage), caption: viewModel.currentPage.title)
                 .frame(maxWidth: 440)
 
             VStack(spacing: 10) {
@@ -81,16 +81,21 @@ struct OnboardingRootView: View {
         }
     }
 
-    // MARK: - Image source
+    // MARK: - Illustration
 
-    /// Maps a page's `ImageSource` to a `FramedScreenshot.Source`, baking the
-    /// menu-bar illustration to an `NSImage` for the `.rendered` case.
-    private func imageSource(for page: OnboardingPage) -> FramedScreenshot.Source {
-        switch page.image {
-        case .asset(let name):
-            return .asset(name)
-        case .rendered:
-            return .rendered(MenuBarIllustration.rendered(colorScheme: colorScheme))
+    /// Bakes the page's code-drawn illustration to an `NSImage` in the current color
+    /// scheme. Re-evaluated when `colorScheme` changes, so the visuals follow the
+    /// system theme.
+    private func illustration(for page: OnboardingPage) -> NSImage? {
+        switch page {
+        case .menuBar:
+            return MenuBarIllustration.rendered(colorScheme: colorScheme)
+        case .defaultBrowser:
+            return DefaultBrowserIllustration.rendered(colorScheme: colorScheme)
+        case .rules:
+            return RulesIllustration.rendered(colorScheme: colorScheme)
+        case .aliases:
+            return AliasesIllustration.rendered(colorScheme: colorScheme)
         }
     }
 
