@@ -67,6 +67,50 @@ The rule of thumb: **anything decision-shaped goes in Core and gets a unit test;
 anything that touches the system is a thin adapter in App, kept behind a protocol so the
 decision logic stays testable.**
 
+### First-launch onboarding
+
+A paged onboarding window appears **once** on first launch (issue #9). It lives entirely
+in the **App layer** (not Core — it is UI presentation state, not a routing decision) and
+is tested in `AppTests`. The pieces:
+
+- **`OnboardingStore`** (`App/Sources/Adapters/OnboardingStore.swift`) — the show-once
+  gate: a struct wrapping an injected `UserDefaults` (default `.standard`), single key,
+  `hasCompletedOnboarding` getter + `markCompleted()` (mirrors `LastUsedStore`, tested
+  against an isolated `UserDefaults(suiteName:)`). Completion is **on close** — dismissing
+  the window by either path (the last-page "Open Settings" button, or the red close button)
+  marks it done.
+- **`OnboardingPage`** + **`OnboardingViewModel`** (`App/Sources/UI/Onboarding/`) — the
+  pure, testable flow: a `CaseIterable` enum of **4 pages** in order (`menuBar →
+  defaultBrowser → rules → aliases`), each carrying `title`, `body`, and an image source;
+  the `@Observable @MainActor` view model owns `currentIndex`, `next()`/`back()` (clamped
+  at bounds), `openSettings()` (deep-links to the Rules tab via the injected
+  `onOpenSettings`), and `complete()` (`store.markCompleted()` + `onFinish`).
+- **`OnboardingWindowController`** (`App/Sources/UI/Onboarding/`) — mirrors
+  `SettingsWindowController`: a lazy `NSWindow` hosting `OnboardingRootView` via
+  `NSHostingController`, activates the app on `show()`, exposes `close()`, and calls
+  `viewModel.complete()` from `windowWillClose`. The view model's `onFinish` is wired to
+  the controller's `close()`, so the last-page "Open Settings" button actually dismisses
+  the window; `complete()` is idempotent (a private `didFinish` guard), so the
+  button-press → `close()` → `windowWillClose` → `complete()` re-entry fires `onFinish`
+  exactly once with no recursion. `AppMain.applicationDidFinishLaunching` builds **one**
+  `OnboardingStore`, retains the controller, and gates `show()` on
+  `hasCompletedOnboarding == false` — appended *after* `intake.activate` so cold-start link
+  routing is untouched.
+- **Drawn, theme-aware illustrations (no screenshots).** Every page's visual is a
+  code-drawn SwiftUI illustration rasterized to a flat `NSImage` via `ImageRenderer` —
+  there are no captured-screenshot assets. The illustrations conform to
+  `OnboardingIllustration` (`App/Sources/UI/Onboarding/OnboardingIllustrations.swift`), a
+  protocol whose default `rendered(colorScheme:)` bakes the view in a given theme:
+  `MenuBarIllustration` (a desktop + menu-bar strip with the real status-item glyph,
+  `StatusBarController.statusIconSymbolName`) and `DefaultBrowserIllustration` /
+  `RulesIllustration` / `AliasesIllustration` (each a `MockWindow` chrome on a
+  `DesktopBackdrop`). `OnboardingRootView.illustration(for:)` picks the per-page view and
+  bakes it with the live `@Environment(\.colorScheme)`, so the visuals **follow the system
+  light/dark theme** and re-render on change. `FramedScreenshot` just wraps the baked
+  `NSImage` in a card (backplate + border + shadow), with a drawn placeholder if rendering
+  ever returns `nil`. All page visuals are flat, non-interactive images; the only live
+  controls (Set as Default, Open Settings, Back/Next) live in the footer.
+
 ### Profile aliases & `RoutingDestination` resolution
 
 A rule (and `FallbackPolicy.defaultBrowser`) no longer embeds a concrete `BrowserTarget`

@@ -85,6 +85,10 @@ final class SettingsWindowController {
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
+    /// Whether the Settings window is currently on screen. Drives the app's
+    /// Dock-icon/activation policy in `AppMain`.
+    var isWindowVisible: Bool { windowController?.window?.isVisible ?? false }
+
     /// Test-only: closes the live window (if any). Production code never needs
     /// to dispose the window controller — `SettingsWindowController` itself is
     /// retained for the app's lifetime and the window is hidden, not destroyed,
@@ -105,7 +109,19 @@ final class SettingsWindowController {
         window.title = "TrafficWand Settings"
         window.styleMask = [.titled, .closable, .miniaturizable]
         window.isReleasedWhenClosed = false
-        window.center()
+        // Center explicitly (NSWindow.center() proved unreliable for hosting-controller
+        // windows): force the known content size, then position from the active
+        // screen's visible frame. Done once at creation, so reopening a window the
+        // user has moved won't yank it back to center.
+        window.setContentSize(NSSize(width: 560, height: 480))
+        if let screen = NSScreen.main {
+            let visible = screen.visibleFrame
+            let size = window.frame.size
+            window.setFrameOrigin(NSPoint(
+                x: visible.midX - size.width / 2,
+                y: visible.midY - size.height / 2
+            ))
+        }
 
         // Reload whenever this specific window regains focus so returning to an
         // already-open Settings window re-reads the latest on-disk config (e.g. a
@@ -121,7 +137,9 @@ final class SettingsWindowController {
             }
         }
 
-        return NSWindowController(window: window)
+        let controller = NSWindowController(window: window)
+        controller.shouldCascadeWindows = false
+        return controller
     }
 
     deinit {

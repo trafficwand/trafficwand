@@ -18,6 +18,7 @@ import os
 /// The status-bar menu, Settings, and the picker panel compose the rest of the
 /// app; `.prompt` decisions are presented by the real `PickerPanelController`.
 @main
+@MainActor
 final class AppMain: NSObject, NSApplicationDelegate {
     private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "intake")
 
@@ -49,6 +50,11 @@ final class AppMain: NSObject, NSApplicationDelegate {
     /// the wiring stays decoupled from the concrete framework.
     private var updater: UpdaterControlling?
 
+    /// The first-launch onboarding window controller. Retained so the window and
+    /// its view model persist for the app's lifetime; built in
+    /// `applicationDidFinishLaunching` and shown once (gated by `OnboardingStore`).
+    private var onboardingWindowController: OnboardingWindowController?
+
     static func main() {
         let app = NSApplication.shared
         let delegate = AppMain()
@@ -57,8 +63,29 @@ final class AppMain: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Menu-bar agent: no Dock icon, no main menu activation.
+        // Single-instance guard: if another copy is already running, hand off to it
+        // and quit (see `yieldIfAnotherInstanceRunning`).
+        if yieldIfAnotherInstanceRunning() { return }
+
+        // Menu-bar agent by default (no Dock icon, no ⌘-Tab). The policy is flipped
+        // to `.regular` only while the onboarding or Settings window is open, then
+        // back to `.accessory` when the last one closes — so the app is reachable via
+        // the Dock / ⌘-Tab exactly when there's a window to switch to. See
+        // `syncActivationPolicy()`.
         NSApp.setActivationPolicy(.accessory)
+
+        // Re-sync the activation policy whenever any window closes. `willClose` fires
+        // while the window is still visible, so defer to the next runloop tick when
+        // `isVisible` reflects the close.
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated { self?.syncActivationPolicy() }
+            }
+        }
 
         // Sparkle updater: retained for the app's lifetime so its background
         // checks keep running. The "Check for Updates…" menu item drives it
@@ -106,6 +133,70 @@ final class AppMain: NSObject, NSApplicationDelegate {
         // (the closure is owned by `intake`, owned by `self`) and the awkward
         // double-optional of `[weak self]`.
         intake.activate { url in service.route(url: url) }
+
+        // First-launch onboarding: build ONE `OnboardingStore` (production uses
+        // `.standard`) and inject that same instance into the retained
+        // `OnboardingWindowController`'s view model — single source of truth for the
+        // show-once flag. The "Open Settings" deep link reuses `openSettings(tab:)`
+        // (lands on `.rules`); `onFinish` closes the onboarding window via the
+        // retained controller (so the last-page button actually dismisses the
+        // window). `complete()` is idempotent, so the resulting `windowWillClose`
+        // re-entry is a no-op. Presented LAST, after the rest of the app is wired and
+        // after `intake.activate`, so it never gates or alters cold-start link routing.
+        let onboardingStore = OnboardingStore()
+        let onboardingViewModel = OnboardingViewModel(
+            store: onboardingStore,
+            onOpenSettings: { [weak self] tab in self?.openSettings(tab: tab) },
+            onFinish: { [weak self] in self?.onboardingWindowController?.close() }
+        )
+        let onboardingController = OnboardingWindowController(viewModel: onboardingViewModel)
+        onboardingWindowController = onboardingController
+        if onboardingStore.hasCompletedOnboarding == false {
+            onboardingController.show()
+            syncActivationPolicy()
+        }
+    }
+
+    /// If another copy of TrafficWand is already running, activate it, quit this
+    /// process, and return `true`. Two instances sharing one `config.json` can race
+    /// on load/save and quarantine the config (see `FileConfigStore`), losing the
+    /// user's rules/aliases. ponytail: a tiny launch-race window where two
+    /// near-simultaneous starts miss each other is acceptable for a menu-bar agent;
+    /// a cross-process file lock would be the upgrade if it ever matters.
+    private func yieldIfAnotherInstanceRunning() -> Bool {
+        // Never yield under the test harness: the test host app shares our bundle ID,
+        // so self-terminating would crash the test runner before it connects.
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return false
+        }
+        let others = NSRunningApplication
+            .runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "")
+            .filter { $0.processIdentifier != NSRunningApplication.current.processIdentifier }
+        guard Self.shouldYieldToExistingInstance(otherInstanceCount: others.count) else {
+            return false
+        }
+        Self.logger.log("Another instance is running; activating it and quitting.")
+        others.first?.activate()
+        NSApp.terminate(nil)
+        return true
+    }
+
+    /// Whether to yield to an already-running instance (and quit). `nonisolated` and
+    /// pure so the single-instance decision is unit-tested off the main actor; the
+    /// `NSRunningApplication` query that produces the count is the thin adapter above.
+    nonisolated static func shouldYieldToExistingInstance(otherInstanceCount: Int) -> Bool {
+        otherInstanceCount > 0
+    }
+
+    /// Shows a Dock icon + ⌘-Tab presence (`.regular`) while the onboarding or
+    /// Settings window is visible, and reverts to the menu-bar-agent policy
+    /// (`.accessory`) when neither is. Called after showing either window and from
+    /// the window-close observer.
+    @MainActor
+    private func syncActivationPolicy() {
+        let anyWindowVisible = (onboardingWindowController?.isWindowVisible ?? false)
+            || (settingsWindowController?.isWindowVisible ?? false)
+        NSApp.setActivationPolicy(anyWindowVisible ? .regular : .accessory)
     }
 
     /// URL intake: hand each link to `LinkIntake`, which routes it immediately if the
@@ -127,6 +218,7 @@ final class AppMain: NSObject, NSApplicationDelegate {
     private func openSettings() {
         Self.logger.log("Opening Settings window.")
         settingsWindowController?.show()
+        syncActivationPolicy()
     }
 
     /// Shows the Settings window deep-linked to the About tab (status-bar
@@ -135,6 +227,7 @@ final class AppMain: NSObject, NSApplicationDelegate {
     private func openAbout() {
         Self.logger.log("Opening About (Settings → About tab).")
         settingsWindowController?.show(initialTab: .about)
+        syncActivationPolicy()
     }
 
     /// Deep-link variant of `openSettings()`: always lands on `tab`.
@@ -142,6 +235,7 @@ final class AppMain: NSObject, NSApplicationDelegate {
     private func openSettings(tab: SettingsTab) {
         Self.logger.log("Opening Settings window on tab: \(String(describing: tab), privacy: .public).")
         settingsWindowController?.show(initialTab: tab)
+        syncActivationPolicy()
     }
 
     /// Assembles the real `RoutingService` from the concrete adapters.
