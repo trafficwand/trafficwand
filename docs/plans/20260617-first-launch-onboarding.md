@@ -220,9 +220,9 @@ Thin App-layer feature, no Core changes:
 - Create: `App/Sources/UI/Onboarding/OnboardingWindowController.swift`
 - Create: `App/Tests/AppTests/OnboardingWindowControllerTests.swift`
 
-- [ ] write tests (mirror `SettingsWindowControllerAboutTests`/`AppSmokeTests`): controller builds; `show()` doesn't crash; closing the window marks the injected `OnboardingStore` completed and fires `onFinish`
-- [ ] create `OnboardingWindowController` (`@MainActor`): lazy `NSWindow` hosting `OnboardingRootView`, activates app on `show()`, `NSWindowDelegate.windowWillClose` → `viewModel.complete()`; retains the view model
-- [ ] run `task test` — must pass before next task
+- [x] write tests (mirror `SettingsWindowControllerAboutTests`/`AppSmokeTests`): controller builds; `show()` doesn't crash; closing the window marks the injected `OnboardingStore` completed and fires `onFinish`
+- [x] create `OnboardingWindowController` (`@MainActor`): lazy `NSWindow` hosting `OnboardingRootView`, activates app on `show()`, `NSWindowDelegate.windowWillClose` → `viewModel.complete()`; retains the view model
+- [x] run `task test` — must pass before next task
 
 ### Task 6: Wire into `AppMain` (show on first launch only)
 
