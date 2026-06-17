@@ -62,6 +62,7 @@ targets:
     sources:
       - path: App/Sources
       - path: App/Resources/AppIcon.icon
+      - path: App/Resources/Onboarding.xcassets
     dependencies:
       - package: TrafficWandCore
       - package: Sparkle

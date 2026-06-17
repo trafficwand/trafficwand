@@ -196,11 +196,11 @@ Thin App-layer feature, no Core changes:
 - Modify: `project.yml` (add the xcassets to the `TrafficWand` target sources)
 - Create: `App/Tests/AppTests/OnboardingImageTests.swift`
 
-- [ ] write tests: `FramedScreenshot` resolves to a placeholder when the named asset is absent and to the asset/`NSImage` when present (assert the resolution helper's output, e.g. a pure `image(forAsset:) -> NSImage?` returning `nil` → placeholder branch); `MenuBarIllustration` rasterizes to a non-`nil` `NSImage` via `ImageRenderer`
-- [ ] create `FramedScreenshot` (takes an asset name or a rendered `NSImage`; frames it with border/shadow/caption; falls back to a drawn placeholder when no image resolves; the image is non-interactive)
-- [ ] create `MenuBarIllustration` SwiftUI view + an `ImageRenderer`-based helper that bakes it to an `NSImage`
-- [ ] add `App/Resources/Onboarding.xcassets` with the three placeholder imagesets; add it to `project.yml` target sources; run `task generate`
-- [ ] run `task test` — must pass before next task
+- [x] write tests: `FramedScreenshot` resolves to a placeholder when the named asset is absent and to the asset/`NSImage` when present (assert the resolution helper's output, e.g. a pure `image(forAsset:) -> NSImage?` returning `nil` → placeholder branch); `MenuBarIllustration` rasterizes to a non-`nil` `NSImage` via `ImageRenderer`
+- [x] create `FramedScreenshot` (takes an asset name or a rendered `NSImage`; frames it with border/shadow/caption; falls back to a drawn placeholder when no image resolves; the image is non-interactive)
+- [x] create `MenuBarIllustration` SwiftUI view + an `ImageRenderer`-based helper that bakes it to an `NSImage`
+- [x] add `App/Resources/Onboarding.xcassets` with the three placeholder imagesets; add it to `project.yml` target sources; run `task generate`
+- [x] run `task test` — must pass before next task
 
 ### Task 4: Onboarding root view (paged flow)
 
