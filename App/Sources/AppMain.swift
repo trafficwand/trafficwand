@@ -49,6 +49,11 @@ final class AppMain: NSObject, NSApplicationDelegate {
     /// the wiring stays decoupled from the concrete framework.
     private var updater: UpdaterControlling?
 
+    /// The first-launch onboarding window controller. Retained so the window and
+    /// its view model persist for the app's lifetime; built in
+    /// `applicationDidFinishLaunching` and shown once (gated by `OnboardingStore`).
+    private var onboardingWindowController: OnboardingWindowController?
+
     static func main() {
         let app = NSApplication.shared
         let delegate = AppMain()
@@ -106,6 +111,25 @@ final class AppMain: NSObject, NSApplicationDelegate {
         // (the closure is owned by `intake`, owned by `self`) and the awkward
         // double-optional of `[weak self]`.
         intake.activate { url in service.route(url: url) }
+
+        // First-launch onboarding: build ONE `OnboardingStore` (production uses
+        // `.standard`) and inject that same instance into the retained
+        // `OnboardingWindowController`'s view model — single source of truth for the
+        // show-once flag. The "Open Settings" deep link reuses `openSettings(tab:)`
+        // (lands on `.rules`); `onFinish` is a no-op (the controller closes its own
+        // window). Presented LAST, after the rest of the app is wired and after
+        // `intake.activate`, so it never gates or alters cold-start link routing.
+        let onboardingStore = OnboardingStore()
+        let onboardingViewModel = OnboardingViewModel(
+            store: onboardingStore,
+            onOpenSettings: { [weak self] tab in self?.openSettings(tab: tab) },
+            onFinish: {}
+        )
+        let onboardingController = OnboardingWindowController(viewModel: onboardingViewModel)
+        onboardingWindowController = onboardingController
+        if onboardingStore.hasCompletedOnboarding == false {
+            onboardingController.show()
+        }
     }
 
     /// URL intake: hand each link to `LinkIntake`, which routes it immediately if the

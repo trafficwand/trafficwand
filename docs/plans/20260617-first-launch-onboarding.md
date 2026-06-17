@@ -230,11 +230,11 @@ Thin App-layer feature, no Core changes:
 - Modify: `App/Sources/AppMain.swift`
 - Modify (if needed): `App/Tests/AppTests/...` (extend an existing launch/smoke assertion, or add a small gate test if `AppMain` exposes a testable seam; otherwise rely on the controller/store tests + manual verification)
 
-- [ ] build **one** `OnboardingStore` instance; inject it into a retained `OnboardingWindowController` along with the `openSettings(tab:)` deep-link closure and an `onFinish` no-op
-- [ ] gate the `show()` off **that same** store instance (`store.hasCompletedOnboarding == false`), after the rest of the app is wired — single source of truth, no second `OnboardingStore()`
-- [ ] verify no regression to cold-start link intake (onboarding is presented after `intake.activate`; it does not gate routing)
-- [ ] note: `AppMain.applicationDidFinishLaunching` has no unit-test seam today (matches existing precedent — `AppSmokeTests` only checks Core linkage), so the show-once gate's correctness rides on the `OnboardingStore` + `OnboardingWindowController` tests plus manual verification, not on an `AppMain` test
-- [ ] run `task test` — must pass before next task
+- [x] build **one** `OnboardingStore` instance; inject it into a retained `OnboardingWindowController` along with the `openSettings(tab:)` deep-link closure and an `onFinish` no-op
+- [x] gate the `show()` off **that same** store instance (`store.hasCompletedOnboarding == false`), after the rest of the app is wired — single source of truth, no second `OnboardingStore()`
+- [x] verify no regression to cold-start link intake (onboarding is presented after `intake.activate`; it does not gate routing) — onboarding wiring is appended *after* the `intake.activate { ... }` call, so the buffered-link flush runs first and unchanged; routing path is untouched
+- [x] note: `AppMain.applicationDidFinishLaunching` has no unit-test seam today (matches existing precedent — `AppSmokeTests` only checks Core linkage), so the show-once gate's correctness rides on the `OnboardingStore` + `OnboardingWindowController` tests plus manual verification, not on an `AppMain` test — confirmed: no new AppMain test added; relied on existing store/controller tests, full suite (223 tests) green
+- [x] run `task test` — must pass before next task — 223 tests, 0 failures; `task lint` clean
 
 ### Task 7: Verify acceptance criteria
 
