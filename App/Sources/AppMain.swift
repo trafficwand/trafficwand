@@ -62,8 +62,12 @@ final class AppMain: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // Menu-bar agent: no Dock icon, no main menu activation.
-        NSApp.setActivationPolicy(.accessory)
+        // ponytail: .regular for this dev stage so the app has a Dock icon and is
+        // reachable via ⌘-Tab while bringing up onboarding/settings UI. Overrides
+        // LSUIElement at runtime. Revert to .accessory (pure menu-bar agent) before
+        // release, or flip to .regular only while a window is open if a Dock icon is
+        // wanted only when there's a window to switch to.
+        NSApp.setActivationPolicy(.regular)
 
         // Sparkle updater: retained for the app's lifetime so its background
         // checks keep running. The "Check for Updates…" menu item drives it

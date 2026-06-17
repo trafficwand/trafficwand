@@ -49,6 +49,11 @@ final class OnboardingWindowController: NSObject {
 
         NSApp.activate(ignoringOtherApps: true)
         controller.showWindow(nil)
+        // Center AFTER showWindow: the hosting controller only applies the
+        // SwiftUI .frame size during its first layout pass, so centering at
+        // construction time positions a not-yet-sized window. Centering here
+        // anchors the real 540×600 window in the middle of the screen.
+        controller.window?.center()
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
@@ -71,7 +76,6 @@ final class OnboardingWindowController: NSObject {
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.center()
 
         return NSWindowController(window: window)
     }
