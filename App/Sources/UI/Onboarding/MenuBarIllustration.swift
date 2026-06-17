@@ -72,20 +72,14 @@ struct MenuBarIllustration: View {
         .background(Color(nsColor: .windowBackgroundColor).opacity(0.85))
     }
 
-    /// The real app icon if available, else a generic wand glyph so the
-    /// illustration is well-formed even when the icon can't be resolved.
+    /// The TrafficWand **menu-bar** glyph — the same SF Symbol template the real
+    /// status item uses (`StatusBarController.statusIconSymbolName`), not the big
+    /// application icon, so the illustration matches what the user actually sees in
+    /// their menu bar.
     private var appIcon: some View {
-        Group {
-            if let icon = NSImage(named: NSImage.applicationIconName) {
-                Image(nsImage: icon)
-                    .resizable()
-                    .interpolation(.high)
-            } else {
-                Image(systemName: "wand.and.stars")
-                    .resizable()
-                    .foregroundStyle(.tint)
-            }
-        }
+        Image(systemName: StatusBarController.statusIconSymbolName)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(.primary)
     }
 
     /// Rasterizes the illustration to a flat `NSImage` at 2x scale.
