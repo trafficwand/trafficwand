@@ -95,6 +95,11 @@ task run
 
 ## Setting TrafficWand as the default browser
 
+On first launch, TrafficWand shows a short onboarding tour (where to find it in the menu
+bar, how to set it as your default browser, and a quick intro to rules and aliases) with a
+**Set as Default** button and a shortcut into Settings. It appears only once. You can also
+set the default browser manually at any time:
+
 1. Launch TrafficWand (`task run`).
 2. Click the TrafficWand item in the macOS menu bar.
 3. Choose **"Set as Default Browser…"**.

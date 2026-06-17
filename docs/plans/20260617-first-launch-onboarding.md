@@ -249,9 +249,9 @@ Thin App-layer feature, no Core changes:
 - Modify: `CLAUDE.md` (add an Onboarding subsection under the App/ layer description if the pattern warrants it)
 - Modify: `README.md` (only if it documents first-run behavior)
 
-- [ ] update `CLAUDE.md` (unconditional) with the onboarding window/flag pattern and the screenshot-asset convention — this is an architectural seam in the same class as the documented `LinkIntake`/picker/aliases patterns
-- [ ] update `README.md` if it covers first-run UX
-- [ ] move this plan to `docs/plans/completed/`
+- [x] update `CLAUDE.md` (unconditional) with the onboarding window/flag pattern and the screenshot-asset convention — this is an architectural seam in the same class as the documented `LinkIntake`/picker/aliases patterns — added a "First-launch onboarding" `###` subsection under the App/ layer docs (store/flag, page/view model flow, window controller, screenshot-asset convention)
+- [x] update `README.md` if it covers first-run UX — README's "Setting TrafficWand as the default browser" section covers first-run UX, so added a brief mention of the one-time onboarding tour there
+- [x] (deferred: orchestrator moves the plan to `docs/plans/completed/` after review + finalize phases)
 
 ## Post-Completion
 

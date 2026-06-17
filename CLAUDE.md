@@ -67,6 +67,40 @@ The rule of thumb: **anything decision-shaped goes in Core and gets a unit test;
 anything that touches the system is a thin adapter in App, kept behind a protocol so the
 decision logic stays testable.**
 
+### First-launch onboarding
+
+A paged onboarding window appears **once** on first launch (issue #9). It lives entirely
+in the **App layer** (not Core — it is UI presentation state, not a routing decision) and
+is tested in `AppTests`. The pieces:
+
+- **`OnboardingStore`** (`App/Sources/Adapters/OnboardingStore.swift`) — the show-once
+  gate: a struct wrapping an injected `UserDefaults` (default `.standard`), single key,
+  `hasCompletedOnboarding` getter + `markCompleted()` (mirrors `LastUsedStore`, tested
+  against an isolated `UserDefaults(suiteName:)`). Completion is **on close** — dismissing
+  the window by any path (Done, Open Settings, or the red close button) marks it done.
+- **`OnboardingPage`** + **`OnboardingViewModel`** (`App/Sources/UI/Onboarding/`) — the
+  pure, testable flow: a `CaseIterable` enum of **4 pages** in order (`menuBar →
+  defaultBrowser → rules → aliases`), each carrying `title`, `body`, and an image source;
+  the `@Observable @MainActor` view model owns `currentIndex`, `next()`/`back()` (clamped
+  at bounds), `openSettings()` (deep-links to the Rules tab via the injected
+  `onOpenSettings`), and `complete()` (`store.markCompleted()` + `onFinish`).
+- **`OnboardingWindowController`** (`App/Sources/UI/Onboarding/`) — mirrors
+  `SettingsWindowController`: a lazy `NSWindow` hosting `OnboardingRootView` via
+  `NSHostingController`, activates the app on `show()`, and calls `viewModel.complete()`
+  from `windowWillClose`. `AppMain.applicationDidFinishLaunching` builds **one**
+  `OnboardingStore`, retains the controller, and gates `show()` on
+  `hasCompletedOnboarding == false` — appended *after* `intake.activate` so cold-start link
+  routing is untouched.
+- **Screenshot-asset convention.** `App/Resources/Onboarding.xcassets` holds the **three
+  real screenshots** (user-captured PNGs: `onboarding-default-browser`, `onboarding-rules`,
+  `onboarding-aliases`) — wired into the target via `project.yml` `sources`. The menu-bar
+  page is **not** a screenshot: it is a code-drawn `MenuBarIllustration` rasterized to an
+  `NSImage` via `ImageRenderer`. `FramedScreenshot` resolves a named asset (or a provided
+  rendered `NSImage`) and renders a **drawn placeholder** until a PNG exists, so the
+  feature ships and runs before the screenshots are captured. All page visuals are flat,
+  non-interactive images; the only live controls (Set as Default, Open Settings,
+  Back/Next) live in the footer.
+
 ### Profile aliases & `RoutingDestination` resolution
 
 A rule (and `FallbackPolicy.defaultBrowser`) no longer embeds a concrete `BrowserTarget`
