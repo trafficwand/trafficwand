@@ -11,13 +11,9 @@ import XCTest
 final class OnboardingImageTests: XCTestCase {
 
     func testImageForAssetReturnsNilForMissingAsset() {
-        // No PNG is shipped for this name yet, so the resolver must return nil,
-        // driving FramedScreenshot to its drawn placeholder branch.
-        let resolved = FramedScreenshot.image(forAsset: "onboarding-default-browser")
-        XCTAssertNil(resolved)
-    }
-
-    func testImageForAssetReturnsNilForNonsenseName() {
+        // A name that is never in the catalog → nil, driving FramedScreenshot to its
+        // drawn placeholder branch. (Don't key this on a real onboarding asset name:
+        // those resolve once the user drops the screenshot PNG into the catalog.)
         let resolved = FramedScreenshot.image(forAsset: "definitely-not-a-real-asset-name")
         XCTAssertNil(resolved)
     }

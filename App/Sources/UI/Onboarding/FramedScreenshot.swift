@@ -48,42 +48,67 @@ struct FramedScreenshot: View {
         }
     }
 
-    /// Aspect ratio of the card. Matches `MenuBarIllustration.renderSize`
-    /// (480×300 = 1.6) so the rasterized illustration fills the frame exactly;
-    /// real screenshots are fit (letterboxed) inside the same consistent shape.
+    /// Aspect ratio of the drawn card (illustration + placeholder). Matches
+    /// `MenuBarIllustration.renderSize` (480×300 = 1.6). Real screenshots are *not*
+    /// boxed to this — they keep their natural aspect.
     private static let aspect: CGFloat = 1.6
     private static let cornerRadius: CGFloat = 12
 
-    var body: some View {
-        ZStack {
-            // Single card background, shared by both the image and placeholder
-            // cases so every page reads as the same shape.
-            RoundedRectangle(cornerRadius: Self.cornerRadius)
-                .fill(Color(nsColor: .windowBackgroundColor))
+    /// How the resolved source should be presented.
+    private enum DisplayMode {
+        /// A real screenshot asset — shown plain (it already has its own window
+        /// chrome/shadow), with no backplate or shadow.
+        case screenshot(NSImage)
+        /// The drawn menu-bar illustration — gets the card backplate + shadow so it
+        /// reads as a framed screenshot.
+        case illustration(NSImage)
+        /// No image yet — drawn placeholder on the card.
+        case placeholder
+    }
 
-            if let image = resolvedImage {
+    private var displayMode: DisplayMode {
+        switch source {
+        case .asset(let name):
+            if let image = Self.image(forAsset: name) { return .screenshot(image) }
+            return .placeholder
+        case .rendered(let image):
+            if let image { return .illustration(image) }
+            return .placeholder
+        }
+    }
+
+    var body: some View {
+        Group {
+            switch displayMode {
+            case .screenshot(let image):
+                // Plain: no backplate, no shadow — the screenshot is its own frame.
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+                    .aspectRatio(contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius))
+
+            case .illustration(let image):
                 Image(nsImage: image)
                     .resizable()
                     .interpolation(.high)
                     .aspectRatio(contentMode: .fit)
                     .padding(1)
-            } else {
+                    .modifier(CardFrame(cornerRadius: Self.cornerRadius))
+                    .aspectRatio(Self.aspect, contentMode: .fit)
+
+            case .placeholder:
                 placeholderContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .modifier(CardFrame(cornerRadius: Self.cornerRadius))
+                    .aspectRatio(Self.aspect, contentMode: .fit)
             }
         }
-        .aspectRatio(Self.aspect, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius))
-        .overlay(
-            RoundedRectangle(cornerRadius: Self.cornerRadius)
-                .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
         .accessibilityElement()
         .accessibilityLabel(caption ?? "Screenshot")
     }
 
     /// Drawn placeholder content shown until a real screenshot asset is added.
-    /// Sits on the shared card background (no second rounded rect).
     private var placeholderContent: some View {
         VStack(spacing: 8) {
             Image(systemName: "photo")
@@ -95,5 +120,25 @@ struct FramedScreenshot: View {
                 .multilineTextAlignment(.center)
         }
         .padding(24)
+    }
+}
+
+/// The card chrome (backplate + border + shadow) used by the drawn illustration and
+/// the placeholder — but *not* by real screenshots, which carry their own framing.
+private struct CardFrame: ViewModifier {
+    let cornerRadius: CGFloat
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(Color(nsColor: .windowBackgroundColor))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
     }
 }
