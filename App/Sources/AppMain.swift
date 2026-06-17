@@ -63,6 +63,10 @@ final class AppMain: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Single-instance guard: if another copy is already running, hand off to it
+        // and quit (see `yieldIfAnotherInstanceRunning`).
+        if yieldIfAnotherInstanceRunning() { return }
+
         // Menu-bar agent by default (no Dock icon, no ⌘-Tab). The policy is flipped
         // to `.regular` only while the onboarding or Settings window is open, then
         // back to `.accessory` when the last one closes — so the app is reachable via
@@ -151,6 +155,37 @@ final class AppMain: NSObject, NSApplicationDelegate {
             onboardingController.show()
             syncActivationPolicy()
         }
+    }
+
+    /// If another copy of TrafficWand is already running, activate it, quit this
+    /// process, and return `true`. Two instances sharing one `config.json` can race
+    /// on load/save and quarantine the config (see `FileConfigStore`), losing the
+    /// user's rules/aliases. ponytail: a tiny launch-race window where two
+    /// near-simultaneous starts miss each other is acceptable for a menu-bar agent;
+    /// a cross-process file lock would be the upgrade if it ever matters.
+    private func yieldIfAnotherInstanceRunning() -> Bool {
+        // Never yield under the test harness: the test host app shares our bundle ID,
+        // so self-terminating would crash the test runner before it connects.
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return false
+        }
+        let others = NSRunningApplication
+            .runningApplications(withBundleIdentifier: Bundle.main.bundleIdentifier ?? "")
+            .filter { $0.processIdentifier != NSRunningApplication.current.processIdentifier }
+        guard Self.shouldYieldToExistingInstance(otherInstanceCount: others.count) else {
+            return false
+        }
+        Self.logger.log("Another instance is running; activating it and quitting.")
+        others.first?.activate()
+        NSApp.terminate(nil)
+        return true
+    }
+
+    /// Whether to yield to an already-running instance (and quit). `nonisolated` and
+    /// pure so the single-instance decision is unit-tested off the main actor; the
+    /// `NSRunningApplication` query that produces the count is the thin adapter above.
+    nonisolated static func shouldYieldToExistingInstance(otherInstanceCount: Int) -> Bool {
+        otherInstanceCount > 0
     }
 
     /// Shows a Dock icon + ⌘-Tab presence (`.regular`) while the onboarding or
