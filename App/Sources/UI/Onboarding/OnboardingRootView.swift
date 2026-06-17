@@ -44,7 +44,7 @@ struct OnboardingRootView: View {
     var body: some View {
         VStack(spacing: 24) {
             FramedScreenshot(source: imageSource(for: viewModel.currentPage), caption: viewModel.currentPage.title)
-                .frame(maxHeight: 280)
+                .frame(maxWidth: 440)
 
             VStack(spacing: 10) {
                 Text(viewModel.currentPage.title)

@@ -85,6 +85,10 @@ final class SettingsWindowController {
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
+    /// Whether the Settings window is currently on screen. Drives the app's
+    /// Dock-icon/activation policy in `AppMain`.
+    var isWindowVisible: Bool { windowController?.window?.isVisible ?? false }
+
     /// Test-only: closes the live window (if any). Production code never needs
     /// to dispose the window controller — `SettingsWindowController` itself is
     /// retained for the app's lifetime and the window is hidden, not destroyed,

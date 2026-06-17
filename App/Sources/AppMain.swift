@@ -18,6 +18,7 @@ import os
 /// The status-bar menu, Settings, and the picker panel compose the rest of the
 /// app; `.prompt` decisions are presented by the real `PickerPanelController`.
 @main
+@MainActor
 final class AppMain: NSObject, NSApplicationDelegate {
     private static let logger = Logger(subsystem: AppIdentity.subsystem, category: "intake")
 
@@ -62,12 +63,25 @@ final class AppMain: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        // ponytail: .regular for this dev stage so the app has a Dock icon and is
-        // reachable via ⌘-Tab while bringing up onboarding/settings UI. Overrides
-        // LSUIElement at runtime. Revert to .accessory (pure menu-bar agent) before
-        // release, or flip to .regular only while a window is open if a Dock icon is
-        // wanted only when there's a window to switch to.
-        NSApp.setActivationPolicy(.regular)
+        // Menu-bar agent by default (no Dock icon, no ⌘-Tab). The policy is flipped
+        // to `.regular` only while the onboarding or Settings window is open, then
+        // back to `.accessory` when the last one closes — so the app is reachable via
+        // the Dock / ⌘-Tab exactly when there's a window to switch to. See
+        // `syncActivationPolicy()`.
+        NSApp.setActivationPolicy(.accessory)
+
+        // Re-sync the activation policy whenever any window closes. `willClose` fires
+        // while the window is still visible, so defer to the next runloop tick when
+        // `isVisible` reflects the close.
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated { self?.syncActivationPolicy() }
+            }
+        }
 
         // Sparkle updater: retained for the app's lifetime so its background
         // checks keep running. The "Check for Updates…" menu item drives it
@@ -135,7 +149,19 @@ final class AppMain: NSObject, NSApplicationDelegate {
         onboardingWindowController = onboardingController
         if onboardingStore.hasCompletedOnboarding == false {
             onboardingController.show()
+            syncActivationPolicy()
         }
+    }
+
+    /// Shows a Dock icon + ⌘-Tab presence (`.regular`) while the onboarding or
+    /// Settings window is visible, and reverts to the menu-bar-agent policy
+    /// (`.accessory`) when neither is. Called after showing either window and from
+    /// the window-close observer.
+    @MainActor
+    private func syncActivationPolicy() {
+        let anyWindowVisible = (onboardingWindowController?.isWindowVisible ?? false)
+            || (settingsWindowController?.isWindowVisible ?? false)
+        NSApp.setActivationPolicy(anyWindowVisible ? .regular : .accessory)
     }
 
     /// URL intake: hand each link to `LinkIntake`, which routes it immediately if the
@@ -157,6 +183,7 @@ final class AppMain: NSObject, NSApplicationDelegate {
     private func openSettings() {
         Self.logger.log("Opening Settings window.")
         settingsWindowController?.show()
+        syncActivationPolicy()
     }
 
     /// Shows the Settings window deep-linked to the About tab (status-bar
@@ -165,6 +192,7 @@ final class AppMain: NSObject, NSApplicationDelegate {
     private func openAbout() {
         Self.logger.log("Opening About (Settings → About tab).")
         settingsWindowController?.show(initialTab: .about)
+        syncActivationPolicy()
     }
 
     /// Deep-link variant of `openSettings()`: always lands on `tab`.
@@ -172,6 +200,7 @@ final class AppMain: NSObject, NSApplicationDelegate {
     private func openSettings(tab: SettingsTab) {
         Self.logger.log("Opening Settings window on tab: \(String(describing: tab), privacy: .public).")
         settingsWindowController?.show(initialTab: tab)
+        syncActivationPolicy()
     }
 
     /// Assembles the real `RoutingService` from the concrete adapters.

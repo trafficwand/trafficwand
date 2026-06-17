@@ -48,48 +48,52 @@ struct FramedScreenshot: View {
         }
     }
 
+    /// Aspect ratio of the card. Matches `MenuBarIllustration.renderSize`
+    /// (480×300 = 1.6) so the rasterized illustration fills the frame exactly;
+    /// real screenshots are fit (letterboxed) inside the same consistent shape.
+    private static let aspect: CGFloat = 1.6
+    private static let cornerRadius: CGFloat = 12
+
     var body: some View {
-        Group {
+        ZStack {
+            // Single card background, shared by both the image and placeholder
+            // cases so every page reads as the same shape.
+            RoundedRectangle(cornerRadius: Self.cornerRadius)
+                .fill(Color(nsColor: .windowBackgroundColor))
+
             if let image = resolvedImage {
                 Image(nsImage: image)
                     .resizable()
                     .interpolation(.high)
                     .aspectRatio(contentMode: .fit)
+                    .padding(1)
             } else {
-                placeholder
+                placeholderContent
             }
         }
-        .frame(maxWidth: .infinity)
-        .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color(nsColor: .windowBackgroundColor))
-        )
+        .aspectRatio(Self.aspect, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: 10)
+            RoundedRectangle(cornerRadius: Self.cornerRadius)
                 .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .shadow(color: .black.opacity(0.2), radius: 8, y: 4)
+        .shadow(color: .black.opacity(0.18), radius: 8, y: 4)
         .accessibilityElement()
         .accessibilityLabel(caption ?? "Screenshot")
     }
 
-    /// Drawn placeholder shown until a real screenshot asset is added.
-    private var placeholder: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.secondary.opacity(0.12))
-            VStack(spacing: 8) {
-                Image(systemName: "photo")
-                    .font(.system(size: 32))
-                    .foregroundStyle(.secondary)
-                Text(caption ?? "Screenshot goes here")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            .padding(24)
+    /// Drawn placeholder content shown until a real screenshot asset is added.
+    /// Sits on the shared card background (no second rounded rect).
+    private var placeholderContent: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "photo")
+                .font(.system(size: 32))
+                .foregroundStyle(.secondary)
+            Text(caption ?? "Screenshot goes here")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
-        .aspectRatio(16.0 / 10.0, contentMode: .fit)
+        .padding(24)
     }
 }

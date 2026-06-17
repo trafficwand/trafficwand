@@ -72,6 +72,10 @@ final class OnboardingWindowController: NSObject {
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
+    /// Whether the onboarding window is currently on screen. Drives the app's
+    /// Dock-icon/activation policy in `AppMain`.
+    var isWindowVisible: Bool { windowController?.window?.isVisible ?? false }
+
     /// Closes the onboarding window (if any). Closing triggers `windowWillClose`,
     /// which marks completion. Wire this as the view model's `onFinish` so the
     /// last-page "Open Settings" button actually dismisses the window.
