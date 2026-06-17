@@ -209,10 +209,10 @@ Thin App-layer feature, no Core changes:
 - Modify: `App/Sources/UI/Previews/PreviewFixtures.swift` (sample `OnboardingViewModel` for `#Preview`, `#if DEBUG`, `internal`)
 - Create: `App/Tests/AppTests/OnboardingRootViewTests.swift` (light: constructs the view across pages without crashing; the default-browser page shows a Set-as-Default affordance; the last page's primary action calls `openSettings()`)
 
-- [ ] write the view tests (construction across each page index; primary-button wiring on the last page; default-browser button present on page 2)
-- [ ] create `OnboardingRootView`: shows `currentPage`'s `FramedScreenshot` (rendered illustration for `menuBar`), title, body; footer with Back / Next, page-dot indicator; the `defaultBrowser` page adds a live "Set as Default" button via an injected `DefaultBrowserManager` (held by the view, like `GeneralSettingsView`); the `aliases` (last) page's primary button is "Open Settings" → `viewModel.openSettings()` then closes (label/landing-tab note: it deep-links to **Rules** per issue #9's "open rules editor"; if "Open Settings" landing on Rules reads oddly, relabel to "Open Rules" — decide here)
-- [ ] add a `#Preview` using `PreviewFixtures`
-- [ ] run `task test` — must pass before next task
+- [x] write the view tests (construction across each page index; primary-button wiring on the last page; default-browser button present on page 2)
+- [x] create `OnboardingRootView`: shows `currentPage`'s `FramedScreenshot` (rendered illustration for `menuBar`), title, body; footer with Back / Next, page-dot indicator; the `defaultBrowser` page adds a live "Set as Default" button via an injected `DefaultBrowserManager` (held by the view, like `GeneralSettingsView`); the `aliases` (last) page's primary button is "Open Settings" → `viewModel.openSettings()` then closes (kept the "Open Settings" label landing on Rules, as the plan's note permits)
+- [x] add a `#Preview` using `PreviewFixtures`
+- [x] run `task test` — must pass before next task
 
 ### Task 5: Onboarding window controller
 
