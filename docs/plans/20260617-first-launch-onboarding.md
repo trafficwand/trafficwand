@@ -170,10 +170,10 @@ Thin App-layer feature, no Core changes:
 - Create: `App/Sources/Adapters/OnboardingStore.swift`
 - Create: `App/Tests/AppTests/OnboardingStoreTests.swift`
 
-- [ ] write `OnboardingStoreTests`: default is not-completed; after `markCompleted()` it is completed; uses an isolated `UserDefaults(suiteName:)` and clears it (mirror `LastUsedStoreTests`)
-- [ ] assert the isolated store leaves `UserDefaults.standard` unchanged (mirror `LastUsedStoreTests.testStoreDoesNotPolluteStandardDefaults`) — guards against a leaked test write silently marking the dev's own install as onboarded
-- [ ] create `OnboardingStore` wrapping injected `UserDefaults` (default `.standard`), single key, `hasCompletedOnboarding` getter + `markCompleted()`
-- [ ] run `task test` — must pass before next task
+- [x] write `OnboardingStoreTests`: default is not-completed; after `markCompleted()` it is completed; uses an isolated `UserDefaults(suiteName:)` and clears it (mirror `LastUsedStoreTests`)
+- [x] assert the isolated store leaves `UserDefaults.standard` unchanged (mirror `LastUsedStoreTests.testStoreDoesNotPolluteStandardDefaults`) — guards against a leaked test write silently marking the dev's own install as onboarded
+- [x] create `OnboardingStore` wrapping injected `UserDefaults` (default `.standard`), single key, `hasCompletedOnboarding` getter + `markCompleted()`
+- [x] run `task test` — must pass before next task
 
 ### Task 2: Onboarding pages + navigation view model
 
