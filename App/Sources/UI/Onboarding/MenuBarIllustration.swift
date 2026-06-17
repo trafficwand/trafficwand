@@ -12,6 +12,10 @@ struct MenuBarIllustration: View {
     /// Fixed render size; baked at 2x for a crisp raster (see `rendered()`).
     static let renderSize = CGSize(width: 480, height: 300)
 
+    /// The color scheme to draw in, so the rasterized illustration matches the
+    /// system theme (`@Environment(\.colorScheme)` is read inside via `appearance`).
+    @Environment(\.colorScheme) private var colorScheme
+
     var body: some View {
         ZStack {
             // Desktop backdrop.
@@ -63,13 +67,14 @@ struct MenuBarIllustration: View {
             Text("9:41")
                 .font(.system(size: 13))
         }
-        .foregroundStyle(.primary)
+        .foregroundStyle(colorScheme == .dark ? Color.white : Color.black)
         .padding(.horizontal, 14)
         .frame(height: 30)
-        // A solid, translucent fill rather than `.regularMaterial`: materials don't
-        // reliably rasterize through `ImageRenderer` (they can bake out transparent
-        // or flat), so use a concrete menu-bar-like color that always renders.
-        .background(Color(nsColor: .windowBackgroundColor).opacity(0.85))
+        // Explicit per-scheme fill (not `.regularMaterial`, which doesn't reliably
+        // rasterize through `ImageRenderer`, and not `Color(nsColor:)`, which won't
+        // adapt to the injected colorScheme during rendering): a concrete menu-bar
+        // color per theme that always bakes correctly.
+        .background(colorScheme == .dark ? Color(white: 0.16) : Color(white: 0.96))
     }
 
     /// The TrafficWand **menu-bar** glyph — the same SF Symbol template the real
@@ -82,13 +87,16 @@ struct MenuBarIllustration: View {
             .foregroundStyle(.primary)
     }
 
-    /// Rasterizes the illustration to a flat `NSImage` at 2x scale.
+    /// Rasterizes the illustration to a flat `NSImage` at 2x scale, drawn in the
+    /// given color scheme so it matches the system theme.
     ///
     /// `ImageRenderer` is `@MainActor`, so this must be called on the main actor.
     /// Returns `nil` only if the renderer fails to produce an image.
     @MainActor
-    static func rendered() -> NSImage? {
-        let renderer = ImageRenderer(content: MenuBarIllustration())
+    static func rendered(colorScheme: ColorScheme = .light) -> NSImage? {
+        let renderer = ImageRenderer(
+            content: MenuBarIllustration().environment(\.colorScheme, colorScheme)
+        )
         renderer.scale = 2
         return renderer.nsImage
     }

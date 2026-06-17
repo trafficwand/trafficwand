@@ -56,9 +56,10 @@ struct FramedScreenshot: View {
 
     /// How the resolved source should be presented.
     private enum DisplayMode {
-        /// A real screenshot asset — shown plain (it already has its own window
-        /// chrome/shadow), with no backplate or shadow.
-        case screenshot(NSImage)
+        /// A real screenshot asset, carried by **name** so it renders as a SwiftUI
+        /// `Image(name)` — which resolves light/dark catalog variants from the
+        /// environment color scheme. Shown plain (no backplate/shadow).
+        case screenshot(String)
         /// The drawn menu-bar illustration — gets the card backplate + shadow so it
         /// reads as a framed screenshot.
         case illustration(NSImage)
@@ -69,7 +70,9 @@ struct FramedScreenshot: View {
     private var displayMode: DisplayMode {
         switch source {
         case .asset(let name):
-            if let image = Self.image(forAsset: name) { return .screenshot(image) }
+            // Existence check via NSImage(named:); render via Image(name) below so
+            // light/dark variants follow the system theme.
+            if Self.image(forAsset: name) != nil { return .screenshot(name) }
             return .placeholder
         case .rendered(let image):
             if let image { return .illustration(image) }
@@ -80,9 +83,10 @@ struct FramedScreenshot: View {
     var body: some View {
         Group {
             switch displayMode {
-            case .screenshot(let image):
+            case .screenshot(let name):
                 // Plain: no backplate, no shadow — the screenshot is its own frame.
-                Image(nsImage: image)
+                // SwiftUI Image(name) auto-resolves the catalog's light/dark variant.
+                Image(name)
                     .resizable()
                     .interpolation(.high)
                     .aspectRatio(contentMode: .fit)

@@ -29,6 +29,9 @@ struct OnboardingRootView: View {
     /// Re-read on appear/refresh; the live default status can change outside the app.
     @State private var isDefaultBrowser = false
 
+    /// Drives re-baking the menu-bar illustration so it matches the system theme.
+    @Environment(\.colorScheme) private var colorScheme
+
     /// Whether a given page should surface the live "Set as Default" affordance.
     /// Pure so the per-page layout decision is unit-testable.
     static func showsDefaultBrowserButton(for page: OnboardingPage) -> Bool {
@@ -87,7 +90,7 @@ struct OnboardingRootView: View {
         case .asset(let name):
             return .asset(name)
         case .rendered:
-            return .rendered(MenuBarIllustration.rendered())
+            return .rendered(MenuBarIllustration.rendered(colorScheme: colorScheme))
         }
     }
 

@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import XCTest
 @testable import TrafficWand
 
@@ -27,11 +28,13 @@ final class OnboardingImageTests: XCTestCase {
 
     @MainActor
     func testMenuBarIllustrationRasterizesToImage() {
-        let image = MenuBarIllustration.rendered()
-        XCTAssertNotNil(image)
-        if let image {
-            XCTAssertGreaterThan(image.size.width, 0)
-            XCTAssertGreaterThan(image.size.height, 0)
+        for scheme in [ColorScheme.light, .dark] {
+            let image = MenuBarIllustration.rendered(colorScheme: scheme)
+            XCTAssertNotNil(image, "expected a rasterized image for \(scheme)")
+            if let image {
+                XCTAssertGreaterThan(image.size.width, 0)
+                XCTAssertGreaterThan(image.size.height, 0)
+            }
         }
     }
 }
