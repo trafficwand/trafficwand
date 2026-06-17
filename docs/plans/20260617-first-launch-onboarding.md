@@ -182,10 +182,10 @@ Thin App-layer feature, no Core changes:
 - Create: `App/Sources/UI/Onboarding/OnboardingViewModel.swift`
 - Create: `App/Tests/AppTests/OnboardingViewModelTests.swift`
 
-- [ ] write `OnboardingViewModelTests`: exactly 4 pages in order `menuBar, defaultBrowser, rules, aliases`; starts at index 0 (`isFirstPage`); `next()` advances and clamps at last (`isLastPage`); `back()` retreats and clamps at 0; `openSettings()` invokes the injected closure with `.rules`; `complete()` marks the store completed and fires `onFinish`
-- [ ] create `OnboardingPage` enum (`CaseIterable`) with `title`, `body`, and image-source per page
-- [ ] create `OnboardingViewModel` (`@Observable @MainActor`) with navigation + `openSettings()` + `complete()`, injecting `OnboardingStore`, `onOpenSettings`, `onFinish`
-- [ ] run `task test` — must pass before next task
+- [x] write `OnboardingViewModelTests`: exactly 4 pages in order `menuBar, defaultBrowser, rules, aliases`; starts at index 0 (`isFirstPage`); `next()` advances and clamps at last (`isLastPage`); `back()` retreats and clamps at 0; `openSettings()` invokes the injected closure with `.rules`; `complete()` marks the store completed and fires `onFinish`
+- [x] create `OnboardingPage` enum (`CaseIterable`) with `title`, `body`, and image-source per page
+- [x] create `OnboardingViewModel` (`@Observable @MainActor`) with navigation + `openSettings()` + `complete()`, injecting `OnboardingStore`, `onOpenSettings`, `onFinish`
+- [x] run `task test` — must pass before next task
 
 ### Task 3: Screenshot/illustration views (`FramedScreenshot` + `MenuBarIllustration`)
 
