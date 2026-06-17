@@ -20,6 +20,11 @@ import SwiftUI
 /// double-fire or recursion.
 @MainActor
 final class OnboardingWindowController: NSObject {
+    /// Fixed onboarding window size. Mirrors `OnboardingRootView`'s `.frame`; set
+    /// explicitly so the window has a known size before we compute its centered
+    /// origin (the SwiftUI frame is otherwise only applied on the first layout pass).
+    private static let contentSize = NSSize(width: 540, height: 600)
+
     private let viewModel: OnboardingViewModel
     private let defaultBrowserManager: DefaultBrowserManager
     private var windowController: NSWindowController?
@@ -49,11 +54,21 @@ final class OnboardingWindowController: NSObject {
 
         NSApp.activate(ignoringOtherApps: true)
         controller.showWindow(nil)
-        // Center AFTER showWindow: the hosting controller only applies the
-        // SwiftUI .frame size during its first layout pass, so centering at
-        // construction time positions a not-yet-sized window. Centering here
-        // anchors the real 540×600 window in the middle of the screen.
-        controller.window?.center()
+        // Position explicitly: NSWindow.center() proved unreliable here (it placed
+        // the window in a corner), and NSWindowController cascades on showWindow.
+        // Compute the centered origin from the active screen's visible frame using
+        // the window's real size after layout.
+        if let window = controller.window {
+            window.setContentSize(Self.contentSize)
+            if let screen = window.screen ?? NSScreen.main {
+                let visible = screen.visibleFrame
+                let size = window.frame.size
+                window.setFrameOrigin(NSPoint(
+                    x: visible.midX - size.width / 2,
+                    y: visible.midY - size.height / 2
+                ))
+            }
+        }
         controller.window?.makeKeyAndOrderFront(nil)
     }
 
@@ -76,8 +91,12 @@ final class OnboardingWindowController: NSObject {
         window.styleMask = [.titled, .closable]
         window.isReleasedWhenClosed = false
         window.delegate = self
+        window.setContentSize(Self.contentSize)
 
-        return NSWindowController(window: window)
+        let controller = NSWindowController(window: window)
+        // Don't let the controller cascade the window away from our centered origin.
+        controller.shouldCascadeWindows = false
+        return controller
     }
 }
 
