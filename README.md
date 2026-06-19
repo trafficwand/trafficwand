@@ -10,7 +10,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/picker-dark.png">
-  <img align="left" width="280" src=".github/assets/screenshots/picker-light.png" alt="TrafficWand picker">
+  <img align="left" width="320" hspace="28" vspace="10" src=".github/assets/screenshots/picker-light.png" alt="TrafficWand picker">
 </picture>
 
 TrafficWand is a tiny menu-bar app that becomes your default browser. Click a link
@@ -20,13 +20,14 @@ kind of link.
 Write a rule like `*.github.com → Chrome "Work"` once and stop opening links in the wrong
 window. No rule yet? A picker asks where the link should go — and remembers your choice.
 
-**Free and open source**, collects **no data**, runs on **macOS 26 (Tahoe) or later**.
-
-### [⬇ Download the latest release](../../releases/latest)
-
-Grab the `.dmg`, drag TrafficWand to Applications, and launch it.
+**Free and open source collects no data, runs on macOS 26 (Tahoe) or later.**
 
 <br clear="left">
+
+## Download
+
+**[Download the latest release](../../releases/latest)**, drag TrafficWand to
+Applications, and launch it.
 
 ## Building from source
 
