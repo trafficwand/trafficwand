@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/assets/logo.png" alt="TrafficWand" width="160">
+  <img src=".github/assets/logo.png" alt="TrafficWand" width="128">
 </p>
 <h1 align="center">TrafficWand</h1>
 <p align="center"><strong>Open every link in the right browser.</strong></p>
@@ -22,6 +22,19 @@ Free, open source, no data collected. macOS 26 (Tahoe) or later.
 
 **[Download the latest release](../../releases/latest)**, drag TrafficWand to
 Applications, and launch it.
+
+## Building from source
+
+Needs [XcodeGen](https://github.com/yonaskolb/XcodeGen),
+[SwiftLint](https://github.com/realm/SwiftLint), and [Task](https://taskfile.dev):
+
+```sh
+brew install xcodegen swiftlint
+git clone https://github.com/trafficwand/trafficwand.git
+cd trafficwand && task generate && task run
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for build, release, and architecture details.
 
 ## How it works
 
@@ -46,31 +59,36 @@ unmatched links.
 
 ## FAQ
 
-**How much does it cost?** Free and open source. [Sponsorship](https://github.com/sponsors/trafficwand)
-is welcome.
+### How much does it cost?
 
-**What data do you collect?** None. The only network activity is checking GitHub for updates.
+Free and open source. [Sponsorship](https://github.com/sponsors/trafficwand) is welcome.
 
-**Which browsers are supported?** All installed browsers. Profile switching works for the
-Chromium family (Chrome, Edge, Brave, Arc, …) and Firefox; Safari is link-only.
+### What data do you collect?
 
-**How do I stop using it?** Set another default browser in **System Settings ▸ Desktop &
-Dock**, then delete the app — it leaves nothing behind.
+None. The only network activity is checking GitHub for updates.
 
-**Found a bug or want a feature?** [Open an issue](https://github.com/trafficwand/trafficwand/issues).
+### Which browsers are supported?
 
-## Building from source
+Currently profile switching works for:
+- Arc
+- Brave
+- Chrome
+- Chromium
+- Dia
+- Edge
+- Firefox
+- Helium
+- Vivaldi
 
-Needs [XcodeGen](https://github.com/yonaskolb/XcodeGen),
-[SwiftLint](https://github.com/realm/SwiftLint), and [Task](https://taskfile.dev):
+Also, TrafficWand supports Comet and Safari, but currently without profile switching.
 
-```sh
-brew install xcodegen swiftlint
-git clone https://github.com/trafficwand/trafficwand.git
-cd trafficwand && task generate && task run
-```
+### How do I stop using it?
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for build, release, and architecture details.
+Set another default browser in **System Settings ▸ Desktop & Dock**, then move app from /Applications to the Trash — it leaves nothing behind.
+
+### I Found a bug or have a feature request
+
+[Open an issue](https://github.com/trafficwand/trafficwand/issues).
 
 ## License
 
