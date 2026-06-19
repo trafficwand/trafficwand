@@ -229,21 +229,21 @@ existing `docs/spikes/*` and `CLAUDE.md` for deep detail rather than duplicating
 **Files:**
 - Modify: `README.md`
 
-- [ ] add **How it works** as the website's 3 numbered steps (make it default → write
+- [x] add **How it works** as the website's 3 numbered steps (make it default → write
       rules → click links anywhere)
-- [ ] add **Features** mirroring the website groups: Rules (top-to-bottom matching),
+- [x] add **Features** mirroring the website groups: Rules (top-to-bottom matching),
       Profiles/"work stays at work", Aliases, Picker ("no rule yet?"), Lives in the menu
       bar, Works with already-open browsers, Update notifications, Free & open source / no
       data collected
-- [ ] keep & lightly trim the existing **Rule syntax** glob table + examples (the
+- [x] keep & lightly trim the existing **Rule syntax** glob table + examples (the
       `*.github.com` vs `*github.com` gotcha is worth keeping) — **preserve wording**
-- [ ] **preserve** the existing **Setting TrafficWand as the default browser** steps
+- [x] **preserve** the existing **Setting TrafficWand as the default browser** steps
       (current README ~lines 96–111) — they're user-facing — and add a one-line
       "TrafficWand keeps itself up to date via Sparkle (toggle in Settings ▸ General)" note
-- [ ] add a **FAQ** section with the website's 6 Q&As, GitHub-flavored (cost/sponsorship,
+- [x] add a **FAQ** section with the website's 6 Q&As, GitHub-flavored (cost/sponsorship,
       data collection = none, requirements, supported browsers/profiles, how to stop
       using it, found a bug → open an issue)
-- [ ] verify internal anchor links (if a table of contents is added) and the FAQ's
+- [x] verify internal anchor links (if a table of contents is added) and the FAQ's
       external links (issues, sponsor) resolve
 
 ### Task 5: Rewrite README.md — Build from source, Contributing, License, final pass

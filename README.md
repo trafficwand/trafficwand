@@ -31,16 +31,41 @@ macOS 26 (Tahoe) or later.
 
 ## How it works
 
-When TrafficWand is your default browser, macOS delivers every clicked link to it via
-`application(_:open:)`. TrafficWand extracts the host, finds the first enabled rule
-whose glob matches, and launches the rule's browser/profile. Links matching no rule
-follow your chosen fallback policy.
+1. **Make it your default browser.** One click in the menu bar, then confirm the standard
+   macOS prompt. That's it — TrafficWand now receives every link you click.
+2. **Write a few rules.** Tell TrafficWand which sites open where, for example
+   `*.github.com → Chrome "Work"` or `*figma.com → Arc "Design"`. First match wins.
+3. **Click links anywhere.** From Slack, Mail, your terminal, anywhere — each link routes
+   to the right browser and the right profile automatically.
 
-Profile selection is done by launching the target browser with per-family command-line
-arguments (Chromium `--profile-directory=<dir>`, Firefox `-P <name>`) through
-`open -n -a <app> --args …`, which reliably forwards the link into the correct profile
-of an already-running browser. See [`docs/spikes/launch-mechanism.md`](docs/spikes/launch-mechanism.md)
-for the full investigation behind this choice.
+Under the hood: when TrafficWand is your default browser, macOS delivers every clicked
+link to it via `application(_:open:)`. TrafficWand extracts the host, finds the first
+enabled rule whose glob matches, and launches the rule's browser/profile. Links matching
+no rule follow your chosen fallback policy.
+
+Profile selection is done by launching the target browser via per-family command-line
+arguments — see [Profiles](#profiles) for details.
+
+---
+
+## Features
+
+- **Rules** — tell TrafficWand which sites open in which browser. Rules are evaluated
+  top-to-bottom; the first match wins.
+- **Work stays at work** — route per profile, so Chrome "Work" and Chrome "Personal" stay
+  cleanly separated (and the same for any Chromium- or Firefox-family browser).
+- **Aliases** — give a browser+profile a name (e.g. **"Work"**) and re-point every rule
+  that uses it in one place.
+- **No rule yet?** — a picker panel asks where the link should go, and can remember your
+  choice as a new rule.
+- **Lives in the menu bar** — no Dock icon, stays out of the way.
+- **Works with browsers you've already opened** — links route into a running browser's
+  profile, no relaunch.
+- **Tells you about updates** — checks for new versions automatically.
+- **Free and open source** — collects no data.
+
+The sections below cover [profiles](#profiles), [aliases](#aliases), and the
+[fallback policy](#fallback-policy) in detail.
 
 ---
 
@@ -119,6 +144,9 @@ set the default browser manually at any time:
 The menu item shows a checkmark and reads "TrafficWand is your default browser" once it
 is the active handler for `http`/`https`. To revert, pick another browser in
 **System Settings ▸ Desktop & Dock ▸ Default web browser**.
+
+TrafficWand keeps itself up to date automatically via Sparkle — toggle background checks
+in **Settings ▸ General**, or use **"Check for Updates…"** in the menu bar.
 
 ---
 
@@ -236,6 +264,32 @@ For links that match no rule, choose one of:
   nothing has been recorded yet, the picker is shown.
 
 The picker is always the ultimate fallback.
+
+---
+
+## FAQ
+
+**How much does it cost?**
+TrafficWand is free and open source. If you'd like to support it, sponsorship is welcome
+via [GitHub Sponsors](https://github.com/sponsors/trafficwand).
+
+**What data do you collect?**
+None. The only network activity is checking GitHub for updates.
+
+**What does it require?**
+macOS 26 (Tahoe) or later. It's a notarized Developer ID app, so it opens without
+Gatekeeper warnings.
+
+**Which browsers and profiles are supported?**
+All installed browsers. Profile switching works for the Chromium family (Chrome, Edge,
+Brave, Arc, and more) and Firefox; Safari is link-only (no profile selection).
+
+**How do I stop using it?**
+Change your default browser back in **System Settings ▸ Desktop & Dock**, then delete the
+app — it leaves nothing behind.
+
+**Found a bug or want a feature?**
+Open an issue: <https://github.com/trafficwand/trafficwand/issues>.
 
 ---
 
