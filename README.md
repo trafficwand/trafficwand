@@ -1,7 +1,4 @@
-<p align="center">
-  <img src=".github/assets/logo.png" alt="TrafficWand" width="128">
-</p>
-<h1 align="center">TrafficWand</h1>
+<h1 align="center"><img src=".github/assets/logo.png" valign="middle" alt="TrafficWand" width="64"> TrafficWand</h1>
 <p align="center"><strong>Open every link in the right browser.</strong></p>
 
 <p align="center">
@@ -16,7 +13,6 @@ anywhere on your Mac and it opens in the browser — and the profile — you pic
 kind of link. Write a rule like `*.github.com → Chrome "Work"` once and stop opening links
 in the wrong window.
 
-Free, open source, no data collected. macOS 26 (Tahoe) or later.
 
 ## Download
 
@@ -46,16 +42,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for build, release, and architecture deta
 
 ## Features
 
-- **Rules** — match sites with simple wildcards; the first matching rule wins.
-- **Profiles** — keep Chrome "Work" and "Personal" cleanly apart (Chromium and Firefox).
-- **Aliases** — name a browser+profile once, re-point every rule that uses it in one place.
+- **Rules** — match sites based on domain masks.
+- **Profiles** — keep work and personal stuff cleanly apart.
+- **Aliases** — name a browser+profile once, re-use in rules.
 - **Picker** — no rule yet? A panel asks where the link goes and can remember your choice.
-- **Stays out of the way** — menu bar only, no Dock icon.
-- **Works with browsers you've already opened** — routes into a running profile, no relaunch.
-- **Auto-updates** and collects no data.
-
-Everything is configured in **Settings** — rules, profiles, aliases, and the fallback for
-unmatched links.
+- **Stays out of the way** — the app lives quietly in menu bar.
 
 ## FAQ
 
