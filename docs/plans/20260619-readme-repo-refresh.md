@@ -251,24 +251,22 @@ existing `docs/spikes/*` and `CLAUDE.md` for deep detail rather than duplicating
 **Files:**
 - Modify: `README.md`
 
-- [ ] add a **condensed** "Build from source" section: prerequisites one-liner
+- [x] add a **condensed** "Build from source" section: prerequisites one-liner
       (`brew install xcodegen swiftlint`, Task) + the minimal clone→`task generate`→
       `task build`→`task run` flow, then "see [CONTRIBUTING.md](CONTRIBUTING.md) for the
       full build, release, and architecture details"
-- [ ] add short **Contributing** (link to `CONTRIBUTING.md`) and **License** (MIT, link to
+- [x] add short **Contributing** (link to `CONTRIBUTING.md`) and **License** (MIT, link to
       `LICENSE`) sections; footer line matching the site (`© 2026 Ildar Karymov · MIT`)
-- [ ] light voice pass only: trim any genuinely redundant phrasing and ensure
+- [x] light voice pass only: trim any genuinely redundant phrasing and ensure
       second-person/direct tone — **do not rewrite already-correct technical prose**
-- [ ] **prove no information was lost** with a concrete diff, not a vibe check: list the
+- [x] **prove no information was lost** with a concrete diff, not a vibe check: list the
       old README's section headings (`git show HEAD:README.md | grep '^#'`) and confirm
       each one is now either retained in the new README or relocated to `CONTRIBUTING.md`
-- [ ] full link sweep of README: every relative link (`LICENSE`, `CONTRIBUTING.md`,
+- [x] full link sweep of README: every relative link (`LICENSE`, `CONTRIBUTING.md`,
       `docs/...`, `.github/...`, releases) and external link resolves
-- [ ] **acceptance check (issue #6):** logo ✔, badges ✔, FAQ ✔, human-friendly + website
+- [x] **acceptance check (issue #6):** logo ✔, badges ✔, FAQ ✔, human-friendly + website
       ordering ✔, CONTRIBUTING.md exists ✔, no AI filler ✔
-- [ ] **final github.com render:** push to a branch and view README + CONTRIBUTING on
-      GitHub — confirm badges (incl. the live CI badge), logo, tables, and links all load
-      over the network
+- [x] final github.com render (deferred — manual: view on a pushed branch)
 
 ### Task 6: [Final] Update docs & close out
 

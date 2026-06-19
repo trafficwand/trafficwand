@@ -24,11 +24,6 @@ on macOS 26 (Tahoe) or later.
 **[Download the latest release](../../releases/latest)** — grab the `.dmg`, drag
 TrafficWand to Applications, and launch it.
 
-It's a notarized Developer ID app, so it opens without Gatekeeper warnings. Requires
-macOS 26 (Tahoe) or later.
-
----
-
 ## How it works
 
 1. **Make it your default browser.** One click in the menu bar, then confirm the standard
@@ -66,65 +61,6 @@ arguments — see [Profiles](#profiles) for details.
 
 The sections below cover [profiles](#profiles), [aliases](#aliases), and the
 [fallback policy](#fallback-policy) in detail.
-
----
-
-## Requirements
-
-- macOS 26 (Tahoe) or later for the app.
-- **Xcode 26+** (provides the Swift 6 toolchain and `xcodebuild`).
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) and
-  [SwiftLint](https://github.com/realm/SwiftLint), installed via Homebrew:
-
-  ```sh
-  brew install xcodegen swiftlint
-  ```
-
-- [Task](https://taskfile.dev) (`task`) as the command runner.
-
-For building a **release DMG** (`task dmg`) you additionally need:
-
-- Enrollment in the [Apple Developer Program](https://developer.apple.com/programs/) (for
-  a Developer ID Application certificate + notarization access).
-- [`create-dmg`](https://github.com/create-dmg/create-dmg), installed via Homebrew:
-
-  ```sh
-  brew install create-dmg
-  ```
-
-See §Distribution below for the full release setup.
-
-The `.xcodeproj` is **generated** by XcodeGen from `project.yml` and is not committed —
-run `task generate` after a fresh clone.
-
----
-
-## Build & run
-
-All workflows go through the `Taskfile`:
-
-| Command           | What it does                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| `task generate`   | Generate `TrafficWand.xcodeproj` from `project.yml` (XcodeGen).                                               |
-| `task build`      | Build the app target (`xcodebuild build`). Accepts an optional `CONFIG` var (default `Debug`; e.g. `CONFIG=Release task build`). |
-| `task build-info` | Write `BuildInfo.xcconfig` with the current short git commit hash (auto-run by `build`/`run`/`test`/default).                   |
-| `task run`        | Build and launch the app.                                                                                                         |
-| `task test`       | Run the app test target (`xcodebuild test`); includes Core via SPM.                                                               |
-| `task test-core`  | Run the pure Core package tests (`swift test`) + the no-AppKit guard.                                                             |
-| `task lint`       | Run SwiftLint across the repo.                                                                                                    |
-| `task dmg`        | Build, sign, notarize, and package the app as a DMG (release — see §Distribution for setup).                                     |
-| `task install`    | Release build installed to `/Applications`. Quits any running instance; does not relaunch. (unsigned — Gatekeeper may prompt on first launch) |
-| `task install-dev` | Debug build installed to `/Applications`. Quits any running instance; does not relaunch.                                       |
-| `task`            | Default: generate + build + lint + all tests.                                                                                     |
-
-Typical first run:
-
-```sh
-brew install xcodegen swiftlint
-task generate
-task build
-task run
-```
 
 ---
 
@@ -293,97 +229,36 @@ Open an issue: <https://github.com/trafficwand/trafficwand/issues>.
 
 ---
 
-## Architecture
+## Building from source
 
-TrafficWand is split into two layers:
+You'll need [XcodeGen](https://github.com/yonaskolb/XcodeGen),
+[SwiftLint](https://github.com/realm/SwiftLint), and [Task](https://taskfile.dev):
+`brew install xcodegen swiftlint`. Then:
 
-- **`TrafficWandCore`** — a pure Swift SPM package (Foundation only, **zero AppKit**).
-  All the decision logic lives here: glob matching, rule matching, routing decisions,
-  config persistence, profile parsing, and launch-argument construction. It is
-  exhaustively unit-tested via `swift test`, and a build-time guard
-  (`task test-core`) fails if any Core source imports AppKit.
-- **App target** — a thin AppKit/SwiftUI shell that adapts the system (`NSWorkspace`,
-  `Process`, the filesystem, the menu bar, Settings, and the picker panel) to the Core
-  protocols. Assembled by XcodeGen from `project.yml`.
+```sh
+git clone https://github.com/trafficwand/trafficwand.git
+cd trafficwand
+task generate
+task run
+```
 
-This split keeps the trustworthy, testable logic free of UI and system dependencies; the
-app is just glue. See [`CLAUDE.md`](CLAUDE.md) for the protocol seams and contributor
-notes.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full build, release, and architecture
+details.
 
 ---
 
-## Distribution
+## Contributing
 
-TrafficWand is distributed as a **non-sandboxed Developer ID** app (so it can read
-browser profile configs and launch profiles without sandbox exceptions): signed with a
-Developer ID Application certificate, **Hardened Runtime** enabled, **notarized** and
-stapled by Apple, packaged as a **DMG**.
-
-Building a release DMG requires enrollment in the Apple Developer Program. One-time
-setup:
-
-```sh
-brew install create-dmg
-```
-
-Then provide the four notary credentials. The easiest way is a gitignored
-`.dmg.env` file at the repo root — copy the template and fill it in once:
-
-```sh
-cp .dmg.env.example .dmg.env
-$EDITOR .dmg.env
-```
-
-`.dmg.env.example` documents where each value comes from (Team ID, the Developer ID
-Application certificate, and the app-specific password). `scripts/build-dmg.sh` sources
-`.dmg.env` automatically. Alternatively, export the four vars
-(`DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_SPECIFIC_PASSWORD`)
-in your shell — in CI they come from environment secrets, so no file is needed there.
-
-Validate the setup without running the full pipeline:
-
-```sh
-scripts/build-dmg.sh --preflight
-```
-
-Then produce a release:
-
-```sh
-task dmg
-```
-
-Output lands at `dist/TrafficWand-<version>.dmg`, ready to upload as a GitHub release
-asset.
-
-### Updates
-
-Installed copies keep themselves current via [Sparkle](https://sparkle-project.org): the
-menu bar exposes a **"Check for Updates…"** item for an on-demand check, and the app also
-checks automatically in the background (toggle in **Settings ▸ General**). Updates are
-EdDSA-signed and downloaded from the GitHub Releases page, so no manual re-download is
-needed once you're on a Sparkle-enabled release.
-
-### Automated releases
-
-Pushing a `v*.*.*` tag does this automatically. The
-[`release.yml`](.github/workflows/release.yml) workflow runs the same `task dmg`
-pipeline in CI and creates (or updates) the matching GitHub Release with auto-generated
-notes and the signed, notarized DMG attached. Bump `MARKETING_VERSION` in `project.yml`
-to match the tag before pushing — a mismatch fails the job before the build. Grab the
-signed DMG from the [Releases](../../releases) page.
-
-This requires seven repository secrets (Settings → Secrets and variables → Actions): the
-four notary credentials above (`DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_TEAM_ID`,
-`APPLE_APP_SPECIFIC_PASSWORD`) plus, so CI can import the signing identity into a
-throwaway keychain, `MACOS_CERTIFICATE_P12_BASE64` (base64 of the exported `.p12`
-containing the certificate **and** its private key) and `MACOS_CERTIFICATE_PASSWORD`
-(the `.p12` password), plus `SPARKLE_ED_PRIVATE_KEY` (the EdDSA private key used to sign
-the update appcast). CI signs the DMG, renders `appcast.xml`, and uploads it as a release
-asset; the app's feed URL is the stable `releases/latest/download/appcast.xml` redirect.
+Contributions are welcome. File bugs and feature requests on the
+[issue tracker](https://github.com/trafficwand/trafficwand/issues), and see
+[CONTRIBUTING.md](CONTRIBUTING.md) for how to build, test, and submit changes.
 
 ---
 
 ## License
 
-TrafficWand is released under the MIT License. See [`LICENSE`](LICENSE) for the
-full text.
+TrafficWand is released under the MIT License. See [`LICENSE`](LICENSE) for the full text.
+
+---
+
+<p align="center">© 2026 Ildar Karymov · MIT License</p>
