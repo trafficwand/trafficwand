@@ -48,6 +48,41 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for build, release, and architecture deta
 - **Picker** — no rule yet? A panel asks where the link goes and can remember your choice.
 - **Stays out of the way** — the app lives quietly in menu bar.
 
+<details>
+<summary><strong>Screenshots</strong></summary>
+
+<br>
+
+**Rules** — order your routing rules; first match wins.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/rules-dark.png">
+  <img src=".github/assets/screenshots/rules-light.png" alt="Rules" width="600">
+</picture>
+
+**Profiles** — route to a specific browser profile per rule.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/profiles-dark.png">
+  <img src=".github/assets/screenshots/profiles-light.png" alt="Profiles" width="600">
+</picture>
+
+**Aliases** — name a browser+profile once and reuse it.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/aliases-dark.png">
+  <img src=".github/assets/screenshots/aliases-light.png" alt="Aliases" width="600">
+</picture>
+
+**Picker** — choose where an unmatched link goes, and remember the choice.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/picker-dark.png">
+  <img src=".github/assets/screenshots/picker-light.png" alt="Picker" width="600">
+</picture>
+
+</details>
+
 ## FAQ
 
 ### How much does it cost?
