@@ -8,11 +8,26 @@
   <img src="https://img.shields.io/badge/macOS-26%20Tahoe%2B-blue" alt="macOS 26 Tahoe or later">
 </p>
 
+<table>
+<tr>
+<td width="45%" valign="middle">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/picker-dark.png">
+  <img src=".github/assets/screenshots/picker-light.png" alt="TrafficWand picker" width="100%">
+</picture>
+</td>
+<td width="55%" valign="middle">
+
 TrafficWand is a tiny menu-bar app that becomes your default browser. Click a link
 anywhere on your Mac and it opens in the browser — and the profile — you picked for that
-kind of link. Write a rule like `*.github.com → Chrome "Work"` once and stop opening links
-in the wrong window.
+kind of link.
 
+Write a rule like `*.github.com → Chrome "Work"` once and stop opening links in the wrong
+window. No rule yet? A picker asks where the link should go — and remembers your choice.
+
+</td>
+</tr>
+</table>
 
 ## Download
 
@@ -72,13 +87,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for build, release, and architecture deta
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/aliases-dark.png">
   <img src=".github/assets/screenshots/aliases-light.png" alt="Aliases" width="600">
-</picture>
-
-**Picker** — choose where an unmatched link goes, and remember the choice.
-
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/picker-dark.png">
-  <img src=".github/assets/screenshots/picker-light.png" alt="Picker" width="600">
 </picture>
 
 </details>
