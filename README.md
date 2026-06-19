@@ -8,15 +8,10 @@
   <img src="https://img.shields.io/badge/macOS-26%20Tahoe%2B-blue" alt="macOS 26 Tahoe or later">
 </p>
 
-<table>
-<tr>
-<td width="45%" valign="middle">
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/picker-dark.png">
-  <img src=".github/assets/screenshots/picker-light.png" alt="TrafficWand picker" width="100%">
+  <img align="left" width="360" src=".github/assets/screenshots/picker-light.png" alt="TrafficWand picker">
 </picture>
-</td>
-<td width="55%" valign="middle">
 
 TrafficWand is a tiny menu-bar app that becomes your default browser. Click a link
 anywhere on your Mac and it opens in the browser — and the profile — you picked for that
@@ -25,9 +20,10 @@ kind of link.
 Write a rule like `*.github.com → Chrome "Work"` once and stop opening links in the wrong
 window. No rule yet? A picker asks where the link should go — and remembers your choice.
 
-</td>
-</tr>
-</table>
+TrafficWand is **free and open source**, collects **no data**, and runs on **macOS 26
+(Tahoe) or later**.
+
+<br clear="left">
 
 ## Download
 
