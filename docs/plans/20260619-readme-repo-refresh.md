@@ -215,14 +215,14 @@ existing `docs/spikes/*` and `CLAUDE.md` for deep detail rather than duplicating
 **Files:**
 - Modify: `README.md`
 
-- [ ] replace the top with the centered logo + `# TrafficWand` + tagline markup
-- [ ] add the badges row (release, CI, license, platform) with correct link targets
-- [ ] rewrite the hero blurb in the website's voice ("A tiny menu-bar app that becomes
+- [x] replace the top with the centered logo + `# TrafficWand` + tagline markup
+- [x] add the badges row (release, CI, license, platform) with correct link targets
+- [x] rewrite the hero blurb in the website's voice ("A tiny menu-bar app that becomes
       your default browser…", "Set up your rules once and stop opening links in the wrong
       window.") — no AI hedging
-- [ ] add a **Download / Install** section: link to `../../releases/latest`, a one-line
+- [x] add a **Download / Install** section: link to `../../releases/latest`, a one-line
       Gatekeeper note (notarized Developer ID app), and the macOS 26 Tahoe+ requirement
-- [ ] verify the logo `<img>` and all four badges render (view on a branch / preview)
+- [x] verify the logo `<img>` and all four badges render (view on a branch / preview)
 
 ### Task 4: Rewrite README.md — How it works, Features, Rule syntax, FAQ
 

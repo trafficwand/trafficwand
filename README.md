@@ -1,21 +1,31 @@
-# TrafficWand
+<p align="center">
+  <img src=".github/assets/logo.png" alt="TrafficWand" width="160">
+</p>
+<h1 align="center">TrafficWand</h1>
+<p align="center"><strong>Open every link in the right browser.</strong></p>
 
-**TrafficWand** is a native macOS menu-bar app that becomes your system **default
-browser** and routes every clicked `http`/`https` link to the *right* browser — and
-optionally the *right* profile — based on simple, user-defined wildcard domain rules.
+<p align="center">
+  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/trafficwand/trafficwand" alt="Latest release"></a>
+  <a href="https://github.com/trafficwand/trafficwand/actions/workflows/ci.yml"><img src="https://github.com/trafficwand/trafficwand/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/trafficwand/trafficwand" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/macOS-26%20Tahoe%2B-blue" alt="macOS 26 Tahoe or later">
+</p>
 
-If you juggle work and personal contexts across different browsers (or different
-Chrome/Firefox profiles), TrafficWand stops you from constantly opening the wrong one.
-Set it as your default browser once, write a few rules like `*.github.com → Chrome
-"Work"`, and every link lands where it belongs.
+TrafficWand is a tiny menu-bar app that becomes your default browser. When you click a
+link anywhere on your Mac, it opens in the browser — and the profile — you picked for
+that kind of link. Write a rule like `*.github.com → Chrome "Work"` once and stop
+opening links in the wrong window.
 
-- Lives quietly in the **menu bar** (no Dock icon).
-- **First-match-wins** ordered rules with wildcard globs.
-- Targets a **browser + optional profile** per rule (Chrome "Work", Firefox
-  "Personal", …) — directly, or via a reusable **alias** you can re-point in one place.
-- Configurable **fallback** for links that match no rule: show a **picker**, send to a
-  single **default browser**, or reuse the **last-used** browser.
-- Profile routing that works **even when the target browser is already running**.
+Set up your rules once and forget about it. TrafficWand is free and open source, and runs
+on macOS 26 (Tahoe) or later.
+
+## Download
+
+**[Download the latest release](../../releases/latest)** — grab the `.dmg`, drag
+TrafficWand to Applications, and launch it.
+
+It's a notarized Developer ID app, so it opens without Gatekeeper warnings. Requires
+macOS 26 (Tahoe) or later.
 
 ---
 
