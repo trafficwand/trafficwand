@@ -192,22 +192,22 @@ existing `docs/spikes/*` and `CLAUDE.md` for deep detail rather than duplicating
 - Reference (read, don't duplicate): `CLAUDE.md`, `docs/spikes/launch-mechanism.md`,
   `docs/spikes/sparkle-updates.md`
 
-- [ ] add a short intro: how to report bugs / request features (link to GitHub issues),
+- [x] add a short intro: how to report bugs / request features (link to GitHub issues),
       and the English-only + TDD-for-Core working conventions (from `CLAUDE.md`)
-- [ ] move the **Requirements** section from README (macOS 26, Xcode 26+, XcodeGen,
+- [x] move the **Requirements** section from README (macOS 26, Xcode 26+, XcodeGen,
       SwiftLint, Task, `create-dmg`) into CONTRIBUTING
-- [ ] move the full **Build & run** `task` command table into CONTRIBUTING
-- [ ] move the **Architecture** (Core/App split) section into CONTRIBUTING; link to
+- [x] move the full **Build & run** `task` command table into CONTRIBUTING
+- [x] move the **Architecture** (Core/App split) section into CONTRIBUTING; link to
       `CLAUDE.md` for the protocol seams
-- [ ] move the **Distribution** (signing/notarization/DMG) + the **Sparkle build/appcast
+- [x] move the **Distribution** (signing/notarization/DMG) + the **Sparkle build/appcast
       pipeline** + **Automated releases** (tag → `release.yml`, the seven secrets) into
       CONTRIBUTING; link to `docs/spikes/sparkle-updates.md`. **Do not** move the
       user-facing "the app auto-updates" note or the "Setting as default browser" steps —
       those stay in the README (Task 4)
-- [ ] add a "Where things live" pointer paragraph (Core vs App, `docs/spikes/`, `CLAUDE.md`)
-- [ ] verify every relocated relative link still resolves from the new file's location
+- [x] add a "Where things live" pointer paragraph (Core vs App, `docs/spikes/`, `CLAUDE.md`)
+- [x] verify every relocated relative link still resolves from the new file's location
       (e.g. `docs/spikes/...`, `.github/workflows/release.yml`, `LICENSE`)
-- [ ] render-check CONTRIBUTING.md (Markdown preview / GitHub) — headings, tables, code
+- [x] render-check CONTRIBUTING.md (Markdown preview / GitHub) — headings, tables, code
       blocks all render
 
 ### Task 3: Rewrite README.md — header, badges, hero, download
