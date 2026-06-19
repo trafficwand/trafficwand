@@ -177,13 +177,13 @@ existing `docs/spikes/*` and `CLAUDE.md` for deep detail rather than duplicating
 **Files:**
 - Create: `.github/assets/logo.png`
 
-- [ ] create `.github/assets/` and run the `sips -Z 400 … --out .github/assets/logo.png`
+- [x] create `.github/assets/` and run the `sips -Z 400 … --out .github/assets/logo.png`
       command (see Technical Details) to downscale the app icon
-- [ ] verify the output exists and is < ~500 KB (`ls -lh .github/assets/logo.png`); if
-      larger, re-run with `-Z 256`
-- [ ] verify it opens as a valid PNG (Quick Look / Preview)
-- [ ] confirm the source ~5 MB PNG is **not** added anywhere new (only the resized copy
-      is committed)
+- [x] verify the output exists and is < ~500 KB (`ls -lh .github/assets/logo.png`); if
+      larger, re-run with `-Z 256` (result: 191 KB, 400x400)
+- [x] verify it opens as a valid PNG (Quick Look / Preview) (`file` reports valid PNG, 400x400 RGBA)
+- [x] confirm the source ~5 MB PNG is **not** added anywhere new (only the resized copy
+      is committed) (git status shows only `.github/assets/` untracked; source remains its single tracked copy)
 
 ### Task 2: Write CONTRIBUTING.md (relocate developer/maintainer content)
 
