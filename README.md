@@ -33,10 +33,9 @@ TrafficWand to Applications, and launch it.
 3. **Click links anywhere.** From Slack, Mail, your terminal, anywhere — each link routes
    to the right browser and the right profile automatically.
 
-Under the hood: when TrafficWand is your default browser, macOS delivers every clicked
-link to it via `application(_:open:)`. TrafficWand extracts the host, finds the first
-enabled rule whose glob matches, and launches the rule's browser/profile. Links matching
-no rule follow your chosen fallback policy.
+When TrafficWand is your default browser, macOS hands it every link you click; it finds
+the first matching rule and opens the link in that browser and profile. Links matching no
+rule follow your chosen fallback policy.
 
 Profile selection is done by launching the target browser via per-family command-line
 arguments — see [Profiles](#profiles) for details.
@@ -127,26 +126,18 @@ Each rule can target a specific profile within a browser:
 - **Firefox**: selected with `-P <name>`, where `<name>` is the profile name from
   `profiles.ini`. TrafficWand discovers these (honoring `installs.ini` defaulting).
 
-### Launch mechanism (from the spike)
-
-TrafficWand launches browsers via `open -n -a <app path> --args <profile flag> <url>`.
-This is the only approach that delivers the profile flag + URL to the browser's own
-argument parser regardless of whether the browser is already running — Chromium and
-Firefox both forward such a request to their running instance over their own IPC. The
-alternatives (`NSWorkspace` `OpenConfiguration.arguments`, direct-binary spawning) were
-evaluated and rejected/relegated; the full reasoning, argv contract, and Hardened
-Runtime implications are in [`docs/spikes/launch-mechanism.md`](docs/spikes/launch-mechanism.md).
-
 **Firefox caveat:** opening the link in Firefox is reliable, but switching to a
 *specific* profile when Firefox is **already running** is **best-effort** — Firefox's
-single-instance remoting model may open the link in the already-running profile rather
-than spinning up the requested one. (`-no-remote` is deliberately *not* used, because it
-breaks the running-instance case entirely.) Chromium has no such limitation.
+single-instance model may open the link in the already-running profile rather than the
+requested one. Chromium has no such limitation.
 
 Safari has no command-line profile selection, so rules targeting it route the link
-without a profile. Every other non-Firefox browser is treated as Chromium and uses
-`--profile-directory=<dir>` when a profile is set (unknown browsers simply carry no
-profile, so they launch their default).
+without a profile. Every other non-Firefox browser is treated as Chromium (unknown
+browsers simply carry no profile, so they launch their default).
+
+For the full launch mechanism — the exact arguments TrafficWand passes, the alternatives
+it evaluated, and the Hardened Runtime implications — see
+[`docs/spikes/launch-mechanism.md`](docs/spikes/launch-mechanism.md).
 
 ---
 
