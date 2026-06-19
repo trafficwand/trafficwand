@@ -270,10 +270,11 @@ existing `docs/spikes/*` and `CLAUDE.md` for deep detail rather than duplicating
 
 ### Task 6: [Final] Update docs & close out
 
-- [ ] update `CLAUDE.md` only if a new convention emerged (e.g. "user-facing docs live in
-      README, contributor docs in CONTRIBUTING") — otherwise skip
-- [ ] move this plan to `docs/plans/completed/`
-- [ ] reference issue #6 in the PR/commit so it auto-closes on merge
+- [x] update `CLAUDE.md` only if a new convention emerged (e.g. "user-facing docs live in
+      README, contributor docs in CONTRIBUTING") — otherwise skip (added a one-line
+      audience-split convention to the Working conventions section)
+- [x] move this plan to `docs/plans/completed/`
+- [x] referenced via commit message / PR (closes #6)
 
 ## Post-Completion
 
