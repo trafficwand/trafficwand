@@ -312,3 +312,4 @@ recipe.
 - Every code change includes new/updated tests (success and edge/error cases).
 - Keep Core free of system dependencies; inject time/filesystem/workspace via protocols.
 - Keep `task lint` clean.
+- Docs split by audience: user-facing docs live in `README.md`; contributor/maintainer docs (build, release, architecture) live in `CONTRIBUTING.md`.

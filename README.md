@@ -1,325 +1,128 @@
-# TrafficWand
+<h1 align="center"><img src=".github/assets/logo.png" valign="middle" alt="TrafficWand" width="64"> TrafficWand</h1>
+<p align="center"><strong>Open every link in the right browser.</strong></p>
 
-**TrafficWand** is a native macOS menu-bar app that becomes your system **default
-browser** and routes every clicked `http`/`https` link to the *right* browser — and
-optionally the *right* profile — based on simple, user-defined wildcard domain rules.
+<p align="center">
+  <a href="../../releases/latest"><img src="https://img.shields.io/github/v/release/trafficwand/trafficwand" alt="Latest release"></a>
+  <a href="https://github.com/trafficwand/trafficwand/actions/workflows/ci.yml"><img src="https://github.com/trafficwand/trafficwand/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/trafficwand/trafficwand" alt="License: MIT"></a>
+  <img src="https://img.shields.io/badge/macOS-26%20Tahoe%2B-blue" alt="macOS 26 Tahoe or later">
+</p>
 
-If you juggle work and personal contexts across different browsers (or different
-Chrome/Firefox profiles), TrafficWand stops you from constantly opening the wrong one.
-Set it as your default browser once, write a few rules like `*.github.com → Chrome
-"Work"`, and every link lands where it belongs.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/picker-dark.png">
+  <img align="left" width="320" hspace="8" vspace="0" src=".github/assets/screenshots/picker-light.png" alt="TrafficWand picker">
+</picture>
 
-- Lives quietly in the **menu bar** (no Dock icon).
-- **First-match-wins** ordered rules with wildcard globs.
-- Targets a **browser + optional profile** per rule (Chrome "Work", Firefox
-  "Personal", …) — directly, or via a reusable **alias** you can re-point in one place.
-- Configurable **fallback** for links that match no rule: show a **picker**, send to a
-  single **default browser**, or reuse the **last-used** browser.
-- Profile routing that works **even when the target browser is already running**.
+<br>
 
----
+TrafficWand is a tiny menu-bar app that becomes your default browser. Click a link
+anywhere on your Mac and it opens in the browser — and the profile — you picked for that
+kind of link.
 
-## How it works
+Write a rule like `*.github.com → Chrome "Work"` once and stop opening links in the wrong
+window. No rule yet? A picker asks where the link should go — and remembers your choice.
 
-When TrafficWand is your default browser, macOS delivers every clicked link to it via
-`application(_:open:)`. TrafficWand extracts the host, finds the first enabled rule
-whose glob matches, and launches the rule's browser/profile. Links matching no rule
-follow your chosen fallback policy.
+Create an alias once — like *Work* or *Personal* — and point your rules at it instead of picking the browser and profile every time. Re-point an alias and every rule that uses it follows, with nothing to edit one by one.
 
-Profile selection is done by launching the target browser with per-family command-line
-arguments (Chromium `--profile-directory=<dir>`, Firefox `-P <name>`) through
-`open -n -a <app> --args …`, which reliably forwards the link into the correct profile
-of an already-running browser. See [`docs/spikes/launch-mechanism.md`](docs/spikes/launch-mechanism.md)
-for the full investigation behind this choice.
+When a link doesn’t match any rule, TrafficWand asks which browser to open it in.
 
----
+<br clear="left">
 
-## Requirements
+## Download
 
-- macOS 26 (Tahoe) or later for the app.
-- **Xcode 26+** (provides the Swift 6 toolchain and `xcodebuild`).
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) and
-  [SwiftLint](https://github.com/realm/SwiftLint), installed via Homebrew:
+**[Download the latest release](../../releases/latest)**, drag TrafficWand to
+Applications, and launch it.
 
-  ```sh
-  brew install xcodegen swiftlint
-  ```
+## Building from source
 
-- [Task](https://taskfile.dev) (`task`) as the command runner.
-
-For building a **release DMG** (`task dmg`) you additionally need:
-
-- Enrollment in the [Apple Developer Program](https://developer.apple.com/programs/) (for
-  a Developer ID Application certificate + notarization access).
-- [`create-dmg`](https://github.com/create-dmg/create-dmg), installed via Homebrew:
-
-  ```sh
-  brew install create-dmg
-  ```
-
-See §Distribution below for the full release setup.
-
-The `.xcodeproj` is **generated** by XcodeGen from `project.yml` and is not committed —
-run `task generate` after a fresh clone.
-
----
-
-## Build & run
-
-All workflows go through the `Taskfile`:
-
-| Command           | What it does                                                                                                  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------- |
-| `task generate`   | Generate `TrafficWand.xcodeproj` from `project.yml` (XcodeGen).                                               |
-| `task build`      | Build the app target (`xcodebuild build`). Accepts an optional `CONFIG` var (default `Debug`; e.g. `CONFIG=Release task build`). |
-| `task build-info` | Write `BuildInfo.xcconfig` with the current short git commit hash (auto-run by `build`/`run`/`test`/default).                   |
-| `task run`        | Build and launch the app.                                                                                                         |
-| `task test`       | Run the app test target (`xcodebuild test`); includes Core via SPM.                                                               |
-| `task test-core`  | Run the pure Core package tests (`swift test`) + the no-AppKit guard.                                                             |
-| `task lint`       | Run SwiftLint across the repo.                                                                                                    |
-| `task dmg`        | Build, sign, notarize, and package the app as a DMG (release — see §Distribution for setup).                                     |
-| `task install`    | Release build installed to `/Applications`. Quits any running instance; does not relaunch. (unsigned — Gatekeeper may prompt on first launch) |
-| `task install-dev` | Debug build installed to `/Applications`. Quits any running instance; does not relaunch.                                       |
-| `task`            | Default: generate + build + lint + all tests.                                                                                     |
-
-Typical first run:
+Needs [XcodeGen](https://github.com/yonaskolb/XcodeGen),
+[SwiftLint](https://github.com/realm/SwiftLint), and [Task](https://taskfile.dev):
 
 ```sh
 brew install xcodegen swiftlint
-task generate
-task build
-task run
+git clone https://github.com/trafficwand/trafficwand.git
+cd trafficwand && task generate && task run
 ```
 
----
+See [CONTRIBUTING.md](CONTRIBUTING.md) for build, release, and architecture details.
 
-## Setting TrafficWand as the default browser
+## How it works
 
-On first launch, TrafficWand shows a short onboarding tour (where to find it in the menu
-bar, how to set it as your default browser, and a quick intro to rules and aliases) with a
-**Set as Default** button and a shortcut into Settings. It appears only once. You can also
-set the default browser manually at any time:
+1. **Make it your default browser** — one click in the menu bar, confirm the macOS prompt.
+2. **Write a few rules** — e.g. `*.github.com → Chrome "Work"`, `*figma.com → Arc "Design"`.
+   First match wins.
+3. **Click links anywhere** — from Slack, Mail, your terminal — each one lands where it
+   belongs.
 
-1. Launch TrafficWand (`task run`).
-2. Click the TrafficWand item in the macOS menu bar.
-3. Choose **"Set as Default Browser…"**.
-4. macOS shows its standard "Do you want to change your default web browser?" prompt —
-   confirm it.
+## Features
 
-The menu item shows a checkmark and reads "TrafficWand is your default browser" once it
-is the active handler for `http`/`https`. To revert, pick another browser in
-**System Settings ▸ Desktop & Dock ▸ Default web browser**.
+- **Rules** — match sites based on domain masks.
+- **Profiles** — keep work and personal stuff cleanly apart.
+- **Aliases** — name a browser+profile once, re-use in rules.
+- **Picker** — no rule yet? A panel asks where the link goes and can remember your choice.
+- **Stays out of the way** — the app lives quietly in menu bar.
 
----
+<details>
+<summary><strong>Screenshots</strong></summary>
 
-## Rule syntax
+<br>
 
-Rules use wildcard globs matched **case-insensitively** against the **full host** of
-the link (the matcher is anchored — the whole host must match, not just part of it):
+**Rules** — order your routing rules; first match wins.
 
-| Token         | Meaning                                              |
-| ------------- | --------------------------------------------------- |
-| `*`           | zero or more of **any** character (including dots)  |
-| `?`           | exactly **one** character                           |
-| anything else | matched literally (so `.` is a literal dot)         |
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/rules-dark.png">
+  <img src=".github/assets/screenshots/rules-light.png" alt="Rules" width="600">
+</picture>
 
-Rules are evaluated **top to bottom; the first enabled rule that matches wins**. Reorder
-them in Settings to set priority.
+**Profiles** — route to a specific browser profile per rule.
 
-### Examples
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/profiles-dark.png">
+  <img src=".github/assets/screenshots/profiles-light.png" alt="Profiles" width="600">
+</picture>
 
-| Pattern          | Matches                                  | Does **not** match           |
-| ---------------- | ---------------------------------------- | ---------------------------- |
-| `*.github.com`   | `gist.github.com`, `api.github.com`      | `github.com` (the apex)      |
-| `*github.com`    | `github.com` **and** `gist.github.com`   | `notgithub.org`              |
-| `*google.com`    | `google.com`, `mail.google.com`          | `google.co.uk`               |
-| `mail.google.com`| `mail.google.com` exactly                | `google.com`, `imap.google.com` |
+**Aliases** — name a browser+profile once and reuse it.
 
-Key gotcha: `*.github.com` requires a leading subdomain (the `.` is literal), so it does
-**not** match the bare apex `github.com`. Use `*github.com` if you want both the apex and
-all subdomains.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset=".github/assets/screenshots/aliases-dark.png">
+  <img src=".github/assets/screenshots/aliases-light.png" alt="Aliases" width="600">
+</picture>
 
----
+</details>
 
-## Profiles
+## FAQ
 
-Each rule can target a specific profile within a browser:
+### How much does it cost?
 
-- **Chromium family** (Chrome, Edge, Brave, Vivaldi, Chromium, Arc, Dia, Comet, Helium,
-  and any other non-Firefox browser — Chromium is the catch-all default): selected with
-  `--profile-directory=<dir>`, where `<dir>` is the profile's *directory name* (e.g.
-  `Default`, `Profile 1`). TrafficWand discovers these from the browser's `Local State`
-  file. Profile routing into a running Chromium browser is **reliable**.
-- **Firefox**: selected with `-P <name>`, where `<name>` is the profile name from
-  `profiles.ini`. TrafficWand discovers these (honoring `installs.ini` defaulting).
+Free and open source. [Sponsorship](https://github.com/sponsors/trafficwand) is welcome.
 
-### Launch mechanism (from the spike)
+### What data do you collect?
 
-TrafficWand launches browsers via `open -n -a <app path> --args <profile flag> <url>`.
-This is the only approach that delivers the profile flag + URL to the browser's own
-argument parser regardless of whether the browser is already running — Chromium and
-Firefox both forward such a request to their running instance over their own IPC. The
-alternatives (`NSWorkspace` `OpenConfiguration.arguments`, direct-binary spawning) were
-evaluated and rejected/relegated; the full reasoning, argv contract, and Hardened
-Runtime implications are in [`docs/spikes/launch-mechanism.md`](docs/spikes/launch-mechanism.md).
+None. The only network activity is checking GitHub for updates.
 
-**Firefox caveat:** opening the link in Firefox is reliable, but switching to a
-*specific* profile when Firefox is **already running** is **best-effort** — Firefox's
-single-instance remoting model may open the link in the already-running profile rather
-than spinning up the requested one. (`-no-remote` is deliberately *not* used, because it
-breaks the running-instance case entirely.) Chromium has no such limitation.
+### Which browsers are supported?
 
-Safari has no command-line profile selection, so rules targeting it route the link
-without a profile. Every other non-Firefox browser is treated as Chromium and uses
-`--profile-directory=<dir>` when a profile is set (unknown browsers simply carry no
-profile, so they launch their default).
+Currently profile switching works for:
+- Arc
+- Brave
+- Chrome
+- Chromium
+- Dia
+- Edge
+- Firefox
+- Helium
+- Vivaldi
 
----
+Also, TrafficWand supports Comet and Safari, but currently without profile switching.
 
-## Aliases
+### How do I stop using it?
 
-Instead of repeating the same browser/profile across many rules, define a reusable
-**alias** — a named binding to a concrete browser + profile (e.g. **"Work"** → Chrome
-"Work Profile"). Rules and the default-browser fallback can then target *either* a
-concrete browser/profile *or* an alias.
+Set another default browser in **System Settings ▸ Desktop & Dock**, then move app from /Applications to the Trash — it leaves nothing behind.
 
-The point is late binding: rules store a *reference* to the alias, not a copy. Re-point
-**"Work"** at a different browser in the **Aliases** tab and every rule (and the fallback)
-that targets **"Work"** follows the change at once — no rule-by-rule editing.
+### I Found a bug or have a feature request
 
-- Manage aliases in **Settings ▸ Aliases**: a master-detail tab — pick an alias from the
-  sidebar list and edit it inline in the detail pane. Edits persist live (the name commits
-  when you press Enter or click away; the browser/profile commits on change), so there's no
-  Save/Cancel step. **Add** drops in a new alias and selects it.
-- In the rule editor and the default-browser fallback, switch the destination between a
-  concrete **Browser** and an **Alias**.
-- The **picker** lists your aliases too (in an **Aliases** section above the browsers), so
-  you can route a one-off link — or *remember* one — to an alias.
-- An alias that is still referenced by a rule or the fallback **cannot be deleted** until
-  the references are removed — the UI tells you which rules block it.
-- If an alias reference is ever dangling (e.g. a hand-edited config), the link safely
-  falls through to the **picker** rather than being dropped or misrouted.
-
-When you pick an **alias** in the picker and tick "Remember choice for `<domain>`", the
-saved rule references that alias by name — so re-pointing the alias later also re-routes
-the remembered site. Picking a concrete **browser/profile** instead remembers that exact
-choice.
-
----
-
-## Fallback policy
-
-For links that match no rule, choose one of:
-
-- **Picker** — a floating panel appears listing your aliases (in an **Aliases** section at
-  the top) and your installed browsers (shown with their real app icons) and their
-  profiles; pick where the link goes. Navigate with the keyboard (arrow keys move the
-  highlight, Return activates the highlighted destination, Esc cancels) or the mouse. Tick
-  **"Remember choice for `<domain>`"** before choosing to persist a rule that automatically
-  routes that whole domain (apex + subdomains) to the picked destination from then on (an
-  alias pick is remembered *as the alias*; a concrete pick as that browser/profile). You can also copy the URL or cancel. The gear in
-  the picker header opens Settings on the Rules tab, and **⌘,** opens Settings on the
-  General tab — handy when the menu-bar icon is hidden behind the MacBook notch.
-- **Single default browser** — the link always opens in one configured browser/profile,
-  no panel.
-- **Last-used** — the link reuses whichever browser/profile you last routed to. If
-  nothing has been recorded yet, the picker is shown.
-
-The picker is always the ultimate fallback.
-
----
-
-## Architecture
-
-TrafficWand is split into two layers:
-
-- **`TrafficWandCore`** — a pure Swift SPM package (Foundation only, **zero AppKit**).
-  All the decision logic lives here: glob matching, rule matching, routing decisions,
-  config persistence, profile parsing, and launch-argument construction. It is
-  exhaustively unit-tested via `swift test`, and a build-time guard
-  (`task test-core`) fails if any Core source imports AppKit.
-- **App target** — a thin AppKit/SwiftUI shell that adapts the system (`NSWorkspace`,
-  `Process`, the filesystem, the menu bar, Settings, and the picker panel) to the Core
-  protocols. Assembled by XcodeGen from `project.yml`.
-
-This split keeps the trustworthy, testable logic free of UI and system dependencies; the
-app is just glue. See [`CLAUDE.md`](CLAUDE.md) for the protocol seams and contributor
-notes.
-
----
-
-## Distribution
-
-TrafficWand is distributed as a **non-sandboxed Developer ID** app (so it can read
-browser profile configs and launch profiles without sandbox exceptions): signed with a
-Developer ID Application certificate, **Hardened Runtime** enabled, **notarized** and
-stapled by Apple, packaged as a **DMG**.
-
-Building a release DMG requires enrollment in the Apple Developer Program. One-time
-setup:
-
-```sh
-brew install create-dmg
-```
-
-Then provide the four notary credentials. The easiest way is a gitignored
-`.dmg.env` file at the repo root — copy the template and fill it in once:
-
-```sh
-cp .dmg.env.example .dmg.env
-$EDITOR .dmg.env
-```
-
-`.dmg.env.example` documents where each value comes from (Team ID, the Developer ID
-Application certificate, and the app-specific password). `scripts/build-dmg.sh` sources
-`.dmg.env` automatically. Alternatively, export the four vars
-(`DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_SPECIFIC_PASSWORD`)
-in your shell — in CI they come from environment secrets, so no file is needed there.
-
-Validate the setup without running the full pipeline:
-
-```sh
-scripts/build-dmg.sh --preflight
-```
-
-Then produce a release:
-
-```sh
-task dmg
-```
-
-Output lands at `dist/TrafficWand-<version>.dmg`, ready to upload as a GitHub release
-asset.
-
-### Updates
-
-Installed copies keep themselves current via [Sparkle](https://sparkle-project.org): the
-menu bar exposes a **"Check for Updates…"** item for an on-demand check, and the app also
-checks automatically in the background (toggle in **Settings ▸ General**). Updates are
-EdDSA-signed and downloaded from the GitHub Releases page, so no manual re-download is
-needed once you're on a Sparkle-enabled release.
-
-### Automated releases
-
-Pushing a `v*.*.*` tag does this automatically. The
-[`release.yml`](.github/workflows/release.yml) workflow runs the same `task dmg`
-pipeline in CI and creates (or updates) the matching GitHub Release with auto-generated
-notes and the signed, notarized DMG attached. Bump `MARKETING_VERSION` in `project.yml`
-to match the tag before pushing — a mismatch fails the job before the build. Grab the
-signed DMG from the [Releases](../../releases) page.
-
-This requires seven repository secrets (Settings → Secrets and variables → Actions): the
-four notary credentials above (`DEVELOPER_ID_APPLICATION`, `APPLE_ID`, `APPLE_TEAM_ID`,
-`APPLE_APP_SPECIFIC_PASSWORD`) plus, so CI can import the signing identity into a
-throwaway keychain, `MACOS_CERTIFICATE_P12_BASE64` (base64 of the exported `.p12`
-containing the certificate **and** its private key) and `MACOS_CERTIFICATE_PASSWORD`
-(the `.p12` password), plus `SPARKLE_ED_PRIVATE_KEY` (the EdDSA private key used to sign
-the update appcast). CI signs the DMG, renders `appcast.xml`, and uploads it as a release
-asset; the app's feed URL is the stable `releases/latest/download/appcast.xml` redirect.
-
----
+[Open an issue](https://github.com/trafficwand/trafficwand/issues).
 
 ## License
 
-TrafficWand is released under the MIT License. See [`LICENSE`](LICENSE) for the
-full text.
+MIT — see [LICENSE](LICENSE). © 2026 Ildar Karymov
